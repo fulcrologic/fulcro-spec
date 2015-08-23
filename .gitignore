@@ -1,0 +1,15 @@
+/target
+/classes
+/checkouts
+pom.xml
+pom.xml.asc
+*.jar
+*.class
+/.lein-*
+/.nrepl-port
+.hgignore
+.hg/
+.idea
+smooth_test.iml
+figwheel_server.log
+resources/public/js
