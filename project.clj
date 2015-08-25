@@ -22,6 +22,9 @@
                         }
                        ]
               }
+  :figwheel {
+             :nrepl-port 7888
+             }
   :profiles {
              :dev {
                    :dependencies [

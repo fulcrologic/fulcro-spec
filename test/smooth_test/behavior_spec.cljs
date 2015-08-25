@@ -8,11 +8,13 @@
 (enable-console-print!)
 
 (let [
-      b2 (b/behavior "second" b/other 11
-                     (b/sample) => 20
+      b2 (b/behavior "second"
+                     clock-ticks => 100
+                     (b/sample) => 10
                      )
-      expr2 (-> b2 :assertions (get 0) :expression)
+      p1 (b/provided "if I force it to return 2" (b/sample) => 2 (b/behavior "then it better" (b/sample) => 2))
       ]
-     (cljs.pprint/pprint (run b2))
-     ;(cljs.pprint/pprint (run expr2))
+     (cljs.pprint/pprint p1)
+     (cljs.pprint/pprint (run p1))
+     ;(cljs.pprint/pprint (run b2))
      )
