@@ -14,7 +14,8 @@
                      )
       p1 (b/provided "if I force it to return 2" (b/sample) => 2 (b/behavior "then it better" (b/sample) => 2))
       ]
+  ;; TODO: The setup is getting parsed ok, but I'm having trouble getting it to bind...
      (cljs.pprint/pprint p1)
      (cljs.pprint/pprint (run p1))
-     ;(cljs.pprint/pprint (run b2))
+     (cljs.pprint/pprint (run b2))
      )

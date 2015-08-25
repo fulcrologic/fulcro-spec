@@ -17,11 +17,10 @@
 
 (defn run [test]
   ;(cljs.pprint/pprint test)
-  ((:setup test)
-   (doseq [step (-> test :steps)]
-     (cond
-       (= :assertion (:type step)) (run-assertion step)
-       (= :clock-tick (:type step)) (advance-clock (:time step))
-       ))))
+  (doseq [step (-> test :steps)]
+    (cond
+      (= :assertion (:type step)) (run-assertion step)
+      (= :clock-tick (:type step)) (advance-clock (:time step))
+      )))
 
 (defn boo [] 3)

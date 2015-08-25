@@ -42,17 +42,13 @@
   result
   ))
 
-(defn mock [rv] (fn [&rest] rv))
-
 (defmacro binding-wrapper [sym value]
-  `(fn [test#] (with-bindings [~sym ~value] (test#))))
+  `(fn [test#] (with-bindings [~sym (smooth-test.behavior/mock ~value)] (test#))))
 
 (defn parse-mocking-clause [acc [the-call arrow value-to-return]]
   (let [function-to-mock (first the-call)
         args-to-expect (rest the-call)]
-    (update acc :setup (fn update-it [old-wrapper] (old-wrapper (binding-wrapper function-to-mock value-to-return))))
-    )
-  )
+    (update acc :setup #(conj % {:function function-to-mock :return value-to-return}))))
 
 (defn is-mocking-clause? [triple] (not (and (sequential? (first triple)) (= "behavior" (name (first (first triple)))))))
 
@@ -60,8 +56,10 @@
 (defmacro provided [description & clauses-and-behaviors]
   (let [mocking-clauses (take-while is-mocking-clause? (partition-all 3 clauses-and-behaviors))
         behaviors (drop (* 3 (count mocking-clauses)) clauses-and-behaviors)
-        setup (reduce parse-mocking-clause { :title description :setup identity} mocking-clauses)
+        setup (reduce parse-mocking-clause { :title description :setup []} mocking-clauses)
+        bindings (map (fn [clause] [(:function clause) (smooth-test.behavior/mock (:return clause))]) (:setup setup))
         ]
-    `(merge ~@behaviors ~setup)
+    ;`(merge ~@behaviors {:setup (fn [test#] (with-bindings [~@bindings] (test#)))})
+    setup
     )
   )
