@@ -25,7 +25,7 @@
                      (b/other) => 4
                      (b/andanother) => 2
                      (b/behavior "then it better"
-                                 (b/sample2) => 40))
+                                 (b/sample2) => 40)) 
       ]
   ;; TODO: The setup is getting parsed ok, but I'm having trouble getting it to bind...
   ;(cljs.pprint/pprint "provided output")
