@@ -5,6 +5,7 @@
   )
 
 (defprotocol IAsyncQueue
+  (current-time [this] "Returns the current time on the simulated clock, in ms")
   (peek-event [this] "Returns the first event on the queue")
   (advance-clock [this ms]
     "Move the clock forward by the specified number of ms, triggering events (even those added by interstitial triggers) in the correct order up to (and including) events that coincide with the final time.")
@@ -25,15 +26,19 @@
 
 (defrecord AsyncQueue [schedule now]
   IAsyncQueue
+  (current-time [this] @(:now this))
   (peek-event [this] (second (first @(-> this :schedule))))
   (advance-clock
     [this ms]
     (let [stop-time (+ ms @(:now this))]
       (loop [evt (peek-event this)]
-        (if (and evt (<= (:abs-time evt) stop-time))
-          (do (process-first-event! this)
+        (let [now (or (:abs-time evt) (inc stop-time))]
+          (if (<= now stop-time)
+            (do
+              (reset! (:now this) now)
+              (process-first-event! this)
               (recur (peek-event this)))
-          )
+            ))
         )
       (reset! (:now this) stop-time)
       )

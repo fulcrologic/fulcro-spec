@@ -105,7 +105,7 @@
 
     (async/advance-clock queue 1050)
 
-    (is (= 1050 @(:now queue)))
+    (is (= 1050 (async/current-time queue)))
     )
   )
 
@@ -118,5 +118,31 @@
     (async/schedule-event queue 10 thrower)
     #?(:clj  (is (thrown? java.lang.Exception (async/advance-clock queue 100)))
        :cljs (is (thrown? js/Error (async/advance-clock queue 100))))
+    )
+  )
+
+(deftest async-queue-triggers-events-in-correct-order-when-a-triggered-event-adds-to-queue
+  (let [queue (async/make-async-queue)
+        invocations (atom 0) ;how many functions have run
+        add-on-fn (fn [] ; scheduled by initial function (just below this one) 10ms AFTER it runs (abs of 11ms)
+                    (is (= 11 (async/current-time queue)))
+                    (is (= 1 @invocations))
+                    (swap! invocations inc))
+        trigger-adding-evt (fn [] ; scheduled below to run at 1ms
+                             (is (= 0 @invocations))
+                             (is (= 1 (async/current-time queue)))
+                             (swap! invocations inc)
+                             (async/schedule-event queue 10 add-on-fn)
+                             )
+        late-fn (fn []  ; manually scheduled at 15ms...must run AFTER the one that was added during the trigger
+                  (is (= 15 (async/current-time queue)))
+                  (is (= 2 @invocations))
+                  )
+        ]
+
+    (async/schedule-event queue 1 trigger-adding-evt)
+    (async/schedule-event queue 15 late-fn)
+    (async/advance-clock queue 100)
+    ;; see assertions in functions...
     )
   )
