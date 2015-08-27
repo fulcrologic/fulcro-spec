@@ -10,7 +10,6 @@
 (defn run-all-tests []
   (run-tests
     'smooth-test.async-spec
-    'smooth-test.behavior-spec
     ))
 
 (defn on-load []
