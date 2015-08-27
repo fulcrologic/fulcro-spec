@@ -1,4 +1,4 @@
-(ns smooth-test.async-spec
+(ns ^:figwheel-always smooth-test.async-spec
   #?(:clj
      (:require [smooth-test.async :as async]
                [clojure.test :as t
@@ -18,7 +18,7 @@
     (async/schedule-event queue 144 mock-fn2)
     (async/schedule-event queue 44 mock-fn1)
 
-    (is (= mock-fn1 (get @(:schedule queue) 44)))
+    (is (= mock-fn2 (get @(:schedule queue) 44)))
     (is (= mock-fn2 (get @(:schedule queue) 144)))
     (is (= mock-fn3 (get @(:schedule queue) 1044)))
     )
