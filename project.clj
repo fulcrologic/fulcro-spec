@@ -8,7 +8,6 @@
                  [org.clojure/clojurescript "0.0-3308"]
                  ]
   :plugins [[lein-cljsbuild "1.0.5"]
-            [com.cemerick/clojurescript.test "0.3.3"]
             [lein-figwheel "0.3.7"]]
   :clean-targets [:target-path "target" "resources/public/js"]
   :cljsbuild {

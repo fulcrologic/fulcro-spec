@@ -1,14 +1,21 @@
 (ns ^:figwheel-always cljs.user
-  (:require-macros [cemerick.cljs.test
-                    :refer (is deftest with-test run-tests testing test-var)])
-  (:require [smooth-test.async :as async]
+  (:require-macros [cljs.test
+                    :refer (is deftest run-tests testing)])
+  (:require smooth-test.async-spec
             [smooth-test.runner.browser :as b]
-            cljs.pprint
-            [cemerick.cljs.test :as t]))
+            [cljs.test :as t]))
 
 (enable-console-print!)
 
+(defn run-all-tests []
+  (run-tests
+    'smooth-test.async-spec
+    'smooth-test.behavior-spec
+    ))
+
 (defn on-load []
-  (t/test-ns 'smooth-test.async-spec)
+  (run-tests
+    'smooth-test.async-spec
+    )
   )
 

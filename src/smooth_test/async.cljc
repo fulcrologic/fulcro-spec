@@ -1,4 +1,8 @@
-(ns smooth-test.async)
+(ns smooth-test.async
+  #?(:cljs (:require [cljs.pprint :refer [pprint]])
+     :clj
+           (:require [clojure.pprint :refer [pprint]]))
+  )
 
 (defprotocol IAsyncQueue
   (advance-clock
@@ -23,12 +27,12 @@
     ;"Move the clock forward by the specified number of ms, triggering events (even those added by interstitial triggers) in the correct order up to (and including) events that coincide with the final time."
     [this ms]
     (let [stop-time (+ ms @(:now this))]
-      (loop [evt (first @(:schedule this))]
-        (if (and evt (<= (:abs-time evt) stop-time))
-          (do (process-first-event! this)
-              (recur (first @(:schedule this))))
-          )
-        )
+      ;  (loop [evt (first @(:schedule this))]
+      ;    (if (and evt (<= (:abs-time evt) stop-time))
+      ;      (do (process-first-event! this)
+      ;          (recur (first @(:schedule this))))
+      ;      )
+      ;    )
       (reset! (:now this) stop-time)
       )
     )
@@ -39,7 +43,7 @@
           event (map->Event {:abs-time   tm
                              :fn-to-call fn-to-call})]
       (if (contains? @(:schedule this) tm)
-        (throw (ex-data (str "Schedule already contains an event " ms-from-now "ms from 'now' which would generate an indeterminant ordering for your events. Please offset your submission time a bit")))
+        (throw (ex-info (str "Schedule already contains an event " ms-from-now "ms from 'now' which would generate an indeterminant ordering for your events. Please offset your submission time a bit") {}))
         (swap! (:schedule this) #(assoc % (:abs-time event) event)))
       )
     )
@@ -48,6 +52,5 @@
 (defn make-async-queue
   "Build an asynchronous event simulation queue."
   []
-  (let [sort-by-event-time (fn [a b] (< (:abs-time a) (:abs-time b)))]
-    (map->AsyncQueue {:now      (atom 0)
-                      :schedule (atom (sorted-map-by sort-by-event-time))})))
+  (map->AsyncQueue {:now      (atom 0)
+                    :schedule (atom (sorted-map))}))

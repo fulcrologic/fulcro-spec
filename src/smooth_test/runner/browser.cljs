@@ -1,6 +1,6 @@
 (ns ^:figwheel-always smooth-test.runner.browser
   (:require
-    [cemerick.cljs.test :as test :include-macros true :refer [report]]
+    [cljs.test :as test :include-macros true :refer [report]]
     ))
 
 (defn color-favicon-data-url [color]
