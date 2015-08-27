@@ -2,6 +2,18 @@
 
 A Clojure library designed to ... well, that part is up to you.
 
+DEVELOPMENT NOTES:
+
+To run tests:
+
+     rlwrap lein figwheel dev test
+
+- Add specs to test folder. Use cljs.test for now.
+- Require the spec in dev/cljs/user.cljs
+- Add spec namespace to run-all-tests call to run-tests
+- focus auto-run via the user.cljs on-load function
+
+
 ## Usage
 
     (specification "The Thing"
