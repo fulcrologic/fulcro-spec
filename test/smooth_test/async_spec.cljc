@@ -1,4 +1,4 @@
-(ns ^:figwheel-always smooth-test.async-spec
+(ns smooth-test.async-spec
   #?(:clj
      (:require [smooth-test.async :as async]
                [clojure.test :as t
@@ -13,6 +13,7 @@
 
 (deftest async-queue-associates-an-event-correctly-with-its-time
   (let [queue (async/make-async-queue)]
+
     (async/schedule-event queue 1044 mock-fn3)
     (async/schedule-event queue 144 mock-fn2)
     (async/schedule-event queue 44 mock-fn1)
@@ -28,6 +29,7 @@
 
 (deftest async-queue-keeps-events-in-order
   (let [queue (async/make-async-queue)]
+
     (async/schedule-event queue 1044 mock-fn3)
     (async/schedule-event queue 144 mock-fn2)
     (async/schedule-event queue 44 mock-fn1)
@@ -38,6 +40,7 @@
 
 (deftest async-queue-refuses-to-add-events-that-collide-in-time
   (let [queue (async/make-async-queue)]
+
     (async/schedule-event queue 44 identity)
 
     #?(:clj  (is (thrown-with-msg? java.lang.Exception #"already contains an event" (async/schedule-event queue 44 identity)))
@@ -46,16 +49,100 @@
     )
   )
 
+(deftest processing-an-event-executes-the-first-scheduled-item
+  (let [detector (atom false)
+        detect (fn [] (reset! detector true))
+        queue (async/make-async-queue)]
+    (async/schedule-event queue 44 detect)
+
+    (async/process-first-event! queue)
+
+    (is @detector)
+    )
+  )
+
+(deftest processing-an-event-removes-the-first-scheduled-item
+  (let [queue (async/make-async-queue)]
+    (async/schedule-event queue 44 mock-fn1)
+
+    (async/process-first-event! queue)
+
+    (is (= 0 (count @(:schedule queue))))
+
+    )
+  )
 
 (deftest async-queue-associates-an-event-correctly-with-its-time-relative-to-current-time
   (let [queue (async/make-async-queue)]
     (async/schedule-event queue 44 mock-fn1)
-    (async/advance-clock queue 100)
+
+    (async/advance-clock queue 10)
     (async/schedule-event queue 44 mock-fn2)
 
     (is (= mock-fn1 (:fn-to-call (get @(:schedule queue) 44))))
-    (is (= mock-fn2 (:fn-to-call (get @(:schedule queue) 144))))
+    (is (= mock-fn2 (:fn-to-call (get @(:schedule queue) 54))))
     (is (= 44 (:abs-time (get @(:schedule queue) 44))))
-    (is (= 144 (:abs-time (get @(:schedule queue) 144))))
+    (is (= 54 (:abs-time (get @(:schedule queue) 54))))
+    )
+  )
+
+(deftest async-queue-executes-and-removes-events-as-clock-advances
+  (let [detector (atom false)
+        detect (fn [] (reset! detector true))
+        queue (async/make-async-queue)]
+    (async/schedule-event queue 44 detect)
+    (async/schedule-event queue 144 mock-fn1)
+
+    (async/advance-clock queue 50)
+
+    (is @detector)
+    (is (not (nil? (async/peek-event queue))))
+    )
+  )
+
+(deftest async-queue-advance-clock-just-advances-the-time-with-no-events
+  (let [queue (async/make-async-queue)]
+
+    (async/advance-clock queue 1050)
+
+    (is (= 1050 (async/current-time queue)))
+    )
+  )
+
+(deftest async-queue-passes-exceptions-through-to-caller-of-advance-clock
+  (let [queue (async/make-async-queue)
+        thrower
+        #?(:cljs (fn [] (throw (js/Error. "Bummer!")))
+           :clj  (fn [] (throw (java.lang.Exception. "Bummer!"))))
+        ]
+    (async/schedule-event queue 10 thrower)
+    #?(:clj  (is (thrown? java.lang.Exception (async/advance-clock queue 100)))
+       :cljs (is (thrown? js/Error (async/advance-clock queue 100))))
+    )
+  )
+
+(deftest async-queue-triggers-events-in-correct-order-when-a-triggered-event-adds-to-queue
+  (let [queue (async/make-async-queue)
+        invocations (atom 0) ;how many functions have run
+        add-on-fn (fn [] ; scheduled by initial function (just below this one) 10ms AFTER it runs (abs of 11ms)
+                    (is (= 11 (async/current-time queue)))
+                    (is (= 1 @invocations))
+                    (swap! invocations inc))
+        trigger-adding-evt (fn [] ; scheduled below to run at 1ms
+                             (is (= 0 @invocations))
+                             (is (= 1 (async/current-time queue)))
+                             (swap! invocations inc)
+                             (async/schedule-event queue 10 add-on-fn)
+                             )
+        late-fn (fn []  ; manually scheduled at 15ms...must run AFTER the one that was added during the trigger
+                  (is (= 15 (async/current-time queue)))
+                  (is (= 2 @invocations))
+                  )
+        ]
+
+    (async/schedule-event queue 1 trigger-adding-evt)
+    (async/schedule-event queue 15 late-fn)
+    (async/advance-clock queue 100)
+    ;; see assertions in functions...
     )
   )

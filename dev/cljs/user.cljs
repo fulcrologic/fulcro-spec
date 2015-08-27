@@ -13,8 +13,6 @@
     ))
 
 (defn on-load []
-  (run-tests
-    'smooth-test.async-spec
-    )
+  (run-all-tests)
   )
 

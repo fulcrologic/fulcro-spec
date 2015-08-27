@@ -26,6 +26,7 @@
                         :compiler {:main cljs.user
                                    :output-to "resources/public/js/test/test.js"
                                    :output-dir "resources/public/js/test/out"
+                                   :recompile-dependents true
                                    :asset-path "js/test/out"
                                    :optimizations :none
                                    }
