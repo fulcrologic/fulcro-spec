@@ -12,16 +12,7 @@
   :clean-targets [:target-path "target" "resources/public/js"]
   :cljsbuild {
               :builds [
-                       { :id "dev"
-                        :source-paths ["src" "dev" ]
-                        :compiler {:main smooth-test.core
-                                   :asset-path "js/out"
-                                   :recompile-dependents true
-                                   :output-to  "resources/public/js/main.js"
-                                   :output-dir "resources/public/js/out"} 
-                        :figwheel true
-                        }
-                       {:id "test"
+                       {:id "dev"
                         :source-paths ["src" "dev" "test"]
                         :figwheel { :on-jsload "cljs.user/on-load" }
                         :compiler {:main cljs.user
@@ -39,9 +30,6 @@
              }
   :profiles {
              :dev {
-                   :dependencies [
-                                  [midje "1.7.0"]
-                                  ]
                    :source-paths ["src" "test" "dev"]
                    :repl-options {
                                   :init-ns clj.user
