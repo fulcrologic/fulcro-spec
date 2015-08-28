@@ -16,6 +16,7 @@
                         :source-paths ["src" "dev" ]
                         :compiler {:main smooth-test.core
                                    :asset-path "js/out"
+                                   :recompile-dependents true
                                    :output-to  "resources/public/js/main.js"
                                    :output-dir "resources/public/js/out"} 
                         :figwheel true
