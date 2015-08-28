@@ -1,7 +1,9 @@
 (ns smooth-test.specification-spec
   #?(:clj
      (:require [smooth-test.parser.parse :as p]
+               [smooth-test.core]
                [clojure.test :as t
+
                 :refer (is deftest with-test run-tests testing)]))
   #?(:cljs (:require-macros [smooth-test.parser.parse :as p]
                    [cljs.test :refer (is deftest run-tests)]))
@@ -20,10 +22,14 @@
 (defn sample3 [] (* 10 (other) (andanother)))
 
 (deftest my-sync-test1
-  (let [x 1]
+  (let [spec (p/specification-function "Specification1" '(
+                                               (p/info "title1")
+                                               (p/info "title2")
+                                               (p/info "title4"))
+                                                                )
+    ]
     )
-
-    )
+ )
 
 ;    Specification generates:
 ;    (def specification# {:description "description"
@@ -36,11 +42,11 @@
 ; provides generates a function for running its code
 ; behavior generates a function for running its code
 ;
-(p/specification "Specification1"
-                 (p/info "title1")
-                 (p/info "title2")
-                 (p/info "title4")
-                 )
+;(p/specification "Specification1"
+;                 (p/info "title1")
+;                 (p/info "title2")
+;                 (p/info "title4")
+;                 )
 
 ;(p/specification "Specification2"
 ;                 (p/behavior "can run behaviors without a provider"

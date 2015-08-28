@@ -43,6 +43,11 @@
                                   [midje "1.7.0"]
                                   ]
                    :source-paths ["src" "test" "dev"]
+                   :repl-options {
+                                  :init-ns clj.user
+                                  :port 7001
+                                  }
+                   :env {:dev true }
                    }
              }
   )

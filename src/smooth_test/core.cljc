@@ -5,7 +5,7 @@
   )
 
 (defn print-title [level text]
-  (pprint (str (apply str (repeat (* level 3) " ")) text))
+  (println (str (apply str (repeat (* level 3) " ")) text))
   )
 
 (defn mock [rv] (fn [&rest] rv))
@@ -29,6 +29,7 @@
         (recur (rest t))
         )))
   )
+
 (defn run-behaviors-with-provided [level setupfn behaviors]
   (loop [t behaviors]
     (if (empty? t)
