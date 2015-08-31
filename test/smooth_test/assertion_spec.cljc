@@ -45,36 +45,82 @@
      (is (a/is-lambda-form? '(fn [n] print n)))
      ))
 
-(deftest Boo
-  (testing "when I like pizza"
-    (testing "and somebody is home"
-      (are [x y] (= 0 (mod x y))
-                 6 3
-                 4 2
-                 11 3
-                 )
-      
-      (is (contains? thing :k))
-      (click-button :label "Today" (rendering boo))
-      (tick 100)
-      
-      ;(with-bindings [queue (make-queue)
-                      ;captured-thing (atom nil)
-                      ;ajax-get (async-stub 200 anything (call-with [2 3 4]) anything)]
-        ;(click-button :label "Go" frag)
-        ;
-        ;(async/schedule-event queue 200 stub )
-        ;(async/advance-clock queue 300)
-        ;
-        ;)
-      (a/assertions "ass stuff"
-                    (-> @app-state :button :label) => "Hello"
-                    (contains? thing :k) => true
-                    (contains? thing :k) =throws=> (Exception. #"msg regexx")
-                    (+ 1 23 2) => 24
-                    4 => 4
-                    ))
-    )
-  )
-
-(assert "3 is odd" (odd? 3))
+;(deftest Boo
+;  (testing "when I like pizza"
+;    (testing "and somebody is home"
+;      (are [x y] (= 0 (mod x y))
+;                 6 3
+;                 4 2
+;                 11 3
+;                 )
+;
+;      (is (contains? thing :k))
+;      (click-button :label "Today" (rendering boo))
+;      (tick 100)
+;
+;      (provided "clause"
+;                (js/setTimeout cb & tm) =1x=> (async tm (cb [1 2 3])) ; exactly once
+;                (js/setTimeout cb & tm) =1x=> (do
+;                                                (verify-arg tm 100)
+;                                                (.log js/console "OK")
+;                                                (async tm (cb [1 2 3]))
+;                                                )
+;                (something) =2x=> 400
+;                (js/setTimeout cb _) => (async 100 (cb [1 2 3])) ; many
+;
+;                (behavior ""
+;                          a => 2
+;                          b => 2
+;                          c => 2
+;                          d => 2
+;                          )
+;
+;                )
+;      )
+;
+;    (testing "clause"
+;      (let [testing-async-queue (make-async-queue)
+;            stub1 (fn [cb & tm] (schedule-item testing-async-queue tm (fn [] (cb [1 2 3]))))    ; arity 2
+;            stub2 (fn [cb & tm] (do
+;                                  ; FIXME: Exception types for js?
+;                                  (if-not (is (= 100 tm)) (throw (Exception. "Argument check failed")))
+;                                  (.log js/console "OK")
+;                                  (schedule-item testing-async-queue tm (fn [] (cb [1 2 3])))
+;                                  ))
+;            stub3 (fn [] 400)
+;            stub4 (fn [cb _] (schedule-item testing-async-queue 100 (fn [] (cb [1 2 3]))))
+;            settimeout-script-atom (atom {:f      "js/setTimeout"
+;                                          :script [
+;                                                   {:times 1 :stub stub1 :argcnt 2 :ncalled 0}
+;                                                   {:times 1 :stub stub2 :argcnt 2 :ncalled 0}
+;                                                   {:times :many :stub stub4 :argcnt 2 :ncalled 0}
+;                                                   ]})
+;            something-script-atom (atom
+;                                    {:f      "something"
+;                                     :script [
+;                                              {:times 2 :stub stub2 :argcnt 0 :ncalled 0}
+;                                              ]})
+;            ]
+;        (with-redefs [js/setTimeout (scripted-stub settimeout-script-atom)
+;                        something (scripted-stub something-script-atom)
+;
+;                        ...
+;
+;                        (verify-scripted-atom settimeout-script-atom)
+;                        (verify-scripted-atom something-script-atom)
+;
+;          )
+;
+;        )
+;      )
+;
+;    (with-bindings [queue (make-queue)
+;                    captured-thing (atom nil)
+;                    ajax-get (async-stub 200 anything (call-with [2 3 4]) anything)]
+;      (click-button :label "Go" frag)
+;
+;      (async/schedule-event queue 200 stub)
+;      (async/advance-clock queue 300)
+;
+;      )
+;    (a/assertions "ass stuff")
