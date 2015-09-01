@@ -66,7 +66,7 @@
   (let [keywords (set (filter #(keyword? %) args))
         title (first (filter #(string? %) args))
         tests (filter #(list? %) args)
-        expanded-tests #spy/d (map #(macroexpand-1 %) tests)
+        expanded-tests (map #(macroexpand-1 %) tests)
         sym (gensym "specification")]
     `(defn ~(vary-meta sym assoc :test-context keywords) []
        (smooth-test.core/print-title 0 ~title)
