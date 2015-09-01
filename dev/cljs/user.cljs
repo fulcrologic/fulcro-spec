@@ -2,7 +2,6 @@
   (:require-macros [cljs.test
                     :refer (is deftest run-tests testing)])
   (:require smooth-test.async-spec
-            smooth-test.specification-spec
             [smooth-test.runner.browser :as b]
             [cljs.test :as t]))
 
@@ -10,7 +9,6 @@
 
 (defn run-all-tests []
   (run-tests 'smooth-test.async-spec)
-  (run-tests 'smooth-test.specification-spec)
 
   )
 
