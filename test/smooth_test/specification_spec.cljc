@@ -1,6 +1,6 @@
 (ns smooth-test.specification-spec
   #?(:clj
-     (:require [smooth-test.parser.parse :as p]
+     (:require [smooth-test.parser.parse :refer [specification specification-fn info]]
                [smooth-test.core]
                [clojure.test :as t
 
@@ -21,32 +21,21 @@
 (defn sample2 [] (* 5 (other) (andanother)))
 (defn sample3 [] (* 10 (other) (andanother)))
 
-(deftest my-sync-test1
-  (let [spec (p/specification-function "Specification1" '(
-                                               (p/info "title1")
-                                               (p/info "title2")
-                                               (p/info "title4"))
-                                                                )
-    ]
-    )
- )
+(def simple-spec (specification-fn '(:unit "Specification1" (p/info "title1")
+                                                          (p/info "title2")
+                                                          (p/info "title4"))))
 
-;    Specification generates:
-;    (def specification# {:description "description"
-;                         :runner (fn [emitter]
-;                             (loop :tests ...))
-;
-;                         :tests [fn1 fn2 fn3 ...] }
-;     Adds specification# to the global list if available tests
-;
-; provides generates a function for running its code
-; behavior generates a function for running its code
-;
-;(p/specification "Specification1"
-;                 (p/info "title1")
-;                 (p/info "title2")
-;                 (p/info "title4")
-;                 )
+(testing "Specification"
+  (testing "includes test meta-data"
+
+    (is (= (name (first #spy/d simple-spec)) "with-meta"))
+  ))
+
+(specification "Specification1"
+                 (info "title1")
+                 (info "title2")
+                 (info "title4")
+                 )
 
 ;(p/specification "Specification2"
 ;                 (p/behavior "can run behaviors without a provider"

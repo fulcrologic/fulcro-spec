@@ -10,15 +10,18 @@
 
 (defn mock [rv] (fn [&rest] rv))
 
-(defn run-specification [tests]
+(defn run-sub-tests [level tests]
   (loop [t tests]
     (if (empty? t)
       nil
       (do
-        ((first t) 1)
+        (println level)
+        (println (first t))
+        ((first t) level)
         (recur (rest t))
         )))
   )
+
 
 (defn run-behaviors [level behaviors]
   (loop [t behaviors]
