@@ -21,15 +21,15 @@
 (defn sample2 [] (* 5 (other) (andanother)))
 (defn sample3 [] (* 10 (other) (andanother)))
 
-(deftest my-sync-test1
-  (let [spec (p/specification-function "Specification1" '(
-                                               (p/info "title1")
-                                               (p/info "title2")
-                                               (p/info "title4"))
-                                                                )
-    ]
-    )
- )
+;(deftest my-sync-test1
+;  (let [spec (p/specification-function "Specification1" '(
+;                                               (p/info "title1")
+;                                               (p/info "title2")
+;                                               (p/info "title4"))
+;                                                                )
+;    ]
+;    )
+; )
 
 ;    Specification generates:
 ;    (def specification# {:description "description"
