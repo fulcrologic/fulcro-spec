@@ -2,8 +2,6 @@
   (:require-macros [cljs.test
                     :refer (is deftest run-tests testing)])
   (:require smooth-test.async-spec
-            smooth-test.stub-spec
-            smooth-test.provided-spec
             [smooth-test.runner.browser :as b]
             [cljs.test :as t]))
 
