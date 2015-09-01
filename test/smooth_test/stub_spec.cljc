@@ -11,10 +11,15 @@
              ))
   )
 
-(defn make-simple-script [] (atom (s/make-script "something"
-                                                 [
-                                                  (s/make-step 'stub 1)
-                                                  ])))
+(deftest make-step-spec
+  (testing "requires the stub to be a lambda data structure")
+  
+  )
+
+(defn make-simple-script [] (s/make-script "something"
+                                           [
+                                            (s/make-step 'stub 1)
+                                            ]))
 (deftest increment-script-call-count
   (testing "finds and increments the correct step"
     (let [script (make-simple-script)]
@@ -34,10 +39,10 @@
     )
   )
 
-(defn make-single-call-script [to-call] (atom (s/make-script "something"
-                                                             [
-                                                              (s/make-step to-call 1)
-                                                              ])))
+(defn make-single-call-script [to-call] (s/make-script "something"
+                                                       [
+                                                        (s/make-step to-call 1)
+                                                        ]))
 
 (deftest scripted-stub
   (testing "calls the stub function"
@@ -75,10 +80,10 @@
   (testing "only moves to the next script step if the call count for the current step reaches the programmed amount"
     (let [a-count (atom 0)
           b-count (atom 0)
-          script (atom (s/make-script "something" [
-                                                   (s/make-step (fn [] (swap! a-count inc)) 2)
-                                                   (s/make-step (fn [] (swap! b-count inc)) 1)
-                                                   ]))
+          script (s/make-script "something" [
+                                             (s/make-step (fn [] (swap! a-count inc)) 2)
+                                             (s/make-step (fn [] (swap! b-count inc)) 1)
+                                             ])
           sstub (s/scripted-stub script)]
       ; first call
       (sstub)

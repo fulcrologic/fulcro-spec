@@ -89,12 +89,12 @@
 ;                                  ))
 ;            stub3 (fn [] 400)
 ;            stub4 (fn [cb _] (schedule-item testing-async-queue 100 (fn [] (cb [1 2 3]))))
-;            settimeout-script-atom (atom {:f      "js/setTimeout"
-;                                          :script [
-;                                                   {:times 1 :stub stub1 :argcnt 2 :ncalled 0}
-;                                                   {:times 1 :stub stub2 :argcnt 2 :ncalled 0}
-;                                                   {:times :many :stub stub4 :argcnt 2 :ncalled 0}
-;                                                   ]})
+;            settimeout-script-atom (make-script "js/setTimeout" 
+;                                          [
+;                                                   (make-step stub1 1)
+;                                                   (make-step stub2 1)
+;                                                   (make-step stub4 2)
+;                                                   ])
 ;            something-script-atom (atom
 ;                                    {:f      "something"
 ;                                     :script [

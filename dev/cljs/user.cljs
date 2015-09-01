@@ -4,6 +4,7 @@
   (:require smooth-test.async-spec
     smooth-test.assertion-spec
             smooth-test.stub-spec
+            smooth-test.provided-spec
   ;          smooth-test.specification-spec
             [smooth-test.runner.browser :as b]
             [cljs.test :as t]))
@@ -12,7 +13,8 @@
 
 (defn run-all-tests []
   ;(run-tests 'smooth-test.async-spec)
-  (run-tests 'smooth-test.stub-spec)
+  ;(run-tests 'smooth-test.stub-spec)
+  (run-tests 'smooth-test.provided-spec)
   ;(run-tests 'smooth-test.specification-spec)
 
   )

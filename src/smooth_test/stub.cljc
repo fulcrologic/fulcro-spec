@@ -5,7 +5,7 @@
   )
 
 (defn make-step [stub times] {:stub stub :times times :ncalled 0})
-(defn make-script [function steps] {:function function :steps steps})
+(defn make-script [function steps] (atom {:function function :steps steps}))
 
 #?(:clj
    (defmacro tryo [f dflt]
