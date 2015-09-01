@@ -28,7 +28,7 @@
 (testing "Specification"
   (testing "includes test meta-data"
 
-    (is (= (name (first #spy/d simple-spec)) "with-meta"))
+    (is (= (name (first simple-spec)) "with-meta"))
   ))
 
 (specification "Specification1"
