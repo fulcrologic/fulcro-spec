@@ -23,7 +23,7 @@
        (timeline/with-timeline
          (let [detector (atom [])]
            (p/provided
-             (js/setTimeout f n) =3x=> (timeline/async n (f))
+             (js/setTimeout f n) =3x=> (timeline/event n (f))
 
              (js/setTimeout (fn [] (js/setTimeout (fn [] (swap! detector conj "LAST")) 300) (swap! detector conj "FIRST")) 100)
 
