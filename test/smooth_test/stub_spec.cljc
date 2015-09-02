@@ -11,11 +11,6 @@
              ))
   )
 
-(deftest make-step-spec
-  (testing "requires the stub to be a lambda data structure")
-  
-  )
-
 (defn make-simple-script [] (s/make-script "something"
                                            [
                                             (s/make-step 'stub 1)

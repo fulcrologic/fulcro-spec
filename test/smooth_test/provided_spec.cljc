@@ -2,12 +2,16 @@
   #?(:clj
      (:require [smooth-test.provided :as p]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing)]
-               [smooth-test.provided :as p]))
+               [smooth-test.timeline :as timeline]
+               ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
+             [smooth-test.timeline :as timeline]
              [smooth-test.provided :as p]
              ))
   #?(:cljs (:require [cljs.test :as t]
-             ))
+             [smooth-test.async :as a :include-macros true]
+             )
+     )
   #?(:clj
      (:import clojure.lang.ExceptionInfo))
   )
@@ -123,22 +127,22 @@
       (p/provided
         (my-square n) =1x=> (+ n 5)
         (my-square n) =2x=> (+ n 7)
-        (is (= 22                                           ;6 + 8 + 8
+        (is (= 22                                                               ;6 + 8 + 8
                (+ (my-square 1) (my-square 1) (my-square 1))))))
     (testing "throws an exception if the mock is called too much"
-      (p/provided 
-                  (my-square n) =1x=> (+ n 5)
-                  (my-square n) =1x=> (+ n 7)
+      (p/provided
+        (my-square n) =1x=> (+ n 5)
+        (my-square n) =1x=> (+ n 7)
 
-                  (is (thrown? ExceptionInfo
-                               (+ (my-square 1) (my-square 1) (my-square 1))))
-                  )))
+        (is (thrown? ExceptionInfo
+                     (+ (my-square 1) (my-square 1) (my-square 1))))
+        )))
   (testing "allows any number of trailing forms"
     (let [detector (atom false)]
       (p/provided
         (my-square n) =1x=> (+ n 5)
-        (my-square n) =2x=> (+ n 7)
-        
+        (my-square n) => (+ n 7)
+
         (+ 1 2)
         (+ 1 2)
         (+ 1 2)
@@ -152,4 +156,3 @@
       (is (= true @detector))
       ))
   )
-
