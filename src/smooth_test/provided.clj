@@ -59,13 +59,3 @@
        (with-redefs [~@redef-pairs]
          ~@behaviors
          ))))
-
-(defmacro provided 
-  "A macro for using a Midje-style provided clause within any testing framework. This macro rewrites
-  assertion-style mocking statements into code that can do that mocking.
-  
-  (provided 
-  
-  "
-  [& forms] 
-  (apply provided-fn forms))

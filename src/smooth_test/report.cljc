@@ -1,7 +1,6 @@
 (ns smooth-test.report
   #?(:clj
      (:require [clojure.test :as t :refer (are is deftest with-test run-tests testing testing-vars-str)]
-               [smooth-test.timeline :as timeline]
                [clojure.stacktrace :as stack]
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
