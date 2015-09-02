@@ -19,7 +19,7 @@
 
 #?(:cljs
    (deftest time-line-macros
-     (testing "Timeline with async processing"
+     (testing "Timeline macros for async processing"
        (timeline/with-timeline
          (let [detector (atom [])]
            (p/provided
@@ -27,11 +27,11 @@
 
              (js/setTimeout (fn [] (js/setTimeout (fn [] (swap! detector conj "LAST")) 300) (swap! detector conj "FIRST")) 100)
 
-             (testing "callbacks not called until first timer tick"
+             (testing "nothing called until timer moves past first specified event is to occur"
                (is (= 0 (count @detector)))
                )
 
-             (testing "after first tick only one callback was called"
+             (testing "after first tick only the callbacks that satisfy the"
                (timeline/tick 101)
                (is (= 1 (count @detector)))
                )
@@ -41,7 +41,7 @@
                (is (= 2 (count @detector)))
                )
 
-             (testing "after time is passed all callback timers the last callback is called"
+             (testing "after all time is passed all callback timers are fired"
                (timeline/tick 401)
                (is (= 3 (count @detector)))
                (is (= "FIRST" (first @detector)))
