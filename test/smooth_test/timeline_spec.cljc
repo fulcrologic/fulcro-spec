@@ -1,12 +1,12 @@
 (ns smooth-test.timeline-spec
   #?(:clj
-     (:require [smooth-test.core :as c :refer [with-timeline provided event tick]]
+     (:require [smooth-test.core :as c :refer [with-timeline provided event tick specification behavior]]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing)]
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
+                            [smooth-test.core :refer [with-timeline provided async tick specification behavior]]
              ))
-  #?(:cljs (:require [cljs.test :as t]
-             [smooth-test.core :include-macros true]
+  #?(:cljs (:require [cljs.test :refer [do-report]]
              )
      )
   #?(:clj
@@ -15,12 +15,12 @@
 
 
 #?(:cljs
-   (specification "Timeline macros for async processing"
+   (specification "Timeline"
      (behavior "within a timeline"
        (with-timeline
          (let [detector (atom [])]
            (provided
-             (js/setTimeout f n) =3x=> (event n (f))
+             (js/setTimeout f n) =3x=> (async n (f))
 
              (js/setTimeout (fn [] (js/setTimeout (fn [] (swap! detector conj "LAST")) 300) (swap! detector conj "FIRST")) 100)
 
@@ -30,7 +30,7 @@
 
              (behavior "after first tick only the callbacks that satisfy the"
                (tick 101)
-               (is (= 1 (count @detector)))
+               (is (= 1  (count @detector)))
                )
 
              (behavior "more functions can run before next callback is called"

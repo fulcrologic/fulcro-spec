@@ -1,14 +1,14 @@
 (ns smooth-test.provided-spec
   #?(:clj
      (:require [smooth-test.core :as c :refer [specification behavior provided with-timeline event tick assertions]]
-               [clojure.test :as t :refer (are is deftest with-test run-tests testing)]
+               [clojure.test :as t :refer (are is deftest with-test run-tests testing  do-report)]
                [smooth-test.provided :as p]
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
              [smooth-test.provided :as p]
+             [smooth-test.core :refer [specification behavior provided with-timeline event tick assertions]]
              ))
-  #?(:cljs (:require [cljs.test :as t]
-             [smooth-test.core :as c :include-macros true]
+  #?(:cljs (:require [cljs.test :refer [do-report]]
              )
      )
   #?(:clj

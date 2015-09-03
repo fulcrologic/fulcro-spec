@@ -1,5 +1,5 @@
 (ns smooth-test.core
-  (:require [clojure.test :refer [do-report test-var *load-tests* *testing-contexts*]]
+  (:require [clojure.test :as t :refer [do-report test-var *load-tests* *testing-contexts* deftest testing]]
             [clojure.string :as s]
             [smooth-test.provided :as p]
             [smooth-test.async :as async]
@@ -11,25 +11,24 @@
    description.
    When *load-tests* is false, specificaiton is ignored."
   [description & body]
-  (when *load-tests*
-    (let [var-name-from-string (fn [s] (symbol (s/lower-case (s/replace s #"[ ]" "-"))))
-          name (var-name-from-string description)]
-      `(def ~(vary-meta name assoc :test `(fn []
-                                            (do-report {:type :begin-specification :string ~description})
-                                            ~@body
-                                            (do-report {:type :end-specification :string ~description})
-                                            ))
-         (fn []
-           (test-var (var ~name)))))))
+  (let [var-name-from-string (fn [s] (symbol (s/lower-case (s/replace s #"[ ]" "-"))))
+        name (var-name-from-string description)]
+    `(~'deftest ~name
+       (~'do-report {:type :begin-specification :string ~description})
+       ~@body
+       (~'do-report {:type :end-specification :string ~description}))
+    )
+  )
 
 (defmacro behavior
   "Adds a new string to the list of testing contexts.  May be nested,
    but must occur inside a test function (deftest)."
   [string & body]
-  `(binding [*testing-contexts* (conj *testing-contexts* ~string)]
-     (do-report {:type :begin-behavior :string ~string})
-     ~@body
-     (do-report {:type :end-behavior :string ~string}))
+  `(~'testing ~string
+            (~'do-report {:type :begin-behavior :string ~string})
+            ~@body
+            (~'do-report {:type :end-behavior :string ~string})
+            )
   )
 
 (defmacro with-timeline
@@ -41,7 +40,7 @@
   )
 
 
-(defmacro event
+(defmacro async
   "Adds an event to the event queue with the specified time and callback function.
 Must be wrapped by with-timeline.
 "
