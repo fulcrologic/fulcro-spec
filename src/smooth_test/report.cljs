@@ -59,6 +59,16 @@
   (swap! *test-level* dec)
   )
 
+(defmethod cljs.test/report [::console :begin-provided ] [m]
+  (swap! *test-level* inc)
+  (println (space-level) (:string m))
+  )
+
+(defmethod cljs.test/report [::console :end-provided ] [m]
+  (swap! *test-level* dec)
+  )
+
+
 (defmethod cljs.test/report [::console :summary ] [m]
   (println "\nRan" (:test m) "tests containing"
                        (+ (:pass m) (:fail m) (:error m)) "assertions.")

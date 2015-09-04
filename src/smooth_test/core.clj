@@ -59,14 +59,15 @@ Must be wrapped by with-timeline.
   "A macro for using a Midje-style provided clause within any testing framework. This macro rewrites
   assertion-style mocking statements into code that can do that mocking.
   "
-  [& forms]
-  (apply p/provided-fn forms))
+  [string & forms]
+  (apply p/provided-fn string forms))
 
-(defmacro assertions [descr & forms]
+(defmacro assertions [& forms]
   (let [triples (partition 3 forms)
         asserts (map (fn [[actual _ expected]] (list 'is (list '= actual expected) (str "ASSERTION: " actual " => " expected))) triples)
         ]
-    `(~'behavior ~descr
+    `(do
        ~@asserts
-       ))
+       )
+       )
   )

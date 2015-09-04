@@ -1,6 +1,6 @@
 (ns smooth-test.timeline-spec
   #?(:clj
-     (:require [smooth-test.core :as c :refer [with-timeline provided event tick specification behavior]]
+     (:require [smooth-test.core :as c :refer [with-timeline provided async tick specification behavior]]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing)]
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
@@ -19,8 +19,8 @@
      (behavior "within a timeline"
        (with-timeline
          (let [detector (atom [])]
-           (provided
-             (js/setTimeout f n) =3x=> (async n (f))
+           (provided "when mocking setTimeout"
+             (js/setTimeout f n) =2x=> (async n (f))
 
              (js/setTimeout (fn [] (js/setTimeout (fn [] (swap! detector conj "LAST")) 300) (swap! detector conj "FIRST")) 100)
 

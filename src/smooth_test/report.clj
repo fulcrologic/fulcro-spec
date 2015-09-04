@@ -38,13 +38,10 @@
         (str "  actual:"
              (with-out-str
                (if (instance? Throwable (:actual data))
-                 (stack/print-cause-trace (:actual data) t/*stack-trace-depth*)
-                 (prn (:actual data)))))))))
-
+                 (prn (.getMessage (:actual data))))))))))
 
 (defmethod smooth-report :default [m]
   )
-
 
 (defmethod smooth-report :pass [m]
   (t/with-test-out
@@ -95,6 +92,18 @@
 (defmethod smooth-report :end-behavior [m]
   (t/with-test-out
     (swap! *test-level* dec)
+    )
+  )
+
+(defmethod smooth-report :begin-provided [m]
+  (t/with-test-out
+    (swap! *test-level* inc)
+    (println (space-level) (:string m)))
+  )
+
+(defmethod smooth-report :end-provided [m]
+  (t/with-test-out
+    (reset! *test-level* 0)
     )
   )
 
