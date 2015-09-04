@@ -9,7 +9,7 @@
                  ]
   :plugins [[lein-cljsbuild "1.0.5"]
             [lein-figwheel "0.3.7"]]
-  :clean-targets [:target-path "target" "resources/public/js"]
+  :clean-targets ^{:protect false} [:target-path "target" "resources/public/js"]
   :cljsbuild {
               :builds [
                        {:id "dev"
