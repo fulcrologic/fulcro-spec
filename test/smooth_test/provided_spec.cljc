@@ -1,6 +1,6 @@
 (ns smooth-test.provided-spec
   #?(:clj
-     (:require [smooth-test.core :as c :refer [specification behavior provided with-timeline event tick assertions]]
+     (:require [smooth-test.core :as c :refer [specification behavior provided with-timeline async tick assertions]]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
                [smooth-test.provided :as p]
                ))
