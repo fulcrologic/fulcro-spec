@@ -2,7 +2,6 @@
   (:require [clojure.string :as str]
             [smooth-test.stub :as stub]
             )
-
   )
 
 (defn parse-arrow-count [sym]
@@ -45,7 +44,7 @@
   )
 
 (defn provided-fn 
-  [& forms]
+  [string & forms]
   (let [groups (partition-all 3 forms)
         triples  (take-while #(and (= 3 (count %)) (is-arrow? (second %))) groups)
         behaviors (drop (* 3 (count triples)) forms)
@@ -54,18 +53,12 @@
         script-triples (convert-groups-to-symbolic-triples grouped-mocks)
         script-let-pairs (reduce (fn [acc ele] (concat acc [(second ele) (last ele)])) [] script-triples)
         redef-pairs (reduce (fn [acc ele] (concat acc [(first ele) `(stub/scripted-stub ~(second ele))])) [] script-triples)
+        script-symbols (reduce (fn [acc ele] (concat acc [(second ele)])) [] script-triples)
         ]
     `(let [~@script-let-pairs]
        (with-redefs [~@redef-pairs]
+         (~'do-report {:type :begin-provided :string ~string})
          ~@behaviors
+         (stub/validate-target-function-counts [~@script-symbols])
+         (~'do-report {:type :end-provided :string ~string})
          ))))
-
-(defmacro provided 
-  "A macro for using a Midje-style provided clause within any testing framework. This macro rewrites
-  assertion-style mocking statements into code that can do that mocking.
-  
-  (provided 
-  
-  "
-  [& forms] 
-  (apply provided-fn forms))
