@@ -1,2 +1,3 @@
 lein jar
-lein localrepo install target/smooth-test-0.1.0-SNAPSHOT.jar smooth-test 0.1.0-SNAPSHOT
+lein pom
+lein localrepo install -p pom.xml target/smooth-test-0.1.0-SNAPSHOT.jar smooth-test 0.1.0-SNAPSHOT
