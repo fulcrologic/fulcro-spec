@@ -1,12 +1,12 @@
-(ns smooth-test.provided-spec
+(ns smooth-spec.provided-spec
   #?(:clj
-     (:require [smooth-test.core :as c :refer [specification behavior provided with-timeline async tick assertions]]
+     (:require [smooth-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions]]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
-               [smooth-test.provided :as p]
+               [smooth-spec.provided :as p]
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-             [smooth-test.provided :as p]
-             [smooth-test.core :refer [specification behavior provided with-timeline async tick assertions]]
+             [smooth-spec.provided :as p]
+             [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
              ))
   #?(:cljs (:require [cljs.test :refer [do-report]]
              )
@@ -51,9 +51,9 @@
                               )
                     (behavior "includes a stubbing function"
                               (assertions
-                                          (contains? result :stub-function) => true
-                                          (:stub-function result) => '(clojure.core/fn [a b] (+ a b))
-                                          )
+                                (contains? result :stub-function) => true
+                                (:stub-function result) => '(clojure.core/fn [a b] (+ a b))
+                                )
                               )
                     (behavior "includes the symbol to mock"
                               (assertions
@@ -97,12 +97,12 @@
                     (behavior "nested vectors' last member is a syntax-quoted call to make-script"
                               (assertions
                                 (last (first scripts)) =>
-                                '(smooth-test.stub/make-script "a" [(smooth-test.stub/make-step (fn [] 22) 2) (smooth-test.stub/make-step (fn [] 32) 1)])
+                                '(smooth-spec.stub/make-script "a" [(smooth-spec.stub/make-step (fn [] 22) 2) (smooth-spec.stub/make-step (fn [] 32) 1)])
                                 (last (second scripts)) =>
-                                '(smooth-test.stub/make-script "b" [(smooth-test.stub/make-step (fn [] 42) 1)])
+                                '(smooth-spec.stub/make-script "b" [(smooth-spec.stub/make-step (fn [] 42) 1)])
                                 ))
-                    ))
-   )
+                  ))
+)
 
 #?(:clj
    (specification "provided-macro"
@@ -185,84 +185,3 @@
                            (is (= true @detector))
                            ))
                )
-
-
-;(deftest Boo
-;  (testing "when I like pizza"
-;    (testing "and somebody is home"
-;      (are [x y] (= 0 (mod x y))
-;                 6 3
-;                 4 2
-;                 11 3
-;                 )
-;
-;      (is (contains? thing :k))
-;      (click-button :label "Today" (rendering boo))
-;      (tick 100)
-;
-;      (provided "clause"
-;                (js/setTimeout cb & tm) =1x=> (async tm (cb [1 2 3])) ; exactly once
-;                (js/setTimeout cb & tm) =1x=> (do
-;                                                (verify-arg tm 100)
-;                                                (.log js/console "OK")
-;                                                (async tm (cb [1 2 3]))
-;                                                )
-;                (something) =2x=> 400
-;                (js/setTimeout cb _) => (async 100 (cb [1 2 3])) ; many
-;
-;                (behavior ""
-;                          a => 2
-;                          b => 2
-;                          c => 2
-;                          d => 2
-;                          )
-;
-;                )
-;      )
-;
-;    (testing "clause"
-;      (let [testing-async-queue (make-async-queue)
-;            stub1 (fn [cb & tm] (schedule-item testing-async-queue tm (fn [] (cb [1 2 3]))))    ; arity 2
-;            stub2 (fn [cb & tm] (do
-;                                  ; FIXME: Exception types for js?
-;                                  (if-not (is (= 100 tm)) (throw (Exception. "Argument check failed")))
-;                                  (.log js/console "OK")
-;                                  (schedule-item testing-async-queue tm (fn [] (cb [1 2 3])))
-;                                  ))
-;            stub3 (fn [] 400)
-;            stub4 (fn [cb _] (schedule-item testing-async-queue 100 (fn [] (cb [1 2 3]))))
-;            settimeout-script-atom (make-script "js/setTimeout"
-;                                          [
-;                                                   (make-step stub1 1)
-;                                                   (make-step stub2 1)
-;                                                   (make-step stub4 2)
-;                                                   ])
-;            something-script-atom (atom
-;                                    {:f      "something"
-;                                     :script [
-;                                              {:times 2 :stub stub2 :argcnt 0 :ncalled 0}
-;                                              ]})
-;            ]
-;        (with-redefs [js/setTimeout (scripted-stub settimeout-script-atom)
-;                        something (scripted-stub something-script-atom)
-;
-;                        ...
-;
-;                        (verify-scripted-atom settimeout-script-atom)
-;                        (verify-scripted-atom something-script-atom)
-;
-;          )
-;
-;        )
-;      )
-;
-;    (with-bindings [queue (make-queue)
-;                    captured-thing (atom nil)
-;                    ajax-get (async-stub 200 anything (call-with [2 3 4]) anything)]
-;      (click-button :label "Go" frag)
-;
-;      (async/schedule-event queue 200 stub)
-;      (async/advance-clock queue 300)
-;
-;      )
-;    (a/assertions "ass stuff")

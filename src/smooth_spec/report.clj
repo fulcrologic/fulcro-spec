@@ -1,4 +1,4 @@
-(ns smooth-test.report
+(ns smooth-spec.report
     (:require [clojure.test :as t :refer (are is deftest with-test run-tests testing testing-vars-str)]
                [clojure.stacktrace :as stack]
                )

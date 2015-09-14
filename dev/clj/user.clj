@@ -1,13 +1,19 @@
 (ns clj.user
   (:require [clojure.test :refer [is deftest run-tests testing]]
-            [smooth-test.report :as report]
-            smooth-test.provided-spec
+            [smooth-spec.report :as report]
+            smooth-spec.provided-spec
+            smooth-spec.async-spec
+            smooth-spec.stub-spec
+            smooth-spec.timeline-spec
             )
   )
 
 (defn run-all-tests []
   (report/with-smooth-output
-      (run-tests 'smooth-test.provided-spec)
+      (run-tests 'smooth-spec.provided-spec)
+      (run-tests 'smooth-spec.async-spec)
+      (run-tests 'smooth-spec.stub-spec)
+      (run-tests 'smooth-spec.timeline-spec)
    )
   )
 

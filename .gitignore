@@ -11,6 +11,6 @@ pom.xml.asc
 .hgignore
 .hg/
 .idea
-smooth_test.iml
+smooth_spec.iml
 figwheel_server.log
 resources/public/js

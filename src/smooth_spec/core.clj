@@ -1,8 +1,8 @@
-(ns smooth-test.core
+(ns smooth-spec.core
   (:require [clojure.test :as t :refer [do-report test-var *load-tests* *testing-contexts* deftest testing]]
             [clojure.string :as s]
-            [smooth-test.provided :as p]
-            [smooth-test.async :as async]
+            [smooth-spec.provided :as p]
+            [smooth-spec.async :as async]
             )
   )
 
