@@ -39,7 +39,7 @@
                )
 
              (behavior "after all time is passed all callback timers are fired"
-               (tick 401)
+               (tick 301)
                (is (= 3 (count @detector)))
                (is (= "FIRST" (first @detector)))
                (is (= "SECOND" (second @detector)))
