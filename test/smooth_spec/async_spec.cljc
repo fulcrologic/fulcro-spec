@@ -1,6 +1,6 @@
-(ns smooth-test.async-spec
+(ns smooth-spec.async-spec
   #?(:clj
-     (:require [smooth-test.async :as async]
+     (:require [smooth-spec.async :as async]
                [clojure.test :as t
                 :refer (is deftest with-test run-tests testing)]))
   #?(:cljs (:require-macros [cljs.test :refer (is deftest run-tests)]))

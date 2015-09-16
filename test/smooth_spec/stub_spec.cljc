@@ -1,13 +1,13 @@
-(ns smooth-test.stub-spec
+(ns smooth-spec.stub-spec
   #?(:clj
-     (:require [smooth-test.stub :as s]
+     (:require [smooth-spec.stub :as s]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing)]
                ))
   #?(:clj
      (:import clojure.lang.ExceptionInfo))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]))
   #?(:cljs (:require [cljs.test :as t]
-             [smooth-test.stub :as s :include-macros true]
+             [smooth-spec.stub :as s :include-macros true]
              ))
   )
 
@@ -61,7 +61,7 @@
 
       (sstub)                                               ; first call
 
-      (try (sstub) (catch ExceptionInfo e (is (= true (-> (ex-data e) :smooth-test.stub/verify-error)))))
+      (try (sstub) (catch ExceptionInfo e (is (= true (-> (ex-data e) :smooth-spec.stub/verify-error)))))
       )
     )
   (testing "throws whatever exception the function throws"

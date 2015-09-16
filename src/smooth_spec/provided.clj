@@ -1,6 +1,6 @@
-(ns smooth-test.provided
+(ns smooth-spec.provided
   (:require [clojure.string :as str]
-            [smooth-test.stub :as stub]
+            [smooth-spec.stub :as stub]
             )
   )
 

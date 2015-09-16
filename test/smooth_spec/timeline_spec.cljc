@@ -1,10 +1,10 @@
-(ns smooth-test.timeline-spec
+(ns smooth-spec.timeline-spec
   #?(:clj
-     (:require [smooth-test.core :as c :refer [with-timeline provided async tick specification behavior]]
+     (:require [smooth-spec.core :as c :refer [with-timeline provided async tick specification behavior]]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing)]
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-                            [smooth-test.core :refer [with-timeline provided async tick specification behavior]]
+                            [smooth-spec.core :refer [with-timeline provided async tick specification behavior]]
              ))
   #?(:cljs (:require [cljs.test :refer [do-report]]
              )

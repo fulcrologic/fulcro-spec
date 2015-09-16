@@ -1,6 +1,5 @@
-(ns smooth-test.report
+(ns smooth-spec.report
   (:require [cljs.test])
-
   )
 
 (enable-console-print!)
