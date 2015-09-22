@@ -11,7 +11,7 @@
    description.
    When *load-tests* is false, specificaiton is ignored."
   [description & body]
-  (let [var-name-from-string (fn [s] (symbol (s/lower-case (s/replace s #"[ ]" "-"))))
+  (let [var-name-from-string (fn [s] (symbol (s/lower-case (s/replace s #"[()~'\"`!@#$;%^& ]" "-"))))
         name (var-name-from-string description)]
     `(~'deftest ~name
        (~'do-report {:type :begin-specification :string ~description})
