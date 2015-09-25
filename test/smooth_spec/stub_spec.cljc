@@ -1,11 +1,13 @@
 (ns smooth-spec.stub-spec
   #?(:clj
      (:require [smooth-spec.stub :as s]
-               [clojure.test :as t :refer (are is deftest with-test run-tests testing)]
+               [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report assert-expr)]
+               [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
                ))
   #?(:clj
      (:import clojure.lang.ExceptionInfo))
-  #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]))
+  #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
+             [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions]]))
   #?(:cljs (:require [cljs.test :as t]
              [smooth-spec.stub :as s :include-macros true]
              ))
@@ -15,82 +17,123 @@
                                            [
                                             (s/make-step 'stub 1)
                                             ]))
-(deftest increment-script-call-count
-  (testing "finds and increments the correct step"
-    (let [script (make-simple-script)]
+(specification "increment-script-call-count"
+               (behavior "finds and increments the correct step"
+                         (let [script (make-simple-script)]
 
-      (s/increment-script-call-count script 0)
+                           (s/increment-script-call-count script 0)
 
-      (is (= 1 (get-in @script [:steps 0 :times])))
-      )
-    )
-  )
+                           (is (= 1 (get-in @script [:steps 0 :times])))
+                           )
+                         )
+               )
 
-(deftest step-complete
-  (let [script (make-simple-script)]
-    (testing "is false when call count is less than expected count" (is (not (s/step-complete script 0))))
-    (s/increment-script-call-count script 0)
-    (testing "is true when call count reaches expected count" (is (s/step-complete script 0)))
-    )
-  )
+(specification "step-complete"
+               (let [script (make-simple-script)]
+                 (behavior "is false when call count is less than expected count" (is (not (s/step-complete script 0))))
+                 (s/increment-script-call-count script 0)
+                 (behavior "is true when call count reaches expected count" (is (s/step-complete script 0)))
+                 )
+               )
 
 (defn make-single-call-script [to-call] (s/make-script "something"
                                                        [
                                                         (s/make-step to-call 1)
                                                         ]))
 
-(deftest scripted-stub
-  (testing "calls the stub function"
-    (let [detector (atom false)
-          script (make-single-call-script (fn [] (reset! detector true)))
-          sstub (s/scripted-stub script)]
+(specification "scripted-stub"
+               (behavior "calls the stub function"
+                         (let [detector (atom false)
+                               script (make-single-call-script (fn [] (reset! detector true)))
+                               sstub (s/scripted-stub script)]
 
-      (s/tryo (sstub) false)
+                           (s/tryo (sstub) false)
 
-      (is (= true @detector))
-      )
-    )
-  (testing "returns whatever the stub function returns"
-    (let [script (make-single-call-script (fn [] 42))
-          sstub (s/scripted-stub script)]
-      (is (= 42 (sstub)))
-      ))
-  (testing "throws an exception if the function is invoked more than programmed with verify-error set to true"
-    (let [script (make-single-call-script (fn [] 42))
-          sstub (s/scripted-stub script)]
+                           (is (= true @detector))
+                           )
+                         )
+               (behavior "returns whatever the stub function returns"
+                         (let [script (make-single-call-script (fn [] 42))
+                               sstub (s/scripted-stub script)]
+                           (is (= 42 (sstub)))
+                           ))
+               (behavior "throws an exception if the function is invoked more than programmed with verify-error set to true"
+                         (let [script (make-single-call-script (fn [] 42))
+                               sstub (s/scripted-stub script)]
 
-      (sstub)                                               ; first call
+                           (sstub)                                              ; first call
 
-      (try (sstub) (catch ExceptionInfo e (is (= true (-> (ex-data e) :smooth-spec.stub/verify-error)))))
-      )
-    )
-  (testing "throws whatever exception the function throws"
-    (let [script (make-single-call-script (fn [] (throw (ex-info "BUMMER" {}))))
-          sstub (s/scripted-stub script)]
+                           (try (sstub) (catch ExceptionInfo e (is (= true (-> (ex-data e) :smooth-spec.stub/verify-error)))))
+                           )
+                         )
+               (behavior "throws whatever exception the function throws"
+                         (let [script (make-single-call-script (fn [] (throw (ex-info "BUMMER" {}))))
+                               sstub (s/scripted-stub script)]
 
-      #?(:clj  (is (thrown? clojure.lang.ExceptionInfo (sstub)))
-         :cljs (is (thrown? ExceptionInfo (sstub))))
-      )
-    )
-  (testing "only moves to the next script step if the call count for the current step reaches the programmed amount"
-    (let [a-count (atom 0)
-          b-count (atom 0)
-          script (s/make-script "something" [
-                                             (s/make-step (fn [] (swap! a-count inc)) 2)
-                                             (s/make-step (fn [] (swap! b-count inc)) 1)
-                                             ])
-          sstub (s/scripted-stub script)]
-      ; first call
-      (sstub)
-      (is (= 1 @a-count))
-      ; second call
-      (sstub)
-      (is (= 2 @a-count))
-      (is (= 0 @b-count))
+                           #?(:clj  (is (thrown? clojure.lang.ExceptionInfo (sstub)))
+                              :cljs (is (thrown? ExceptionInfo (sstub))))
+                           )
+                         )
+               (behavior "only moves to the next script step if the call count for the current step reaches the programmed amount"
+                         (let [a-count (atom 0)
+                               b-count (atom 0)
+                               script (s/make-script "something" [
+                                                                  (s/make-step (fn [] (swap! a-count inc)) 2)
+                                                                  (s/make-step (fn [] (swap! b-count inc)) 1)
+                                                                  ])
+                               sstub (s/scripted-stub script)]
+                           ; first call
+                           (sstub)
+                           (is (= 1 @a-count))
+                           ; second call
+                           (sstub)
+                           (is (= 2 @a-count))
+                           (is (= 0 @b-count))
 
-      (sstub)
-      (is (= 2 @a-count))
-      (is (= 1 @b-count))
-      )
-    )
-  )
+                           (sstub)
+                           (is (= 2 @a-count))
+                           (is (= 1 @b-count))
+                           )
+                         )
+               )
+
+(specification "validate-target-function-counts"
+               (behavior "returns nil if a target function has been called enough times"
+                         (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 5 :times 5}]})]]
+                           (is (nil? (s/validate-target-function-counts script-atoms)))
+                           )
+                         )
+               (behavior "throws an exception when a target function has not been called enough times"
+                         (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times 5}]})]]
+                           (is (thrown? clojure.lang.ExceptionInfo (s/validate-target-function-counts script-atoms)))
+                           )
+                         )
+
+               (behavior "returns nil if a target function has been called enough times with :many specified"
+                         (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times :many}]})]]
+                           (is (nil? (s/validate-target-function-counts script-atoms)))
+                           )
+                         )
+
+               (behavior "throws an exception if a function has not been called at all with :many was specified"
+                         (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times :many}]})]]
+                           (is (thrown? clojure.lang.ExceptionInfo (s/validate-target-function-counts script-atoms)))
+                           )
+                         )
+
+               (behavior "returns nil all the function have been called the specified number of times"
+                         (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
+                                             (atom {:function "fun2" :steps [{:ncalled 1 :times 1}]})
+                                             ]]
+                           (is (nil? (s/validate-target-function-counts script-atoms)))
+                           )
+                         )
+
+               (behavior "throws an exception if the second function has not been called at all with :many was specified"
+                         (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
+                                             (atom {:function "fun2" :steps [{:ncalled 0 :times 1}]})
+                                             ]]
+                           (is (thrown? clojure.lang.ExceptionInfo (s/validate-target-function-counts script-atoms)))
+                           )
+                         )
+               )

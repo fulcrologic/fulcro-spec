@@ -1,17 +1,24 @@
 (ns smooth-spec.async-spec
   #?(:clj
-     (:require [smooth-spec.async :as async]
-               [clojure.test :as t
-                :refer (is deftest with-test run-tests testing)]))
-  #?(:cljs (:require-macros [cljs.test :refer (is deftest run-tests)]))
-  #?(:cljs (:require [smooth-test.async :as async]
-             [cljs.test :as t])))
+     (:require [smooth-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions]]
+               [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
+               [smooth-spec.async :as async]
+               ))
+  #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
+             [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
+             ))
+  #?(:cljs (:require
+             [smooth-spec.async :as async]
+             [cljs.test :refer [do-report]]
+             )
+     )
+)
 
 (defn mock-fn1 [] (identity 0))
 (defn mock-fn2 [] (identity 0))
 (defn mock-fn3 [] (identity 0))
 
-(deftest async-queue-associates-an-event-correctly-with-its-time
+(specification "async-queue-associates-an-event-correctly-with-its-time"
   (let [queue (async/make-async-queue)]
 
     (async/schedule-event queue 1044 mock-fn3)
@@ -27,7 +34,7 @@
     )
   )
 
-(deftest async-queue-keeps-events-in-order
+(specification "async-queue-keeps-events-in-order"
   (let [queue (async/make-async-queue)]
 
     (async/schedule-event queue 1044 mock-fn3)
@@ -38,7 +45,7 @@
     )
   )
 
-(deftest async-queue-refuses-to-add-events-that-collide-in-time
+(specification "async-queue-refuses-to-add-events-that-collide-in-time"
   (let [queue (async/make-async-queue)]
 
     (async/schedule-event queue 44 identity)
@@ -49,7 +56,7 @@
     )
   )
 
-(deftest processing-an-event-executes-the-first-scheduled-item
+(specification "processing-an-event-executes-the-first-scheduled-item"
   (let [detector (atom false)
         detect (fn [] (reset! detector true))
         queue (async/make-async-queue)]
@@ -61,7 +68,7 @@
     )
   )
 
-(deftest processing-an-event-removes-the-first-scheduled-item
+(specification "processing-an-event-removes-the-first-scheduled-item"
   (let [queue (async/make-async-queue)]
     (async/schedule-event queue 44 mock-fn1)
 
@@ -72,7 +79,7 @@
     )
   )
 
-(deftest async-queue-associates-an-event-correctly-with-its-time-relative-to-current-time
+(specification "async-queue-associates-an-event-correctly-with-its-time-relative-to-current-time"
   (let [queue (async/make-async-queue)]
     (async/schedule-event queue 44 mock-fn1)
 
@@ -86,7 +93,7 @@
     )
   )
 
-(deftest async-queue-executes-and-removes-events-as-clock-advances
+(specification "async-queue-executes-and-removes-events-as-clock-advances"
   (let [detector (atom false)
         detect (fn [] (reset! detector true))
         queue (async/make-async-queue)]
@@ -100,7 +107,7 @@
     )
   )
 
-(deftest async-queue-advance-clock-just-advances-the-time-with-no-events
+(specification "async-queue-advance-clock-just-advances-the-time-with-no-events"
   (let [queue (async/make-async-queue)]
 
     (async/advance-clock queue 1050)
@@ -109,7 +116,7 @@
     )
   )
 
-(deftest async-queue-passes-exceptions-through-to-caller-of-advance-clock
+(specification "async-queue-passes-exceptions-through-to-caller-of-advance-clock"
   (let [queue (async/make-async-queue)
         thrower
         #?(:cljs (fn [] (throw (js/Error. "Bummer!")))
@@ -121,7 +128,7 @@
     )
   )
 
-(deftest async-queue-triggers-events-in-correct-order-when-a-triggered-event-adds-to-queue
+(specification "async-queue-triggers-events-in-correct-order-when-a-triggered-event-adds-to-queue"
   (let [queue (async/make-async-queue)
         invocations (atom 0) ;how many functions have run
         add-on-fn (fn [] ; scheduled by initial function (just below this one) 10ms AFTER it runs (abs of 11ms)
