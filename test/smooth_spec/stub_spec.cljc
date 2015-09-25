@@ -105,7 +105,8 @@
                          )
                (behavior "throws an exception when a target function has not been called enough times"
                          (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times 5}]})]]
-                           (is (thrown? clojure.lang.ExceptionInfo (s/validate-target-function-counts script-atoms)))
+                           #?(:clj  (is (thrown? clojure.lang.ExceptionInfo (s/validate-target-function-counts script-atoms)))
+                              :cljs (is (thrown? ExceptionInfo (s/validate-target-function-counts script-atoms))))
                            )
                          )
 
@@ -117,7 +118,8 @@
 
                (behavior "throws an exception if a function has not been called at all with :many was specified"
                          (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times :many}]})]]
-                           (is (thrown? clojure.lang.ExceptionInfo (s/validate-target-function-counts script-atoms)))
+                           #?(:clj  (is (thrown? clojure.lang.ExceptionInfo (s/validate-target-function-counts script-atoms)))
+                              :cljs (is (thrown? ExceptionInfo (s/validate-target-function-counts script-atoms))))
                            )
                          )
 
@@ -133,7 +135,8 @@
                          (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
                                              (atom {:function "fun2" :steps [{:ncalled 0 :times 1}]})
                                              ]]
-                           (is (thrown? clojure.lang.ExceptionInfo (s/validate-target-function-counts script-atoms)))
+                           #?(:clj  (is (thrown? clojure.lang.ExceptionInfo (s/validate-target-function-counts script-atoms)))
+                              :cljs (is (thrown? ExceptionInfo (s/validate-target-function-counts script-atoms))))
                            )
                          )
                )
