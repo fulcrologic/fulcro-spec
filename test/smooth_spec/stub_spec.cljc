@@ -8,7 +8,8 @@
      (:import clojure.lang.ExceptionInfo))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
              [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions]]))
-  #?(:cljs (:require [cljs.test :as t]
+  #?(:cljs (:require
+             [cljs.test :as t :refer (do-report)]
              [smooth-spec.stub :as s :include-macros true]
              ))
   )
