@@ -7,8 +7,8 @@
                  [org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.7.48"]
                  ]
-  :plugins [[lein-cljsbuild "1.0.5"]
-            [lein-figwheel "0.3.7"]]
+  :plugins [[lein-cljsbuild "1.1.0"]
+            [lein-figwheel "0.4.0"]]
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js"]
   :cljsbuild {
               :builds [
