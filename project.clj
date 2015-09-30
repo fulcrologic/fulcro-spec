@@ -6,6 +6,7 @@
   :dependencies [
                  [org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.7.48"]
+                 [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  ]
   :plugins [[lein-cljsbuild "1.0.5"]
             [lein-figwheel "0.3.7"]]

@@ -86,6 +86,11 @@
   (rd/begin-namespace (ns-name (:ns m)))
   )
 
+(defmethod smooth-report :end-test-ns [m]
+  (rd/end-namespace)
+  )
+
+
 (defmethod smooth-report :begin-specification [m]
   (t/with-test-out
     (reset! *test-level* 0)

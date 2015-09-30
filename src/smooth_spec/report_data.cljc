@@ -1,4 +1,8 @@
-(ns smooth-spec.report-data)
+(ns smooth-spec.report-data
+  #?(:clj
+     (:require [colorize.core :as c]
+               ))
+  )
 
 (defn make-testreport
   ([] (make-testreport []))
@@ -56,16 +60,15 @@
                                      (recur (drop-last 2 current-test-result-path))))))
 
 (defn begin-namespace [name]
-  (let [namespaces (get-in @*test-state* [:top :namespaces])
+  (let [namespaces (get @*test-state* :namespaces)
         namespace-index (first (keep-indexed (fn [idx val] (when (= (:name val) name) idx)) namespaces))
         name-space-location (if namespace-index namespace-index (count namespaces))
         ]
     (reset! *test-scope* [:namespaces name-space-location])
-    (swap! *test-state* #(assoc-in % [:top :namespaces name-space-location] (make-tests-by-namespace name))))
+    (swap! *test-state* #(assoc-in % [:namespaces name-space-location] (make-tests-by-namespace name))))
   )
 
-(defn end-namespace [name]
-
+(defn end-namespace []
   )
 
 (defn begin-specification [spec]
@@ -101,7 +104,6 @@
 
 (defn end-provided [] (pop-test-scope))
 
-
 (defn pass [] (set-test-result :passed))
 
 (defn error [detail] (let [translated-item-path @*test-scope*
@@ -122,9 +124,29 @@
                       (swap! *test-state* #(assoc-in % test-result-path test-result))
                       ))
 
+(defn color-str [status & strings]
+  (cond (= status :passed) (apply c/green  strings)
+        (= status :failed) (apply c/red  strings)
+        (= status :error)  (apply c/red  strings)
+        :otherwise  (apply c/reset strings)
+        )
+  )
+
+(defn print-report-data []
+  (let [namespaces (get @*test-state* :namespaces)]
+    (loop [ns namespaces]
+      (let [n (first ns)]
+        (println (color-str (:status n) "Testing " (:name n)))
+        )
+      )
+    )
+  )
+
 (defn summary [stats]
   (let [translated-item-path @*test-scope*]
     (swap! *test-state* #(assoc-in % (concat translated-item-path [:passed]) (:passed stats)))
     (swap! *test-state* #(assoc-in % (concat translated-item-path [:failed]) (:failed stats)))
     (swap! *test-state* #(assoc-in % (concat translated-item-path [:error]) (:error stats)))
+    (print-report-data)
     ))
+
