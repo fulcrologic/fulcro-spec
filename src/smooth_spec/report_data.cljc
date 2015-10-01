@@ -6,6 +6,7 @@
    {
     :summary    ""
     :namespaces []
+    :tested     0
     :passed     0
     :failed     0
     :error      0
@@ -65,6 +66,7 @@
   )
 
 (defn end-namespace []
+  (pop-test-scope)
   )
 
 (defn begin-specification [spec]
@@ -123,9 +125,9 @@
 
 (defn summary [stats]
   (let [translated-item-path @*test-scope*]
+    (swap! *test-state* #(assoc-in % (concat translated-item-path [:tested]) (:tested stats)))
     (swap! *test-state* #(assoc-in % (concat translated-item-path [:passed]) (:passed stats)))
     (swap! *test-state* #(assoc-in % (concat translated-item-path [:failed]) (:failed stats)))
     (swap! *test-state* #(assoc-in % (concat translated-item-path [:error]) (:error stats)))
-    (print-report-data)
     ))
 

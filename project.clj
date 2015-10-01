@@ -39,4 +39,5 @@
                    :env {:dev true }
                    }
              }
+  :test-refresh  {:report  smooth-spec.report/smooth-report}
   )
