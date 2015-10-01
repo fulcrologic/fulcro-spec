@@ -10,11 +10,11 @@
 
 (defn run-all-tests []
   (report/with-smooth-output
-      (run-tests 'smooth-spec.provided-spec)
-      (run-tests 'smooth-spec.async-spec)
-      (run-tests 'smooth-spec.stub-spec)
-      (run-tests 'smooth-spec.timeline-spec)
-   )
+    (run-tests 'smooth-spec.provided-spec
+               'smooth-spec.async-spec
+               'smooth-spec.stub-spec
+               'smooth-spec.timeline-spec)
+    )
   )
 
 
