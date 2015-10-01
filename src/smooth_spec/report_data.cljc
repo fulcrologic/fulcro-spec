@@ -1,8 +1,4 @@
-(ns smooth-spec.report-data
-  #?(:clj
-     (:require [colorize.core :as c]
-               ))
-  )
+(ns smooth-spec.report-data)
 
 (defn make-testreport
   ([] (make-testreport []))
@@ -124,23 +120,6 @@
                       (swap! *test-state* #(assoc-in % test-result-path test-result))
                       ))
 
-(defn color-str [status & strings]
-  (cond (= status :passed) (apply c/green  strings)
-        (= status :failed) (apply c/red  strings)
-        (= status :error)  (apply c/red  strings)
-        :otherwise  (apply c/reset strings)
-        )
-  )
-
-(defn print-report-data []
-  (let [namespaces (get @*test-state* :namespaces)]
-    (loop [ns namespaces]
-      (let [n (first ns)]
-        (println (color-str (:status n) "Testing " (:name n)))
-        )
-      )
-    )
-  )
 
 (defn summary [stats]
   (let [translated-item-path @*test-scope*]

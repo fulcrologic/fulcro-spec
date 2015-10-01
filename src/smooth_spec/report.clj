@@ -2,12 +2,31 @@
     (:require [clojure.test :as t :refer (are is deftest with-test run-tests testing testing-vars-str)]
                [clojure.stacktrace :as stack]
                [smooth-spec.report-data :as rd]
+               [colorize.core :as c]
                )
      (:import clojure.lang.ExceptionInfo)
   )
 
 (def ^:dynamic *test-level* (atom 0))
 
+
+(defn color-str [status & strings]
+  (cond (= status :passed) (apply c/green  strings)
+        (= status :failed) (apply c/red  strings)
+        (= status :error)  (apply c/red  strings)
+        :otherwise  (apply c/reset strings)
+        )
+  )
+
+(defn print-report-data []
+  (let [namespaces (get @rd/*test-state* :namespaces)]
+    (loop [ns namespaces]
+      (let [n (first ns)]
+        (println (color-str (:status n) "Testing " (:name n)))
+        )
+      )
+    )
+  )
 
 (defn space-level []
   (apply str (repeat (* 3 @*test-level*) " "))
@@ -141,6 +160,7 @@
     (println (:fail m) "failures," (:error m) "errors.")
     (let [stats {:passed (:pass m) :failed (:fail m) :error (:error m)}]
       (rd/summary stats)
+      (print-report-data)
       )
     )
   )
