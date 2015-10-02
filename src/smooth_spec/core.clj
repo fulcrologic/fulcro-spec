@@ -31,8 +31,9 @@
      )
   )
 
-(defmacro behavior-group
-  "An alias for the bahavior function."
+(defmacro component
+  "A wrapper for behaviors.
+  Specifications have named Components, and Components have Behaviors."
   [string & body]
   `(behavior ~string ~@body))
 
