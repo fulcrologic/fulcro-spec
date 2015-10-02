@@ -25,11 +25,16 @@
    but must occur inside a test function (deftest)."
   [string & body]
   `(~'testing ~string
-            (~'do-report {:type :begin-behavior :string ~string})
-            ~@body
-            (~'do-report {:type :end-behavior :string ~string})
-            )
+     (~'do-report {:type :begin-behavior :string ~string})
+     ~@body
+     (~'do-report {:type :end-behavior :string ~string})
+     )
   )
+
+(defmacro behavior-group
+  "An alias for the bahavior function."
+  [string & body]
+  `(behavior ~string ~@body))
 
 (defmacro with-timeline
   "Adds the infrastructure required for doing timeline testing"
@@ -69,5 +74,5 @@ Must be wrapped by with-timeline.
     `(do
        ~@asserts
        )
-       )
+    )
   )
