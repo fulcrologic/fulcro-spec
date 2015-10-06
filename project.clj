@@ -1,4 +1,4 @@
-(defproject smooth-spec "0.1.0"
+(defproject smooth-spec "0.1.1-SNAPSHOT"
   :description "Smooth specifications"
   :url ""
   :license {:name "MIT Public License"
