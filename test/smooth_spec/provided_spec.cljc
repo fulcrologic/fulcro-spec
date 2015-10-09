@@ -6,7 +6,7 @@
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
              [smooth-spec.provided :as p]
-             [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
+             [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions when-mocking]]
              ))
   #?(:cljs (:require [cljs.test :refer [do-report]]
              )
