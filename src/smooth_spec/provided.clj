@@ -43,10 +43,10 @@
        )
   )
 
-(defn provided-fn 
+(defn provided-fn
   [string & forms]
   (let [groups (partition-all 3 forms)
-        triples  (take-while #(and (= 3 (count %)) (is-arrow? (second %))) groups)
+        triples (take-while #(and (= 3 (count %)) (is-arrow? (second %))) groups)
         behaviors (drop (* 3 (count triples)) forms)
         parsed-mocks (reduce (fn [acc t] (conj acc (parse-mock-triple t))) [] triples)
         grouped-mocks (group-by :symbol-to-mock parsed-mocks)
@@ -55,10 +55,17 @@
         redef-pairs (reduce (fn [acc ele] (concat acc [(first ele) `(stub/scripted-stub ~(second ele))])) [] script-triples)
         script-symbols (reduce (fn [acc ele] (concat acc [(second ele)])) [] script-triples)
         ]
-    `(let [~@script-let-pairs]
-       (with-redefs [~@redef-pairs]
-         (~'do-report {:type :begin-provided :string ~string})
-         ~@behaviors
-         (stub/validate-target-function-counts [~@script-symbols])
-         (~'do-report {:type :end-provided :string ~string})
-         ))))
+    (if (= :skip-output string)
+      `(let [~@script-let-pairs]
+         (with-redefs [~@redef-pairs]
+           ~@behaviors
+           (stub/validate-target-function-counts [~@script-symbols])
+           ))
+      `(let [~@script-let-pairs]
+         (with-redefs [~@redef-pairs]
+           (~'do-report {:type :begin-provided :string ~string})
+           ~@behaviors
+           (stub/validate-target-function-counts [~@script-symbols])
+           (~'do-report {:type :end-provided :string ~string})
+           ))
+      )))

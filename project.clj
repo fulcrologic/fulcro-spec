@@ -9,7 +9,7 @@
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  ]
   :plugins [[lein-cljsbuild "1.1.0"]
-            [lein-figwheel "0.4.0"]]
+            [lein-figwheel "0.4.1"]]
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js"]
   :cljsbuild {
               :builds [

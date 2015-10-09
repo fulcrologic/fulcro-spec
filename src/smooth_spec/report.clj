@@ -119,6 +119,14 @@
   (rd/end-behavior)
   )
 
+(defmethod smooth-report :begin-manual [m]
+  (rd/begin-behavior (str (:string m) "(MANUAL)"))
+  )
+
+(defmethod smooth-report :end-manual [m]
+  (rd/end-behavior)
+  )
+
 (defmethod smooth-report :begin-provided [m]
   (rd/begin-provided (:string m))
   )

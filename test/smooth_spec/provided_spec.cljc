@@ -1,6 +1,6 @@
 (ns smooth-spec.provided-spec
   #?(:clj
-     (:require [smooth-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions]]
+     (:require [smooth-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions when-mocking]]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
                [smooth-spec.provided :as p]
                ))
@@ -101,15 +101,16 @@
                                 (last (second scripts)) =>
                                 '(smooth-spec.stub/make-script "b" [(smooth-spec.stub/make-step (fn [] 42) 1)])
                                 ))
-                  ))
-)
+                    ))
+   )
 
 #?(:clj
    (specification "provided-macro"
                   (behavior "Outputs a syntax-quoted block"
-                            (let [expanded (p/provided-fn '(f n) '=> '(+ n 1) '(f n) '=2x=> '(* 3 n) '(is (= 1 2)))
+                            (let [expanded (p/provided-fn "some string" '(f n) '=> '(+ n 1) '(f n) '=2x=> '(* 3 n) '(is (= 1 2)))
                                   let-defs (second expanded)
-                                  script-steps (last (second let-defs))
+                                  make-script (second let-defs)
+                                  script-steps (nth make-script 2)
                                   redef-block (last expanded)
                                   ]
                               (behavior "with a let of the scripted stubs"
@@ -120,14 +121,37 @@
                                         )
                               (behavior "containing a script with the number proper steps"
                                         (assertions
-                                          (count script-steps) => 2)
-                                        )
-                              (behavior "that surrounds the final assertions with a redef"
-                                        (assertions
-                                          (first redef-block) => 'clojure.core/with-redefs
-                                          (last redef-block) => '(is (= 1 2))
+                                          (vector? script-steps) => true
+                                          (count script-steps) => 2
+                                          (first (first script-steps)) => 'smooth-spec.stub/make-step
+                                          (first (second script-steps)) => 'smooth-spec.stub/make-step
                                           )
                                         )
+                              (behavior "surrounds the assertions with a redef"
+                                        (assertions
+                                          (first redef-block) => 'clojure.core/with-redefs
+                                          (vector? (second redef-block)) => true
+                                          (nth redef-block 3) => '(is (= 1 2))
+                                          )
+                                        )
+                              (behavior "sends do-report when given a string"
+                                        (assertions
+                                          (first (last redef-block)) => 'do-report
+                                          (first (nth redef-block 2)) => 'do-report
+                                          )
+                                        )
+                              )
+                            )
+                  (behavior "Can do mocking without output"
+                            (let [expanded (p/provided-fn :skip-output '(f n) '=> '(+ n 1) '(f n) '=2x=> '(* 3 n) '(is (= 1 2)))
+                                  redef-block (last expanded)
+                                  ]
+                              (assertions
+                                (first redef-block) => 'clojure.core/with-redefs
+                                (vector? (second redef-block)) => true
+                                (nth redef-block 2) => '(is (= 1 2))
+                                (count redef-block) => 4 ; no do-report pair
+                                )
                               )
                             )
                   )
@@ -135,8 +159,8 @@
 
 (defn my-square [x] (* x x))
 
-(specification "provided-macro"
-               (behavior "actually causes stubbing to work"
+(specification "provided and when-mocking macros"
+               (behavior "cause stubbing to work"
                          (provided "that functions are mocked the correct number of times, with the correct output values."
                                    (my-square n) =1x=> 1
                                    (my-square n) =2x=> 1
@@ -144,13 +168,14 @@
                                      (+ (my-square 7) (my-square 7) (my-square 7)) => 3
                                      )
                                    )
-                         (provided "a mock for 2 calls"
-                                   (my-square n) =1x=> (+ n 5)
-                                   (my-square n) =1x=> (+ n 7)
-                                   (behavior "throws an exception if the mock is called 3 times"
-                                             (is (thrown? ExceptionInfo
-                                                          (+ (my-square 1) (my-square 1) (my-square 1))))
-                                             )
+                         (behavior "throws an exception if the mock is called too many times"
+                                   (when-mocking
+                                     (my-square n) =1x=> (+ n 5)
+                                     (my-square n) =1x=> (+ n 7)
+
+                                     (is (thrown? ExceptionInfo
+                                                  (+ (my-square 1) (my-square 1) (my-square 1))))
+                                     )
                                    )
 
 
@@ -166,22 +191,22 @@
 
                (behavior "allows any number of trailing forms"
                          (let [detector (atom false)]
-                           (provided "mocks that are not used"
-                                     (my-square n) =1x=> (+ n 5)
-                                     (my-square n) => (+ n 7)
+                           (when-mocking
+                             (my-square n) =1x=> (+ n 5)
+                             (my-square n) => (+ n 7)
 
-                                     (+ 1 2)
-                                     (+ 1 2)
-                                     (+ 1 2)
-                                     (+ 1 2)
-                                     (* 3 3)
-                                     (* 3 3)
-                                     (* 3 3)
-                                     (* 3 3)
-                                     (my-square 2)
-                                     (my-square 2)
-                                     (reset! detector true)
-                                     )
+                             (+ 1 2)
+                             (+ 1 2)
+                             (+ 1 2)
+                             (+ 1 2)
+                             (* 3 3)
+                             (* 3 3)
+                             (* 3 3)
+                             (* 3 3)
+                             (my-square 2)
+                             (my-square 2)
+                             (reset! detector true)
+                             )
                            (is (= true @detector))
                            ))
                )

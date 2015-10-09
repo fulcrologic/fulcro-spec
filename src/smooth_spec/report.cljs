@@ -58,6 +58,16 @@
   (swap! *test-level* dec)
   )
 
+(defmethod cljs.test/report [::console :begin-manual ] [m]
+  (swap! *test-level* inc)
+  (println (space-level) (:string m))
+  )
+
+(defmethod cljs.test/report [::console :end-manual ] [m]
+  (swap! *test-level* dec)
+  )
+
+
 (defmethod cljs.test/report [::console :begin-provided ] [m]
   (swap! *test-level* inc)
   (println (space-level) (:string m))
