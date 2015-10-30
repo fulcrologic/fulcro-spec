@@ -1,6 +1,6 @@
-(ns smooth-spec.provided
+(ns untangled-spec.provided
   (:require [clojure.string :as str]
-            [smooth-spec.stub :as stub]
+            [untangled-spec.stub :as stub]
             )
   )
 

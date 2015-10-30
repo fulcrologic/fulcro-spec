@@ -1,4 +1,4 @@
-(ns smooth-spec.stub
+(ns untangled-spec.stub
   #?(:clj
      (:require [clojure.test :refer (is)]))
   #?(:cljs (:require-macros [cljs.test :refer (is)]))

@@ -1,16 +1,16 @@
-(ns smooth-spec.stub-spec
+(ns untangled-spec.stub-spec
   #?(:clj
-     (:require [smooth-spec.stub :as s]
+     (:require [untangled-spec.stub :as s]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report assert-expr)]
-               [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
+               [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
                ))
   #?(:clj
      (:import clojure.lang.ExceptionInfo))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-             [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions]]))
+             [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]))
   #?(:cljs (:require
              [cljs.test :as t :refer (do-report)]
-             [smooth-spec.stub :as s :include-macros true]
+             [untangled-spec.stub :as s :include-macros true]
              ))
   )
 
@@ -64,7 +64,7 @@
 
                            (sstub)                                              ; first call
 
-                           (try (sstub) (catch ExceptionInfo e (is (= true (-> (ex-data e) :smooth-spec.stub/verify-error)))))
+                           (try (sstub) (catch ExceptionInfo e (is (= true (-> (ex-data e) :untangled-spec.stub/verify-error)))))
                            )
                          )
                (behavior "throws whatever exception the function throws"

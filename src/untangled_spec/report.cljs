@@ -1,4 +1,4 @@
-(ns smooth-spec.report
+(ns untangled-spec.report
   (:require [cljs.test])
   )
 

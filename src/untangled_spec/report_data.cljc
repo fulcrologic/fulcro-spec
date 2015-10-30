@@ -1,4 +1,4 @@
-(ns smooth-spec.report-data)
+(ns untangled-spec.report-data)
 
 (defn make-testreport
   ([] (make-testreport []))
