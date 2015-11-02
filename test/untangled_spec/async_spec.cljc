@@ -1,14 +1,14 @@
-(ns smooth-spec.async-spec
+(ns untangled-spec.async-spec
   #?(:clj
-     (:require [smooth-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions]]
+     (:require [untangled-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions]]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
-               [smooth-spec.async :as async]
+               [untangled-spec.async :as async]
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-             [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
+             [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
              ))
   #?(:cljs (:require
-             [smooth-spec.async :as async]
+             [untangled-spec.async :as async]
              [cljs.test :refer [do-report]]
              )
      )

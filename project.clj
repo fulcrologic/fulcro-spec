@@ -1,5 +1,5 @@
-(defproject smooth-spec "0.1.1-SNAPSHOT"
-  :description "Smooth specifications"
+(defproject untangled-spec "0.1.2-SNAPSHOT"
+  :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
             :url ""}
@@ -39,5 +39,5 @@
                    :env {:dev true }
                    }
              }
-  :test-refresh  {:report  smooth-spec.report/smooth-report}
+  :test-refresh  {:report  untangled-spec.report/untangled-report}
   )

@@ -1,12 +1,12 @@
-(ns smooth-spec.provided-spec
+(ns untangled-spec.provided-spec
   #?(:clj
-     (:require [smooth-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions when-mocking]]
+     (:require [untangled-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions when-mocking]]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
-               [smooth-spec.provided :as p]
+               [untangled-spec.provided :as p]
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-             [smooth-spec.provided :as p]
-             [smooth-spec.core :refer [specification behavior provided with-timeline async tick assertions when-mocking]]
+             [untangled-spec.provided :as p]
+             [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions when-mocking]]
              ))
   #?(:cljs (:require [cljs.test :refer [do-report]]
              )
@@ -97,9 +97,9 @@
                     (behavior "nested vectors' last member is a syntax-quoted call to make-script"
                               (assertions
                                 (last (first scripts)) =>
-                                '(smooth-spec.stub/make-script "a" [(smooth-spec.stub/make-step (fn [] 22) 2) (smooth-spec.stub/make-step (fn [] 32) 1)])
+                                '(untangled-spec.stub/make-script "a" [(untangled-spec.stub/make-step (fn [] 22) 2) (untangled-spec.stub/make-step (fn [] 32) 1)])
                                 (last (second scripts)) =>
-                                '(smooth-spec.stub/make-script "b" [(smooth-spec.stub/make-step (fn [] 42) 1)])
+                                '(untangled-spec.stub/make-script "b" [(untangled-spec.stub/make-step (fn [] 42) 1)])
                                 ))
                     ))
    )
@@ -123,8 +123,8 @@
                                         (assertions
                                           (vector? script-steps) => true
                                           (count script-steps) => 2
-                                          (first (first script-steps)) => 'smooth-spec.stub/make-step
-                                          (first (second script-steps)) => 'smooth-spec.stub/make-step
+                                          (first (first script-steps)) => 'untangled-spec.stub/make-step
+                                          (first (second script-steps)) => 'untangled-spec.stub/make-step
                                           )
                                         )
                               (behavior "surrounds the assertions with a redef"

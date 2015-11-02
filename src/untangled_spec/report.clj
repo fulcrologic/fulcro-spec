@@ -1,7 +1,7 @@
-(ns smooth-spec.report
+(ns untangled-spec.report
   (:require [clojure.test :as t :refer (are is deftest with-test run-tests testing testing-vars-str)]
             [clojure.stacktrace :as stack]
-            [smooth-spec.report-data :as rd]
+            [untangled-spec.report-data :as rd]
             [colorize.core :as c]
             )
   (:import clojure.lang.ExceptionInfo)
@@ -66,17 +66,17 @@
       ))
   )
 
-(defmulti ^:dynamic smooth-report :type)
+(defmulti ^:dynamic untangled-report :type)
 
-(defmethod smooth-report :default [m]
+(defmethod untangled-report :default [m]
   )
 
-(defmethod smooth-report :pass [m]
+(defmethod untangled-report :pass [m]
     (t/inc-report-counter :pass)
     (rd/pass)
     )
 
-(defmethod smooth-report :error [m]
+(defmethod untangled-report :error [m]
     (t/inc-report-counter :error)
     (let [detail {:where    (clojure.test/testing-vars-str m)
                   :message  (:message m)
@@ -86,7 +86,7 @@
       )
     )
 
-(defmethod smooth-report :fail [m]
+(defmethod untangled-report :fail [m]
     (t/inc-report-counter :fail)
     (let [detail {:where    (clojure.test/testing-vars-str m)
                   :message  (:message m)
@@ -94,57 +94,57 @@
                   :actual   (str (:actual m))}]
       (rd/fail detail)))
 
-(defmethod smooth-report :begin-test-ns [m]
+(defmethod untangled-report :begin-test-ns [m]
   (rd/begin-namespace (ns-name (:ns m)))
   )
 
-(defmethod smooth-report :end-test-ns [m]
+(defmethod untangled-report :end-test-ns [m]
   (rd/end-namespace)
   )
 
 
-(defmethod smooth-report :begin-specification [m]
+(defmethod untangled-report :begin-specification [m]
   (rd/begin-specification (:string m)))
 
 
-(defmethod smooth-report :end-specification [m]
+(defmethod untangled-report :end-specification [m]
   (rd/end-specification)
   )
 
-(defmethod smooth-report :begin-behavior [m]
+(defmethod untangled-report :begin-behavior [m]
   (rd/begin-behavior (:string m))
   )
 
-(defmethod smooth-report :end-behavior [m]
+(defmethod untangled-report :end-behavior [m]
   (rd/end-behavior)
   )
 
-(defmethod smooth-report :begin-manual [m]
+(defmethod untangled-report :begin-manual [m]
   (rd/begin-behavior (str (:string m) "(MANUAL)"))
   )
 
-(defmethod smooth-report :end-manual [m]
+(defmethod untangled-report :end-manual [m]
   (rd/end-behavior)
   )
 
-(defmethod smooth-report :begin-provided [m]
+(defmethod untangled-report :begin-provided [m]
   (rd/begin-provided (:string m))
   )
 
-(defmethod smooth-report :end-provided [m]
+(defmethod untangled-report :end-provided [m]
   (rd/end-provided)
   )
 
-(defmethod smooth-report :summary [m]
+(defmethod untangled-report :summary [m]
   (let [stats {:tested (:test m) :passed (:pass m) :failed (:fail m) :error (:error m)}]
     (rd/summary stats)
     (print-report-data)
     )
   )
 
-(defmacro with-smooth-output
+(defmacro with-untangled-output
   "Execute body with modified test reporting functions that produce
-  smooth output"
+  outline output"
   [& body]
-  `(binding [t/report smooth-report]
+  `(binding [t/report untangled-report]
      ~@body))

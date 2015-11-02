@@ -1,4 +1,4 @@
-(ns ^:figwheel-always smooth-spec.runner.browser
+(ns ^:figwheel-always untangled-spec.runner.browser
   (:require
     [cljs.test :as test :include-macros true :refer [report]]
     ))

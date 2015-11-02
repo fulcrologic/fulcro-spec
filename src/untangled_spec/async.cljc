@@ -1,4 +1,4 @@
-(ns smooth-spec.async
+(ns untangled-spec.async
   #?(:cljs (:require [cljs.pprint :refer [pprint]])
      :clj
            (:require [clojure.pprint :refer [pprint]]))
