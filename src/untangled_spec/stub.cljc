@@ -50,13 +50,18 @@
   )
 
 
-(defn validate-step-counts [acc step]
-  (if (or (= (:ncalled step) (:times step))
-          (and (= (:times step) :many) (> (:ncalled step) 0))
-          )
-    (conj acc :ok)
-    (conj acc :error)
-    )
+(defn validate-step-counts
+  "argument step contains keys:
+   - :ncalled, actual number of times called
+   - :times, expected number of times called"
+  [errors step]
+  (conj errors
+        (if (or (= (:ncalled step) (:times step))
+                (and (= (:times step) :many)
+                     (> (:ncalled step) 0))
+                )
+          :ok :error
+          ))
   )
 
 (defn validate-target-function-counts [script-atoms]
