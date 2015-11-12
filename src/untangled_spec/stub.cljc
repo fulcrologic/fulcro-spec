@@ -69,9 +69,9 @@
     (if (not-empty atoms)
       (let [function @(first atoms)
             count-results (reduce validate-step-counts [] (:steps function))
-            errors? (not-every? #(= :ok %) count-results)]
-        (if errors?
-          (throw (ex-info (str "VERIFY ERROR: " (:function function) " was not called as many times as specified") {::verify-error true}))                    )
+            errors? (some #(= :error %) count-results)]
+        (when errors?
+          (throw (ex-info (str "VERIFY ERROR: " (:function function) " was not called as many times as specified") {::verify-error true})))
         (recur (rest atoms))))
     )
   )
