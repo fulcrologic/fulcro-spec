@@ -83,14 +83,24 @@ Must be wrapped by with-timeline.
   [& forms]
   (apply p/provided-fn :skip-output forms))
 
+(defn triple->assertion [[left arrow expected]]
+  (cond
+      (re-find #"expands-to" (str arrow))
+      (let [actual (macroexpand left)]
+        `(~'is (= '~actual ~expected)
+               (format "ASSERTION: %s %s %s"
+                       '~actual '~arrow '~expected)))
+
+      :else
+      (let [actual (gensym "actual")]
+        `(let [~actual ~left]
+           (~'is ~(if (fn? (eval expected))
+                    `(true? (~expected ~actual))
+                    `(= ~actual ~expected))
+                 (format "ASSERTION: %s %s %s"
+                         '~actual '~arrow '~expected))))))
+
 (defmacro assertions [& forms]
   (let [triples (partition 3 forms)
-        asserts (map (fn [[left _ expected]]
-                       (let [actual (gensym "actual")]
-                         `(let [~actual ~left]
-                            (~'is ~(if (fn? (eval expected))
-                                     `(true? (~expected ~actual))
-                                     `(= ~actual ~expected))
-                                  (str "ASSERTION: " ~actual " => " ~expected)))))
-                     triples)]
+        asserts (map triple->assertion triples)]
     `(do ~@asserts)))

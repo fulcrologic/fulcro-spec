@@ -12,6 +12,10 @@
 #?(:clj
     (specification "untangled-spec.core-spec"
                    (behavior "assertions"
+                             (behavior "=expands-to=>"
+                                       (assertions
+                                         (let [foo :foo] foo)
+                                         =expands-to=> '(let* [foo :foo] foo)))
                              (behavior "works with r-side being a literal (ie not fn)"
                                        (let [f #(inc %)
                                              ast (macroexpand
