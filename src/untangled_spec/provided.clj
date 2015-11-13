@@ -16,23 +16,32 @@
     )
   )
 
+(defn symbol->any [s]
+  (if (symbol? s) ::any s))
+
+(defn literal->gensym [l]
+  (if (symbol? l) l (gensym "arg")))
+
 (defn parse-mock-triple [[thing-to-mock arrow thing-to-do]]
   (assert (list? thing-to-mock) "Provided clause must have function calls on the left of triples")
-  (assert (every? symbol? thing-to-mock) "Provided clauses must have symbols only. No raw data.")
-  (let [arglist (rest thing-to-mock)]
-    {;:stub-symbol   (gensym "stub")
-     :ntimes         (parse-arrow-count arrow)
+  (let [params (rest thing-to-mock)
+        arglist (map literal->gensym params)]
+    {:ntimes         (parse-arrow-count arrow)
      :stub-function  `(fn [~@arglist] ~thing-to-do)
      :symbol-to-mock (first thing-to-mock)
-     }
-    ))
+     :literals (mapv symbol->any params)
+     }))
 
 (defn convert-groups-to-symbolic-triples [grouped-mocks]
   (letfn [(steps-to-script [acc [sym detailed-steps]]
-                           (let [steps (vec (map (fn [detail] `(stub/make-step ~(:stub-function detail) ~(:ntimes detail))) detailed-steps))]
-                             (conj acc [sym (gensym "script") `(stub/make-script ~(name sym) ~steps)])
-                             )
-                           )]
+            (let [steps (mapv (fn [detail]
+                                `(stub/make-step ~(:stub-function detail)
+                                                 ~(:ntimes detail)
+                                                 ~(:literals detail)))
+                              detailed-steps)]
+              (conj acc [sym (gensym "script") `(stub/make-script ~(name sym) ~steps)])
+              )
+            )]
     (reduce steps-to-script [] grouped-mocks)
     ))
 
