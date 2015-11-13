@@ -25,9 +25,9 @@
    but must occur inside a specification. If the behavior is not machine
    testable then include the keyword :manual-test just after the string
    description instead of code.
-   
+
    (behavior \"blows up when the moon is full\" :manual-test)
-   
+
    "
   [string & body]
   (let [options (into #{} (take-while keyword? body))
@@ -85,10 +85,12 @@ Must be wrapped by with-timeline.
 
 (defmacro assertions [& forms]
   (let [triples (partition 3 forms)
-        asserts (map (fn [[actual _ expected]] (list 'is (list '= actual expected) (str "ASSERTION: " actual " => " expected))) triples)
-        ]
-    `(do
-       ~@asserts
-       )
-    )
-  )
+        asserts (map (fn [[left _ expected]]
+                       (let [actual (gensym "actual")]
+                         `(let [~actual ~left]
+                            (~'is ~(if (fn? (eval expected))
+                                     `(true? (~expected ~actual))
+                                     `(= ~actual ~expected))
+                                  (str "ASSERTION: " ~actual " => " ~expected)))))
+                     triples)]
+    `(do ~@asserts)))

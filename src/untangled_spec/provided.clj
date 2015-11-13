@@ -54,14 +54,22 @@
 (defn provided-fn
   [string & forms]
   (let [groups (partition-all 3 forms)
-        triples (take-while #(and (= 3 (count %)) (is-arrow? (second %))) groups)
+        triples (->> groups (take-while #(and (= 3 (count %))
+                                              (is-arrow? (second %)))))
         behaviors (drop (* 3 (count triples)) forms)
         parsed-mocks (reduce (fn [acc t] (conj acc (parse-mock-triple t))) [] triples)
         grouped-mocks (group-by :symbol-to-mock parsed-mocks)
         script-triples (convert-groups-to-symbolic-triples grouped-mocks)
-        script-let-pairs (reduce (fn [acc ele] (concat acc [(second ele) (last ele)])) [] script-triples)
-        redef-pairs (reduce (fn [acc ele] (concat acc [(first ele) `(stub/scripted-stub ~(second ele))])) [] script-triples)
-        script-symbols (reduce (fn [acc ele] (concat acc [(second ele)])) [] script-triples)
+        script-let-pairs (reduce (fn [acc ele]
+                                   (concat acc [(second ele) (last ele)]))
+                                 [] script-triples)
+        redef-pairs (reduce (fn [acc ele]
+                              (concat acc [(first ele)
+                                           `(stub/scripted-stub ~(second ele))]))
+                            [] script-triples)
+        script-symbols (reduce (fn [acc ele]
+                                 (concat acc [(second ele)]))
+                               [] script-triples)
         ]
     (if (= :skip-output string)
       `(let [~@script-let-pairs]

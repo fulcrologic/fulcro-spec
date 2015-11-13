@@ -60,7 +60,9 @@
               (if (step-complete script-atom @step) (swap! step inc))
               rv)
             )
-          (throw (ex-info (str "VERIFY ERROR: " target-function " was called too many times!") {::verify-error true}))
+          (throw (ex-info (str "VERIFY ERROR: " target-function " was called too many times!")
+                          {::verify-error true
+                           :max-calls max-calls}))
           ))
       ))
   )
