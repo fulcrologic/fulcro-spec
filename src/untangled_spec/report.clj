@@ -3,6 +3,7 @@
             [clojure.stacktrace :as stack]
             [untangled-spec.report-data :as rd]
             [colorize.core :as c]
+            [clojure.data :refer [diff]]
             )
   (:import clojure.lang.ExceptionInfo)
   )
@@ -18,22 +19,31 @@
 (defn space-level [level]
   (apply str (repeat (* 2 level) " ")))
 
-(defn print-test-results [test-results print-level]
+(defn print-test-results [test-results print-fn]
   (loop [filtered-test-results (filter #(not (= (:status %) :passed)) test-results)]
-    (when (not (empty? filtered-test-results))
-      (let [test-result (first filtered-test-results)]
-        (println)
-        (println (space-level print-level) (if (= (:status test-result) :error) "Error" "Failed") " in" (:where test-result))
-        (when-let [message (:message test-result)] (println (space-level print-level) message))
-        (println (space-level print-level) "expected:" (pr-str (:expected test-result)))
-        (println (space-level print-level) "  actual:" (pr-str (:actual test-result)))
-        (println)
+    (when (seq filtered-test-results)
+      (let [{:keys [message actual where status]} (first filtered-test-results)
+            [_ [_ act exp]] (read-string actual)]
+        (print-fn)
+        (print-fn (if (= status :error)
+                    "Error" "Failed") "in" where)
+        (when message (print-fn message))
+        (print-fn "expected:" exp)
+        (print-fn "  actual:" act)
+        (when (and (coll? exp)
+                   (not (map? exp)))
+          ;clojure.data/diff does basic eq check for strings & maps -> redundant
+          (let [[plus minus eq] (clojure.data/diff act exp)]
+            (print-fn "    diff: -" minus)
+            (print-fn "    diff: +" plus)))
+        (print-fn)
         (recur (rest filtered-test-results))))))
 
 (defn print-test-item [test-item print-level]
   (t/with-test-out
     (println (space-level print-level) (color-str (:status test-item) (:name test-item)))
-    (print-test-results (:test-results test-item) (inc print-level))
+    (print-test-results (:test-results test-item)
+                        (partial println (space-level (inc print-level))))
     (loop [test-items (:test-items test-item)]
       (when (not (empty? test-items))
         (print-test-item (first test-items) (inc print-level))
