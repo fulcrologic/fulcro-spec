@@ -33,7 +33,7 @@
                              (assertions
                                (p/parse-arrow-count '=1x=>) => 1
                                (p/parse-arrow-count '=7=>) => 7
-                               (p/parse-arrow-count '=234x=>) -> 234
+                               (p/parse-arrow-count '=234x=>) => 234
                                )
                              )
                    ))
@@ -219,7 +219,6 @@
                                                (if true :val
                                                  (dont-call)) => :val))
                                    )
-
                          )
 
                (behavior "allows any number of trailing forms"
