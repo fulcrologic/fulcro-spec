@@ -83,22 +83,34 @@ Must be wrapped by with-timeline.
   [& forms]
   (apply p/provided-fn :skip-output forms))
 
-(defn triple->assertion [[left arrow expected]]
-  (cond
-      (re-find #"expands-to" (str arrow))
-      (let [actual (macroexpand left)]
-        `(~'is (= '~actual ~expected)
-               (format "ASSERTION: %s %s %s"
-                       '~actual '~arrow '~expected)))
+(defn throws? [& [e exp-type re f]]
+  (and (= exp-type (type e))
+       (or (re-find (or re #"") (.getMessage e))
+           (throw (ex-info "failed to find re in exception"
+                    {:re re :msg (.getMessage e)})))
+       (or ((or f (fn [_] true)) e)
+           (throw e))))
 
-      :else
-      (let [actual (gensym "actual")]
-        `(let [~actual ~left]
-           (~'is ~(if (fn? (eval expected))
-                    `(true? (~expected ~actual))
-                    `(= ~actual ~expected))
-                 (format "ASSERTION: %s %s %s"
-                         '~actual '~arrow '~expected))))))
+(defn triple->assertion [[left arrow expected]]
+  (case arrow
+    =fn=>
+    `(~'is (~expected ~left)
+           (format "ASSERTION: %s %s %s"
+                   '~left '~arrow '~expected))
+
+    =throws=>
+    `(~'is (try ~left
+                (catch Exception ~'e
+                  (throws? ~'e ~@expected)))
+           (format "ASSERTION: %s %s %s"
+                   '~left '~arrow '~expected))
+
+    =>
+    `(~'is (= ~left ~expected)
+           (format "ASSERTION: %s %s %s"
+                   '~left '~arrow ~expected))
+
+    (throw (ex-info "invalid arrow" {::arrow arrow}))))
 
 (defmacro assertions [& forms]
   (let [triples (partition 3 forms)
