@@ -170,7 +170,6 @@
     )
 
 (defn my-square [x] (* x x))
-(defn dont-call [] :stahp)
 
 (specification "provided and when-mocking macros"
                (behavior "cause stubbing to work"
@@ -205,19 +204,6 @@
                                                   (my-square 1)
                                                   (my-square 1)) => 22
                                                ))
-                                   )
-
-                         (provided "mock a function to not be called"
-                                   (dont-call) =0x=> :not-called
-                                   (behavior "throws an Exception if it is called"
-                                             (assertions
-                                               (is (thrown? ExceptionInfo (dont-call)))
-                                               )
-                                             )
-                                   (behavior "does not return the not-called function's"
-                                             (assertions
-                                               (if true :val
-                                                 (dont-call)) => :val))
                                    )
                          )
 

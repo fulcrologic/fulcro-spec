@@ -11,6 +11,7 @@
     (assert (re-find #"=>$" nm) "Arrows must end with => (try =#x=>)")
     (cond
       (= "=>" nm) :many
+      (= "0" number) (assert false "Arrow count must not be zero in provided clauses.")
       number (Integer/parseInt number)
       )
     )
