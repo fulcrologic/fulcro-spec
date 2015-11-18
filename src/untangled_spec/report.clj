@@ -23,17 +23,25 @@
 (defn get-exp-act [{:keys [arrow raw-actual actual expected] :as test-result}]
   (case (symbol arrow)
     =fn=>
-    (let [[_ [exp act]] (read-string expected)]
+    (let [[exp act] (read-string expected)]
       [act exp])
 
     =>
-    (let [[_ [_ act exp]] (read-string actual)]
-      [act exp])
+    (if (instance? Exception raw-actual)
+      (do (println (format-exception raw-actual {:frame-limit 10}))
+          [actual (-> (read-string expected) second)])
+      (let [[_ [_ act exp]] (read-string actual)]
+        [act exp]))
+
+    =throws=>
+    [actual (->> (read-string expected)
+                 last last (drop 2))]
 
     (throw (ex-info "invalid arrow" {:arrow arrow}))))
 
-(defn print-diff [act exp raw-actual print-fn]
-  (when (and (coll? exp)
+(defn print-diff [act exp {:keys [raw-actual arrow]} print-fn]
+  (when (and (not= arrow "=throws=>")
+             (coll? exp)
              (not (map? exp))
              (not (instance? java.lang.Exception raw-actual)))
     ;clojure.data/diff does basic eq check for strings & maps -> redundant
@@ -58,10 +66,10 @@
                  (print-fn)
                  (print-fn (if (= status :error)
                              "Error" "Failed") "in" where)
-                 (when message (print-fn message))
+                 (when message (print-fn "ASSERTION:" message))
                  (print-fn "expected:" exp)
                  (print-fn "  actual:" act)
-                 (print-diff act exp raw-actual print-fn)
+                 (print-diff act exp test-result print-fn)
                  (print-fn))))))
 
 (defn print-test-item [test-item print-level]
@@ -88,8 +96,10 @@
   (t/with-test-out
     (let [report-data @rd/*test-state*
           namespaces (get report-data :namespaces)]
-      (->> namespaces
-           (mapv #(print-namespace %)))
+      (try (->> namespaces
+                (mapv #(print-namespace %)))
+           (catch Exception e
+             (print-exception e println)))
       (println "\nRan" (:tested report-data) "tests containing"
                (+ (:passed report-data)
                   (:failed report-data)
@@ -107,6 +117,10 @@
     (rd/pass)
     )
 
+(defn read-arrow [m]
+  (-> (str \( (:message m) \))
+      read-string second))
+
 (defmethod untangled-report :error [m]
   (t/inc-report-counter :error)
   (let [detail {:where      (clojure.test/testing-vars-str m)
@@ -114,7 +128,7 @@
                 :expected   (str (:expected m))
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
-                :arrow      (re-find #"=.*=?>" (:message m))}]
+                :arrow      (read-arrow m)}]
     (rd/error detail)
     )
   )
@@ -126,7 +140,7 @@
                 :expected   (str (:expected m))
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
-                :arrow      (re-find #"=.*=?>" (:message m))}]
+                :arrow      (read-arrow m)}]
     (rd/fail detail)))
 
 (defmethod untangled-report :begin-test-ns [m]

@@ -3,6 +3,7 @@
             [clojure.string :as s]
             [untangled-spec.provided :as p]
             [untangled-spec.async :as async]
+            [untangled-spec.assertions :refer [triple->assertion]]
             )
   )
 
@@ -55,7 +56,6 @@
      )
   )
 
-
 (defmacro async
   "Adds an event to the event queue with the specified time and callback function.
 Must be wrapped by with-timeline.
@@ -82,35 +82,6 @@ Must be wrapped by with-timeline.
   "A macro that works just like 'provided', but requires no string and outputs no extra text in the test output."
   [& forms]
   (apply p/provided-fn :skip-output forms))
-
-(defn throws? [& [e exp-type re f]]
-  (and (= exp-type (type e))
-       (or (re-find (or re #"") (.getMessage e))
-           (throw (ex-info "failed to find re in exception"
-                    {:re re :msg (.getMessage e)})))
-       (or ((or f (fn [_] true)) e)
-           (throw e))))
-
-(defn triple->assertion [[left arrow expected]]
-  (case arrow
-    =fn=>
-    `(~'is (~expected ~left)
-           (format "ASSERTION: %s %s %s"
-                   '~left '~arrow '~expected))
-
-    =throws=>
-    `(~'is (try ~left
-                (catch Exception ~'e
-                  (throws? ~'e ~@expected)))
-           (format "ASSERTION: %s %s %s"
-                   '~left '~arrow '~expected))
-
-    =>
-    `(~'is (= ~left ~expected)
-           (format "ASSERTION: %s %s %s"
-                   '~left '~arrow ~expected))
-
-    (throw (ex-info "invalid arrow" {::arrow arrow}))))
 
 (defmacro assertions [& forms]
   (let [triples (partition 3 forms)
