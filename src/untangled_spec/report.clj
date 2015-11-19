@@ -20,27 +20,26 @@
 (defn space-level [level]
   (apply str (repeat (* 2 level) " ")))
 
-(defn get-exp-act [{:keys [arrow raw-actual actual expected] :as test-result}]
-  (case (symbol arrow)
-    =fn=>
-    (let [[exp act] (read-string expected)]
-      [act exp])
+(defn get-exp-act [{:keys [extra] :as test-result}]
+  (let [{:keys [arrow actual expected]} extra]
+    (case arrow
+      =>
+      (if (instance? Exception actual)
+        (let [e actual]
+          (do (println (format-exception e {:frame-limit 10}))
+              [(str e) expected]))
+        [actual expected])
 
-    =>
-    (if (instance? Exception raw-actual)
-      (do (println (format-exception raw-actual {:frame-limit 10}))
-          [actual (-> (read-string expected) second)])
-      (let [[_ [_ act exp]] (read-string actual)]
-        [act exp]))
+      =fn=>
+      [actual expected]
 
-    =throws=>
-    [actual (->> (read-string expected)
-                 last last (drop 2))]
+      =throws=>
+      [(:actual test-result) expected]
 
-    (throw (ex-info "invalid arrow" {:arrow arrow}))))
+      (throw (ex-info "invalid arrow" {:arrow arrow})))))
 
 (defn print-diff [act exp {:keys [raw-actual arrow]} print-fn]
-  (when (and (not= arrow "=throws=>")
+  (when (and (= arrow '=>)
              (coll? exp)
              (not (map? exp))
              (not (instance? java.lang.Exception raw-actual)))
@@ -52,7 +51,7 @@
 (defn print-exception [e print-fn]
   (when (instance? java.lang.Exception e)
     (binding [*traditional* true]
-      (print-fn "  actual:" (.toString e))
+      (print-fn "  actual:" (str e))
       (println)
       ;TODO: MAGIC NUMBER :frame-limit
       (println (format-exception e {:frame-limit 10})))))
@@ -60,7 +59,7 @@
 (defn print-test-results [test-results print-fn]
   (->> test-results
        (remove #(= (:status %) :passed))
-       (mapv (fn [{:keys [message arrow where status raw-actual]
+       (mapv (fn [{:keys [message where status raw-actual]
                    :as test-result}]
                (let [[act exp] (get-exp-act test-result)]
                  (print-fn)
@@ -70,7 +69,10 @@
                  (print-fn "expected:" exp)
                  (print-fn "  actual:" act)
                  (print-diff act exp test-result print-fn)
-                 (print-fn))))))
+                 (print-fn))
+               (when true
+                 ;TODO: ^true -> :key in config?
+                 (throw (ex-info "" {::stop? true})))))))
 
 (defn print-test-item [test-item print-level]
   (t/with-test-out
@@ -99,7 +101,8 @@
       (try (->> namespaces
                 (mapv #(print-namespace %)))
            (catch Exception e
-             (print-exception e println)))
+             (when-not (->> e ex-data ::stop?)
+               (print-exception e println))))
       (println "\nRan" (:tested report-data) "tests containing"
                (+ (:passed report-data)
                   (:failed report-data)
@@ -118,8 +121,7 @@
     )
 
 (defn read-arrow [m]
-  (-> (str \( (:message m) \))
-      read-string second))
+  (-> m :extra :arrow symbol))
 
 (defmethod untangled-report :error [m]
   (t/inc-report-counter :error)
@@ -128,10 +130,9 @@
                 :expected   (str (:expected m))
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
+                :extra      (:extra m)
                 :arrow      (read-arrow m)}]
-    (rd/error detail)
-    )
-  )
+    (rd/error detail)))
 
 (defmethod untangled-report :fail [m]
   (t/inc-report-counter :fail)
@@ -140,6 +141,7 @@
                 :expected   (str (:expected m))
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
+                :extra      (:extra m)
                 :arrow      (read-arrow m)}]
     (rd/fail detail)))
 
