@@ -1,4 +1,4 @@
-# untangled-test
+# untangled-spec
 
 A Clojure library designed to ... well, that part is up to you.
 
@@ -6,7 +6,7 @@ DEVELOPMENT NOTES:
 
 To run tests:
 
-     rlwrap lein figwheel dev test
+     rlwrap lein figwheel test
 
 - Add specs to test folder. Use cljs.test for now.
 - Require the spec in dev/cljs/user.cljs
