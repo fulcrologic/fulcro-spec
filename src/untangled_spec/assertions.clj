@@ -28,6 +28,7 @@
                                 :actual value#, :extra ~extra})
        value#)))
 
+;TODO: dont use 'is' as the name
 (defmacro is [form & [msg extra]]
   `(try ~(assert-expr form msg extra)
         (catch Throwable t#
@@ -35,6 +36,7 @@
                                    :expected '~form, :actual t#
                                    :extra ~extra}))))
 
+;TODO: try adding meta instead of using :extra
 (defn triple->assertion [[left arrow expected]]
   (case arrow
     =>
