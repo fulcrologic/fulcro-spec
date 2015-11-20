@@ -14,14 +14,7 @@
 
 (enable-console-print!)
 
-(defn run-all-tests []
-  )
-
-(defn on-load []
-  (run-all-tests)
-  )
-
-(ts/test-suite dom-report
+(ts/test-suite spec-report
                'untangled-spec.async-spec
                'untangled-spec.stub-spec
                'untangled-spec.provided-spec
@@ -29,4 +22,9 @@
                'untangled-spec.dom.events-spec
                'untangled-spec.dom.util-spec
                )
+
+(defn on-load []
+  (spec-report))
+
+(spec-report)
 

@@ -16,7 +16,7 @@
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js"]
   :cljsbuild {
               :builds [
-                       {:id "dev"
+                       {:id "test"
                         :source-paths ["src" "dev" "test"]
                         :figwheel { :on-jsload "cljs.user/on-load" }
                         :compiler {:main cljs.user
