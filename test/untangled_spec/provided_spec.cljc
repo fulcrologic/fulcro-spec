@@ -3,6 +3,7 @@
      (:require [untangled-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions when-mocking]]
                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
                [untangled-spec.provided :as p]
+               [untangled-spec.stub]
                ))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
              [untangled-spec.provided :as p]
