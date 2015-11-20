@@ -1,4 +1,4 @@
-# smooth-test
+# untangled-spec
 
 A Clojure library designed to ... well, that part is up to you.
 
@@ -6,12 +6,23 @@ DEVELOPMENT NOTES:
 
 To run tests:
 
-     rlwrap lein figwheel dev test
+     rlwrap lein figwheel test
 
 - Add specs to test folder. Use cljs.test for now.
 - Require the spec in dev/cljs/user.cljs
 - Add spec namespace to run-all-tests call to run-tests
 - focus auto-run via the user.cljs on-load function
+
+
+## Install Notes
+
+- Add the lein plugin localrepo to your `~/.lein/profiles.clj`:
+  - Look on clojars for the current lein version: https://clojars.org/lein-localrepo
+  - E.g. `[lein-localrepo "0.5.3"]`
+- Be sure to run the publish-local script if other projects depend
+  on this library:
+
+    bash$ ./bin/publish-local
 
 
 ## Usage

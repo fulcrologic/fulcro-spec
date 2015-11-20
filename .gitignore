@@ -1,3 +1,4 @@
+*.iml
 *.sw?
 /target
 /classes
@@ -11,6 +12,6 @@ pom.xml.asc
 .hgignore
 .hg/
 .idea
-smooth_test.iml
+*.iml
 figwheel_server.log
 resources/public/js
