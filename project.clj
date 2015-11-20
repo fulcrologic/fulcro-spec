@@ -7,7 +7,10 @@
                  [org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.7.48"]
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
-                 ]
+                 [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
+                 [cljsjs/react-with-addons "0.14.0-1" :scope "test"]
+                 [org.omcljs/om "1.0.0-alpha22" :scope "test"]]
+
   :plugins [[lein-cljsbuild "1.1.0"]
             [lein-figwheel "0.4.1"]]
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js"]
