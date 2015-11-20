@@ -1,5 +1,5 @@
 (ns untangled-spec.dom.events
-  (:require [untangled.test.dom :as dom]
+  (:require [untangled-spec.dom.util :as dom]
             [cljs.test :as t :include-macros true]
             [untangled-spec.dom.util :as util]
             [clojure.string :as str]))
@@ -139,7 +139,7 @@
   Simulates the series of events that occur when a user pressess a single key.
 
   Parameters:
-  `element` A rendered HTML element, as generated with `untangled.test.dom/render-as-dom`.
+  `element` A rendered HTML element, as generated with `untangled-spec.dom.util/render-as-dom`.
   `key-str` A string representing the key that was pressed, i.e. \"a\" or \">\".
   "
   [element key-str]
@@ -166,7 +166,7 @@
   Simulates a sequence of key presses.
 
   Parameters:
-  `element` A rendered HTML element, as generated with `untangled.test.dom/render-as-dom`.
+  `element` A rendered HTML element, as generated with `untangled-spec.dom.util/render-as-dom`.
   `key-str` A string representing the keys that were pressed, i.e. \"aSdf\".
   "
   [element key-str]

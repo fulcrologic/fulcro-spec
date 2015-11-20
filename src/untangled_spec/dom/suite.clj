@@ -6,7 +6,7 @@
      (cljs.core/defmethod cljs.test/report ~(keyword name) [~'m])
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :pass] [~'m]
        (cljs.test/inc-report-counter! :pass)
-       (untangled.test.suite/pass ~name)
+       (untangled-spec.dom.suite/pass ~name)
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :error] [~'m]
        (cljs.test/inc-report-counter! :error)
@@ -14,7 +14,7 @@
                        :message  (:message ~'m)
                        :expected (str (:expected ~'m))
                        :actual   (str (:actual ~'m))}]
-         (untangled.test.suite/fail ~name ~'detail))
+         (untangled-spec.dom.suite/fail ~name ~'detail))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :fail] [~'m]
        (cljs.test/inc-report-counter! :fail)
@@ -22,38 +22,38 @@
                        :message  (:message ~'m)
                        :expected (str (:expected ~'m))
                        :actual   (str (:actual ~'m))}]
-         (untangled.test.suite/fail ~name ~'detail))
+         (untangled-spec.dom.suite/fail ~name ~'detail))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-test-ns] [~'m]
-       (untangled.test.suite/begin-namespace ~name (cljs.core/name (:ns ~'m)))
+       (untangled-spec.dom.suite/begin-namespace ~name (cljs.core/name (:ns ~'m)))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-specification] [~'m]
-       (untangled.test.suite/begin-specification ~name (:string ~'m))
+       (untangled-spec.dom.suite/begin-specification ~name (:string ~'m))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-specification] [~'m]
-       (untangled.test.suite/end-specification ~name)
+       (untangled-spec.dom.suite/end-specification ~name)
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-manual] [~'m]
-       (untangled.test.suite/begin-manual ~name (:string ~'m))
+       (untangled-spec.dom.suite/begin-manual ~name (:string ~'m))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-manual] [~'m]
-       (untangled.test.suite/end-manual ~name)
+       (untangled-spec.dom.suite/end-manual ~name)
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-behavior] [~'m]
-       (untangled.test.suite/begin-behavior ~name (:string ~'m))
+       (untangled-spec.dom.suite/begin-behavior ~name (:string ~'m))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-behavior] [~'m]
-       (untangled.test.suite/end-behavior ~name)
+       (untangled-spec.dom.suite/end-behavior ~name)
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-provided] [~'m]
-       (untangled.test.suite/begin-provided ~name (:string ~'m))
+       (untangled-spec.dom.suite/begin-provided ~name (:string ~'m))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-provided] [~'m]
-       (untangled.test.suite/end-provided ~name)
+       (untangled-spec.dom.suite/end-provided ~name)
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :summary] [~'m]
        (let [~'stats {:passed (:pass ~'m) :failed (:fail ~'m) :error (:error ~'m)}]
-         (untangled.test.suite/summary ~name ~'stats)
+         (untangled-spec.dom.suite/summary ~name ~'stats)
          )
        )
      )
@@ -65,12 +65,12 @@
         target (str name)
         ]
     `(do
-       (cljs.core/defonce ~state-name (untangled.test.suite/new-test-suite ~target))
+       (cljs.core/defonce ~state-name (untangled-spec.dom.suite/new-test-suite ~target))
        (cljs.core/defn ~name []
          (cljs.test/run-tests (cljs.test/empty-env ~test-report-keyword) ~@test-namespaces)
-         (untangled.test.suite/render-tests ~state-name)
+         (untangled-spec.dom.suite/render-tests ~state-name)
          )
-       (untangled.test.suite/render-tests ~state-name)
+       (untangled-spec.dom.suite/render-tests ~state-name)
        ~@(define-test-methods state-name test-report-keyword)
        )
     )
