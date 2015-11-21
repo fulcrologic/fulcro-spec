@@ -4,14 +4,23 @@
             )
   )
 
-(defn parse-arrow-count [sym]
+(defn parse-arrow-count
+  "parses how many times the mock/stub should be called with.
+   * => implies 1+,
+   * =yx=> implies exactly y times.
+   Provided arrow counts cannot be zero because mocking should
+      not be a negative assertion, but a positive one.
+   IE: verify that what you want to be called is called instead,
+      or that, if necessary, it should throw an error if called."
+  [sym]
   (let [nm (name sym)
-        number (re-find #"\d+" nm)]
+        number (re-find #"\d+" nm)
+        not-zero-msg "Arrow count must not be zero in provided clauses."]
     (assert (re-find #"^=" nm) "Arrows must start with = (try =#x=>)")
     (assert (re-find #"=>$" nm) "Arrows must end with => (try =#x=>)")
     (cond
       (= "=>" nm) :many
-      (= "0" number) (assert false "Arrow count must not be zero in provided clauses.")
+      (= "0" number) (assert false not-zero-msg)
       number (Integer/parseInt number)
       )
     )
