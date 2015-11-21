@@ -17,12 +17,12 @@
 
 (defn check-assertion [expected]
   (fn [actual]
-    (let [is-block (if (= "is" (name (first actual)))
+    (let [is-block (if (= "untangled-is" (name (first actual)))
                      actual (->> actual (drop 2) first))]
       (and
         ;verify is using `is
         (->> is-block first
-             (= 'untangled-spec.assertions/is))
+             (= 'untangled-spec.assertions/untangled-is))
         ;call expected with $this eg: (is $this ...)
         (->> is-block second
              (expected))))))
@@ -73,7 +73,7 @@
                         #"invalid arrow"
                         #(-> % ex-data (= {:arrow '=bad-arrow=>}))))))
 
-      (behavior "assertions arrows"
+      (behavior "assertions arrow"
         (provided "=throws=> should fail if nothing threw an Exception"
           (ex-info x y) => (Exception. (str x y))
           (assertions
@@ -82,5 +82,10 @@
           (let [e (ex-info "asdf" {})]
             (assertions
               (throw e) => e)))
+        (provided "=fn=> catch unexpected exceptions"
+          (untangled-spec.assertions/handle-exception e) => 1
+          (let [e (ex-info "foobar" {})]
+            (assertions
+              (throw e) =fn=> odd?)))
         )
       ))

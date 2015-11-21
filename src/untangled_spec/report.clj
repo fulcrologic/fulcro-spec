@@ -20,23 +20,27 @@
 (defn space-level [level]
   (apply str (repeat (* 2 level) " ")))
 
+(defn print-exception [e]
+  (when (instance? java.lang.Exception e)
+    (print (format-exception e {:frame-limit 10}))))
+
 (defn get-exp-act [{:keys [extra] :as test-result}]
   (let [{:keys [arrow actual expected]} extra]
-    (case arrow
-      =>
-      (if (instance? Exception actual)
-        (let [e actual]
-          (do (println (format-exception e {:frame-limit 10}))
-              [(str e) expected]))
-        [actual expected])
+    (if (instance? Exception actual)
+      (let [e actual]
+        (do (print-exception e)
+            [(str e) expected]))
+      (case arrow
+        =>
+        [actual expected]
 
-      =fn=>
-      [actual expected]
+        =fn=>
+        [actual expected]
 
-      =throws=>
-      [(:actual test-result) expected]
+        =throws=>
+        [(:actual test-result) expected]
 
-      (throw (ex-info "invalid arrow" {:arrow arrow})))))
+        (throw (ex-info "invalid arrow" {:arrow arrow}))))))
 
 (defn ?print-diff [act exp {:keys [raw-actual arrow]} print-fn]
   (when (and (= arrow '=>)
@@ -47,14 +51,6 @@
     (let [[plus minus eq] (clojure.data/diff act exp)]
       (print-fn "    diff: -" minus)
       (print-fn "    diff: +" plus))))
-
-(defn print-exception [e print-fn]
-  (when (instance? java.lang.Exception e)
-    (binding [*traditional* true]
-      (print-fn "  actual:" (str e))
-      (println)
-      ;TODO: MAGIC NUMBER :frame-limit
-      (println (format-exception e {:frame-limit 10})))))
 
 (defn print-test-results [test-results print-fn]
   (->> test-results
@@ -102,7 +98,7 @@
                 (mapv #(print-namespace %)))
            (catch Exception e
              (when-not (->> e ex-data ::stop?)
-               (print-exception e println))))
+               (print-exception e))))
       (println "\nRan" (:tested report-data) "tests containing"
                (+ (:passed report-data)
                   (:failed report-data)
