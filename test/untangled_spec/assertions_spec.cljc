@@ -1,7 +1,9 @@
 (ns untangled-spec.assertions-spec
   #?(:clj
-      (:require [untangled-spec.core :as c :refer [specification behavior provided assertions]]
-                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
+      (:require [untangled-spec.core :as c
+                 :refer [specification behavior provided assertions]]
+                [clojure.test :as t
+                 :refer [are is deftest with-test run-tests testing do-report]]
                 [untangled-spec.assertions
                  :refer [exception-matches? triple->assertion]]
                 ))
@@ -46,31 +48,30 @@
             =throws=> (clojure.lang.ExceptionInfo #"not match regex"))))
 
       (behavior "triple->assertion"
-        (behavior "takes a 3-tuple of (actual,arrow,expected)"
-          (behavior "and for the => arrow, returns an equality check"
-            (assertions
-              (triple->assertion '(left => right))
-              =fn=> (check-assertion #(->> % first (= 'clojure.core/=)))
-              ))
-          (behavior "and for the =fn=> arrow, returns a fn call"
-            (assertions
-              (triple->assertion '(left =fn=> right))
-              =fn=> (check-assertion #(->> % first (= 'right)))
-              ))
-          (behavior "and for the =throws=> arrow, returns a try-catch"
-            (assertions
-              (triple->assertion '(left =throws=> (right)))
-              =fn=> (check-assertion
-                      #(and (->> % first (= 'try))
-                            (->> % second (= 'left))
-                            (-> % (nth 2) first (= 'throw))
-                            (->> % last first (= 'catch))))))
-          (behavior "any other arrow, throws an ex-info"
-            (assertions
-              (triple->assertion '(left =bad-arrow=> right))
-              =throws=> (ExceptionInfo
-                          #"invalid arrow"
-                          #(-> % ex-data (= {:arrow '=bad-arrow=>})))))))
+        (behavior "checks equality with the => arrow"
+          (assertions
+            (triple->assertion '(left => right))
+            =fn=> (check-assertion #(->> % first (= 'clojure.core/=)))
+            ))
+        (behavior "verifies actual with the =fn=> function"
+          (assertions
+            (triple->assertion '(left =fn=> right))
+            =fn=> (check-assertion #(->> % first (= 'right)))
+            ))
+        (behavior "verifies that actual throws an exception"
+          (assertions
+            (triple->assertion '(left =throws=> (right)))
+            =fn=> (check-assertion
+                    #(and (->> % first (= 'try))
+                          (->> % second (= 'left))
+                          (-> % (nth 2) first (= 'throw))
+                          (->> % last first (= 'catch))))))
+        (behavior "any other arrow, throws an ex-info"
+          (assertions
+            (triple->assertion '(left =bad-arrow=> right))
+            =throws=> (ExceptionInfo
+                        #"invalid arrow"
+                        #(-> % ex-data (= {:arrow '=bad-arrow=>}))))))
 
       (behavior "assertions arrows"
         (provided "=throws=> should fail if nothing threw an Exception"
@@ -78,8 +79,8 @@
           (assertions
             [:foo :bar] =throws=> (Exception #"Expected an 'Exception'")))
         (behavior "=> catches unexpected exceptions"
-            (let [e (ex-info "asdf" {})]
-              (assertions
-                (throw e) => e)))
+          (let [e (ex-info "asdf" {})]
+            (assertions
+              (throw e) => e)))
         )
       ))
