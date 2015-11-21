@@ -38,7 +38,7 @@
 
       (throw (ex-info "invalid arrow" {:arrow arrow})))))
 
-(defn print-diff [act exp {:keys [raw-actual arrow]} print-fn]
+(defn ?print-diff [act exp {:keys [raw-actual arrow]} print-fn]
   (when (and (= arrow '=>)
              (coll? exp)
              (not (map? exp))
@@ -68,7 +68,7 @@
                  (when message (print-fn "ASSERTION:" message))
                  (print-fn "expected:" exp)
                  (print-fn "  actual:" act)
-                 (print-diff act exp test-result print-fn)
+                 ;(?print-diff act exp test-result print-fn)
                  (print-fn))
                (when true
                  ;TODO: ^true -> :key in config?
