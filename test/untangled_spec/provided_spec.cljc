@@ -65,7 +65,7 @@
                                (assertions
                                  (contains? result :literals) => true
                                  (:literals result) => [1 :b :untangled-spec.provided/any]))
-                     (behavior "literals are converted into symbols in the arglist"
+                     (behavior "converts literals in the arglist into symbols"
                                (assertions
                                  (->> (:stub-function result)
                                       second (every? symbol?))
