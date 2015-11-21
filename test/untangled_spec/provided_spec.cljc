@@ -77,11 +77,14 @@
 #?(:clj
     (specification "convert-groups-to-symbolic-triples"
                    (let [grouped-data {'a [
-                                           {:ntimes 2 :symbol-to-mock 'a :stub-function '(fn [] 22) :literals []}
-                                           {:ntimes 1 :symbol-to-mock 'a :stub-function '(fn [] 32) :literals []}
+                                           {:ntimes 2 :symbol-to-mock
+                                            'a :stub-function '(fn [] 22)}
+                                           {:ntimes 1 :symbol-to-mock
+                                            'a :stub-function '(fn [] 32)}
                                            ]
                                        'b [
-                                           {:ntimes 1 :symbol-to-mock 'b :stub-function '(fn [] 42) :literals []}
+                                           {:ntimes 1 :symbol-to-mock
+                                            'b :stub-function '(fn [] 42)}
                                            ]}
                          scripts (p/convert-groups-to-symbolic-triples grouped-data)
                          ]
@@ -107,11 +110,11 @@
                                (assertions
                                  (last (first scripts)) =>
                                  '(untangled-spec.stub/make-script "a"
-                                    [(untangled-spec.stub/make-step (fn [] 22) 2 [])
-                                     (untangled-spec.stub/make-step (fn [] 32) 1 [])])
+                                    [(untangled-spec.stub/make-step (fn [] 22) 2 nil)
+                                     (untangled-spec.stub/make-step (fn [] 32) 1 nil)])
                                  (last (second scripts)) =>
                                  '(untangled-spec.stub/make-script "b"
-                                    [(untangled-spec.stub/make-step (fn [] 42) 1 [])])
+                                    [(untangled-spec.stub/make-step (fn [] 42) 1 nil)])
                                  ))
                      ))
     )

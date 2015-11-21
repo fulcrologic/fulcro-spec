@@ -93,7 +93,7 @@
                                b-count (atom 0)
                                script (s/make-script "something" [
                                                                   (s/make-step (fn [] (swap! a-count inc)) 2 [])
-                                                                  (s/make-step (fn [] (swap! b-count inc)) 1 [])
+                                                                  (s/make-step (fn [] (swap! b-count inc)) 1 nil)
                                                                   ])
                                sstub (s/scripted-stub script)]
                            ; first call
