@@ -41,7 +41,7 @@
         (behavior "checks the exception's message matches a regex or throws"
           (assertions
             (exception-matches? (ex-info "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn" {})
-                                clojure.lang.ExceptionInfo #"(?i)chulhu")
+                                clojure.lang.ExceptionInfo #"(?i)cthulhu")
             => true
             (exception-matches? (ex-info "kthxbye" {})
                                 clojure.lang.ExceptionInfo #"cthulhu")
