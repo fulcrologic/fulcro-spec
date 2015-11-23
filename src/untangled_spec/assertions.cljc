@@ -17,49 +17,57 @@
 (defn assert-expr [form msg extra]
   (cond
     (nil? form)
-    `(clojure.test/do-report {:type :fail
+    `(~'do-report {:type :fail
                               :message ~msg
                               :extra ~extra})
 
     :else
     `(let [value# ~form]
-       (clojure.test/do-report {:type (if value# :pass :fail)
+       (~'do-report {:type (if value# :pass :fail)
                                 :message ~msg, :expected '~form
                                 :actual value#, :extra ~extra})
        value#)))
 
-(defmacro untangled-is [form & [msg extra]]
-  `(try ~(assert-expr form msg extra)
-        (catch Throwable t#
-          (clojure.test/do-report {:type :error, :message ~msg
-                                   :expected '~form, :actual t#
-                                   :extra ~extra}))))
+#?(:clj
+    (defmacro untangled-is [form & [msg extra]]
+      `(try ~(assert-expr form msg extra)
+            (catch #?(:clj Throwable
+                      :cljs js/Object) t#
+              (~'do-report {:type :error, :message ~msg
+                                       :expected '~form, :actual t#
+                                       :extra ~extra})))))
 
 (defn handle-exception [e] e)
+
+(defn ->msg [l a r] (str l " " a " " r))
 
 ;TODO: try adding meta instead of using :extra
 (defn triple->assertion [[left arrow expected]]
   (case arrow
     =>
     (let [actual left]
-      `(let [actual# (try ~actual (catch Exception ~'e
+      `(let [actual# (try ~actual (catch #?(:clj Exception
+                                            :cljs js/Object) ~'e
                                     (handle-exception ~'e)))
              expected# ~expected]
          (untangled-is (= actual# expected#)
-                       (format "%s %s %s"
-                               '~actual '~arrow ~expected)
+                       (->msg '~actual '~arrow ~expected)
                        {:arrow '~arrow
                         :actual   actual#
                         :expected expected#})))
 
+    =is=>
+    `(~'is (~@expected ~left)
+           (->msg '~left '~arrow '~expected))
+
     =fn=>
     (let [checker expected
           arg left]
-      `(let [arg# (try ~arg (catch Exception ~'e
+      `(let [arg# (try ~arg (catch #?(:clj Exception
+                                      :cljs js/Object) ~'e
                               (handle-exception ~'e)))]
          (untangled-is (~checker arg#)
-                       (format "%s %s %s"
-                               '~arg '~arrow '~checker)
+                       (->msg '~arg '~arrow '~checker)
                        {:arrow '~arrow
                         :actual   arg#
                         :expected '~checker})))
@@ -73,10 +81,10 @@
                                         (first '~criteria)
                                         "' to be thrown!")
                                    {::type ::internal}))
-                          (catch Exception ~'e
+                          (catch #?(:clj Exception
+                                    :cljs js/Object) ~'e
                             (exception-matches? ~'e ~@criteria)))
-                     (format "%s %s %s"
-                             '~should-throw '~arrow '~criteria)
+                     (->msg '~should-throw '~arrow '~criteria)
                      {:arrow '~arrow
                       :expected '~criteria}))
 

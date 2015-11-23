@@ -33,7 +33,6 @@
    :actual     (:actual result-detail)
    :raw-actual (:raw-actual result-detail)
    :extra      (:extra result-detail)
-   :arrow      (:arrow result-detail)
    })
 
 (defn make-tests-by-namespace

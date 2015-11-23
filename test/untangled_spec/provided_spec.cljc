@@ -1,16 +1,25 @@
 (ns untangled-spec.provided-spec
   #?(:clj
-      (:require [untangled-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions when-mocking]]
-                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
+      (:require [untangled-spec.core :as c
+                 :refer [specification behavior provided
+                         with-timeline async tick assertions
+                         when-mocking]]
+                [clojure.test :as t
+                 :refer [are is deftest with-test
+                         run-tests testing do-report]]
                 [untangled-spec.provided :as p]
                 [untangled-spec.stub]
                 ))
-  #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-                            [untangled-spec.provided :as p]
-                            [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions when-mocking]]
-                            ))
+  #?(:cljs (:require-macros
+             [cljs.test :refer (are is deftest run-tests testing)]
+             [untangled-spec.provided :as p]
+             [untangled-spec.core
+              :refer [specification behavior provided
+                      with-timeline async tick assertions
+                      when-mocking]]
+             ))
   #?(:cljs (:require [cljs.test :refer [do-report]]
-                     )
+                     [untangled-spec.assertions])
            )
   #?(:clj
       (:import clojure.lang.ExceptionInfo))
@@ -190,7 +199,8 @@
                                      (my-square n) =1x=> (+ n 5)
                                      (my-square n) =1x=> (+ n 7)
 
-                                     (is (thrown? ExceptionInfo
+                                     (is (thrown? #?(:clj ExceptionInfo
+                                                     :cljs js/Object)
                                                   (+ (my-square 1)
                                                      (my-square 1)
                                                      (my-square 1))))

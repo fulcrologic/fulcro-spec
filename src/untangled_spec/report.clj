@@ -4,18 +4,14 @@
             [untangled-spec.report-data :as rd]
             [colorize.core :as c]
             [clojure.data :refer [diff]]
-            [io.aviso.exception :as purdy :refer [format-exception *traditional*]]
-            )
-  (:import clojure.lang.ExceptionInfo)
-  )
+            [io.aviso.exception :refer [format-exception *traditional*]])
+  (:import clojure.lang.ExceptionInfo))
 
 (defn color-str [status & strings]
   (cond (= status :passed) (apply c/green strings)
         (= status :failed) (apply c/red strings)
         (= status :error) (apply c/red strings)
-        :otherwise (apply c/reset strings)
-        )
-  )
+        :otherwise (apply c/reset strings)))
 
 (defn space-level [level]
   (apply str (repeat (* 2 level) " ")))
@@ -28,11 +24,19 @@
   (let [{:keys [arrow actual expected]} extra]
     (if (instance? Exception actual)
       (let [e actual]
-        (do (print-exception e)
-            [(str e) expected]))
-      (case arrow
+        (print-exception e)
+        [(str e) expected])
+      (case (or arrow '=is=>)
         =>
         [actual expected]
+
+        =is=>
+        (let [{:keys [raw-actual actual expected]} test-result]
+          (if (instance? Exception raw-actual)
+            (let [e raw-actual]
+              (print-exception e)
+              [actual expected])
+            [actual expected]))
 
         =fn=>
         [actual expected]
@@ -108,16 +112,11 @@
 
 (defmulti ^:dynamic untangled-report :type)
 
-(defmethod untangled-report :default [m]
-  )
+(defmethod untangled-report :default [m])
 
 (defmethod untangled-report :pass [m]
     (t/inc-report-counter :pass)
-    (rd/pass)
-    )
-
-(defn read-arrow [m]
-  (-> m :extra :arrow symbol))
+    (rd/pass))
 
 (defmethod untangled-report :error [m]
   (t/inc-report-counter :error)
@@ -126,8 +125,7 @@
                 :expected   (str (:expected m))
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
-                :extra      (:extra m)
-                :arrow      (read-arrow m)}]
+                :extra      (:extra m)}]
     (rd/error detail)))
 
 (defmethod untangled-report :fail [m]
@@ -137,8 +135,7 @@
                 :expected   (str (:expected m))
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
-                :extra      (:extra m)
-                :arrow      (read-arrow m)}]
+                :extra      (:extra m)}]
     (rd/fail detail)))
 
 (defmethod untangled-report :begin-test-ns [m]
