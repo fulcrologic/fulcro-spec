@@ -1,23 +1,24 @@
 (ns untangled-spec.stub-spec
   #?(:clj
-     (:require [untangled-spec.stub :as s]
-               [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report assert-expr)]
-               [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
-               ))
+      (:require [untangled-spec.stub :as s]
+                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report assert-expr)]
+                [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
+                ))
   #?(:clj
-     (:import clojure.lang.ExceptionInfo))
+      (:import clojure.lang.ExceptionInfo))
   #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-             [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]))
+                            [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]))
   #?(:cljs (:require
              [cljs.test :as t :refer (do-report)]
              [untangled-spec.stub :as s :include-macros true]
              ))
   )
 
-(defn make-simple-script [] (s/make-script "something"
-                                           [
-                                            (s/make-step 'stub 1)
-                                            ]))
+(defn make-simple-script []
+  (s/make-script "something"
+                 [
+                  (s/make-step 'stub 1 [])
+                  ]))
 (specification "increment-script-call-count"
                (behavior "finds and increments the correct step"
                          (let [script (make-simple-script)]
@@ -37,10 +38,11 @@
                  )
                )
 
-(defn make-single-call-script [to-call] (s/make-script "something"
-                                                       [
-                                                        (s/make-step to-call 1)
-                                                        ]))
+(defn make-single-call-script [to-call & [literals]]
+  (s/make-script "something"
+                 [
+                  (s/make-step to-call 1 (or literals []))
+                  ]))
 
 (specification "scripted-stub"
                (behavior "calls the stub function"
@@ -48,11 +50,22 @@
                                script (make-single-call-script (fn [] (reset! detector true)))
                                sstub (s/scripted-stub script)]
 
-                           (s/tryo (sstub) false)
+                           (s/try-or (sstub) false)
 
                            (is (= true @detector))
                            )
                          )
+
+               (behavior "verifies the stub fn is called with the correct literals"
+                         (let [script (make-single-call-script (fn [n x]
+                                                                 [(inc n) x])
+                                                               [41 :untangled-spec.provided/any])
+                               sstub (s/scripted-stub script)]
+                           (is (thrown? ExceptionInfo
+                                        (sstub 2 :whatever)))
+                           (is (= [42 :foo]
+                                  (sstub 41 :foo)))))
+
                (behavior "returns whatever the stub function returns"
                          (let [script (make-single-call-script (fn [] 42))
                                sstub (s/scripted-stub script)]
@@ -71,16 +84,16 @@
                          (let [script (make-single-call-script (fn [] (throw (ex-info "BUMMER" {}))))
                                sstub (s/scripted-stub script)]
 
-                           #?(:clj  (is (thrown? clojure.lang.ExceptionInfo (sstub)))
-                              :cljs (is (thrown? ExceptionInfo (sstub))))
+                           #?(:clj (is (thrown? clojure.lang.ExceptionInfo (sstub)))
+                                   :cljs (is (thrown? ExceptionInfo (sstub))))
                            )
                          )
                (behavior "only moves to the next script step if the call count for the current step reaches the programmed amount"
                          (let [a-count (atom 0)
                                b-count (atom 0)
                                script (s/make-script "something" [
-                                                                  (s/make-step (fn [] (swap! a-count inc)) 2)
-                                                                  (s/make-step (fn [] (swap! b-count inc)) 1)
+                                                                  (s/make-step (fn [] (swap! a-count inc)) 2 [])
+                                                                  (s/make-step (fn [] (swap! b-count inc)) 1 nil)
                                                                   ])
                                sstub (s/scripted-stub script)]
                            ; first call

@@ -26,12 +26,14 @@
 
 (defn make-test-result
   [result result-detail]
-  {:status   result
-   :message  (:message result-detail)
-   :where    (:where result-detail)
-   :expected (:expected result-detail)
-   :actual   (:actual result-detail)}
-  )
+  {:status     result
+   :message    (:message result-detail)
+   :where      (:where result-detail)
+   :expected   (:expected result-detail)
+   :actual     (:actual result-detail)
+   :raw-actual (:raw-actual result-detail)
+   :extra      (:extra result-detail)
+   })
 
 (defn make-tests-by-namespace
   [name]
@@ -48,13 +50,14 @@
 
 (defn pop-test-scope [] (swap! *test-scope* #(-> % (pop) (pop))))
 
-(defn set-test-result [status] (loop [current-test-result-path @*test-scope*]
-                                 (if (> (count current-test-result-path) 1)
-                                   (let [target (get-in @*test-state* current-test-result-path)
-                                         current-status (:status target)]
-                                     (if (not (or (= current-status :error) (= current-status :failed)))
-                                       (swap! *test-state* #(assoc-in % (concat current-test-result-path [:status]) status)))
-                                     (recur (drop-last 2 current-test-result-path))))))
+(defn set-test-result [status]
+  (loop [current-test-result-path @*test-scope*]
+    (if (> (count current-test-result-path) 1)
+      (let [target (get-in @*test-state* current-test-result-path)
+            current-status (:status target)]
+        (if (not (or (= current-status :error) (= current-status :failed)))
+          (swap! *test-state* #(assoc-in % (concat current-test-result-path [:status]) status)))
+        (recur (drop-last 2 current-test-result-path))))))
 
 (defn begin-namespace [name]
   (let [namespaces (get @*test-state* :namespaces)
@@ -104,23 +107,25 @@
 
 (defn pass [] (set-test-result :passed))
 
-(defn error [detail] (let [translated-item-path @*test-scope*
-                           current-test-item (get-in @*test-state* translated-item-path)
-                           test-result (make-test-result :error detail)
-                           test-result-path (concat translated-item-path
-                                                    [:test-results (count (:test-results current-test-item))])]
-                       (set-test-result :error)
-                       (swap! *test-state* #(assoc-in % test-result-path test-result))
-                       ))
+(defn error [detail]
+  (let [translated-item-path @*test-scope*
+        current-test-item (get-in @*test-state* translated-item-path)
+        test-result (make-test-result :error detail)
+        test-result-path (concat translated-item-path
+                                 [:test-results (count (:test-results current-test-item))])]
+    (set-test-result :error)
+    (swap! *test-state* #(assoc-in % test-result-path test-result))
+    ))
 
-(defn fail [detail] (let [translated-item-path @*test-scope*
-                          current-test-item (get-in @*test-state* translated-item-path)
-                          test-result (make-test-result :failed detail)
-                          test-result-path (concat translated-item-path
-                                                   [:test-results (count (:test-results current-test-item))])]
-                      (set-test-result :failed)
-                      (swap! *test-state* #(assoc-in % test-result-path test-result))
-                      ))
+(defn fail [detail]
+  (let [translated-item-path @*test-scope*
+        current-test-item (get-in @*test-state* translated-item-path)
+        test-result (make-test-result :failed detail)
+        test-result-path (concat translated-item-path
+                                 [:test-results (count (:test-results current-test-item))])]
+    (set-test-result :failed)
+    (swap! *test-state* #(assoc-in % test-result-path test-result))
+    ))
 
 
 (defn summary [stats]

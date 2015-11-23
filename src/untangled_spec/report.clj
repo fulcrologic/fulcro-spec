@@ -3,50 +3,94 @@
             [clojure.stacktrace :as stack]
             [untangled-spec.report-data :as rd]
             [colorize.core :as c]
-            )
-  (:import clojure.lang.ExceptionInfo)
-  )
+            [clojure.data :refer [diff]]
+            [io.aviso.exception :refer [format-exception *traditional*]])
+  (:import clojure.lang.ExceptionInfo))
 
 (defn color-str [status & strings]
   (cond (= status :passed) (apply c/green strings)
         (= status :failed) (apply c/red strings)
         (= status :error) (apply c/red strings)
-        :otherwise (apply c/reset strings)
-        )
-  )
+        :otherwise (apply c/reset strings)))
 
 (defn space-level [level]
   (apply str (repeat (* 2 level) " ")))
 
-(defn print-test-results [test-results print-level]
-  (loop [filtered-test-results (filter #(not (= (:status %) :passed)) test-results)]
-    (when (not (empty? filtered-test-results))
-      (let [test-result (first filtered-test-results)]
-        (println)
-        (println (space-level print-level) (if (= (:status test-result) :error) "Error" "Failed") " in" (:where test-result))
-        (when-let [message (:message test-result)] (println (space-level print-level) message))
-        (println (space-level print-level) "expected:" (pr-str (:expected test-result)))
-        (println (space-level print-level) "  actual:" (pr-str (:actual test-result)))
-        (println)
-        (recur (rest filtered-test-results))))))
+(defn print-exception [e]
+  (when (instance? java.lang.Exception e)
+    (print (format-exception e {:frame-limit 10}))))
+
+(defn get-exp-act [{:keys [extra] :as test-result}]
+  (let [{:keys [arrow actual expected]} extra]
+    (if (instance? Exception actual)
+      (let [e actual]
+        (print-exception e)
+        [(str e) expected])
+      (case (or arrow '=is=>)
+        =>
+        [actual expected]
+
+        =is=>
+        (let [{:keys [raw-actual actual expected]} test-result]
+          (if (instance? Exception raw-actual)
+            (let [e raw-actual]
+              (print-exception e)
+              [actual expected])
+            [actual expected]))
+
+        =fn=>
+        [actual expected]
+
+        =throws=>
+        [(:actual test-result) expected]
+
+        (throw (ex-info "invalid arrow" {:arrow arrow}))))))
+
+(defn ?print-diff [act exp {:keys [raw-actual arrow]} print-fn]
+  (when (and (= arrow '=>)
+             (coll? exp)
+             (not (map? exp))
+             (not (instance? java.lang.Exception raw-actual)))
+    ;clojure.data/diff does basic eq check for strings & maps -> redundant
+    (let [[plus minus eq] (clojure.data/diff act exp)]
+      (print-fn "    diff: -" minus)
+      (print-fn "    diff: +" plus))))
+
+(defn print-test-results [test-results print-fn]
+  (->> test-results
+       (remove #(= (:status %) :passed))
+       (mapv (fn [{:keys [message where status raw-actual]
+                   :as test-result}]
+               (let [[act exp] (get-exp-act test-result)]
+                 (print-fn)
+                 (print-fn (if (= status :error)
+                             "Error" "Failed") "in" where)
+                 (when message (print-fn "ASSERTION:" message))
+                 (print-fn "expected:" exp)
+                 (print-fn "  actual:" act)
+                 ;(?print-diff act exp test-result print-fn)
+                 (print-fn))
+               (when true
+                 ;TODO: ^true -> :key in config?
+                 (throw (ex-info "" {::stop? true})))))))
 
 (defn print-test-item [test-item print-level]
   (t/with-test-out
-    (println (space-level print-level) (color-str (:status test-item) (:name test-item)))
-    (print-test-results (:test-results test-item) (inc print-level))
-    (loop [test-items (:test-items test-item)]
-      (when (not (empty? test-items))
-        (print-test-item (first test-items) (inc print-level))
-        (recur (rest test-items))))))
+    (println (space-level print-level)
+             (color-str (:status test-item)
+                        (:name test-item)))
+    (print-test-results (:test-results test-item)
+                        (partial println (space-level (inc print-level))))
+    (->> (:test-items test-item)
+         (mapv #(print-test-item % (inc print-level))))))
 
 (defn print-namespace [make-tests-by-namespace]
   (t/with-test-out
     (println)
-    (println (color-str (:status make-tests-by-namespace) "Testing " (:name make-tests-by-namespace)))
-    (loop [test-items (:test-items make-tests-by-namespace)]
-      (when (not (empty? test-items))
-        (do (print-test-item (first test-items) 1)
-            (recur (rest test-items)))))))
+    (println (color-str (:status make-tests-by-namespace)
+                        "Testing " (:name make-tests-by-namespace)))
+    (->> (:test-items make-tests-by-namespace)
+         (mapv #(print-test-item % 1)))))
 
 (defn print-report-data
   "Prints the current report data from the report data state and applies colors based on test results"
@@ -54,45 +98,45 @@
   (t/with-test-out
     (let [report-data @rd/*test-state*
           namespaces (get report-data :namespaces)]
-      (loop [ns namespaces]
-        (when (not (empty? ns))
-          (print-namespace (first ns))
-          (recur (rest ns))
-          )
-        )
+      (try (->> namespaces
+                (mapv #(print-namespace %)))
+           (catch Exception e
+             (when-not (->> e ex-data ::stop?)
+               (print-exception e))))
       (println "\nRan" (:tested report-data) "tests containing"
-               (+ (:passed report-data) (:failed report-data) (:error report-data)) "assertions.")
-      (println (:failed report-data) "failures," (:error report-data) "errors.")
-      ))
-  )
+               (+ (:passed report-data)
+                  (:failed report-data)
+                  (:error report-data)) "assertions.")
+      (println (:failed report-data) "failures,"
+               (:error report-data) "errors."))))
 
 (defmulti ^:dynamic untangled-report :type)
 
-(defmethod untangled-report :default [m]
-  )
+(defmethod untangled-report :default [m])
 
 (defmethod untangled-report :pass [m]
     (t/inc-report-counter :pass)
-    (rd/pass)
-    )
+    (rd/pass))
 
 (defmethod untangled-report :error [m]
-    (t/inc-report-counter :error)
-    (let [detail {:where    (clojure.test/testing-vars-str m)
-                  :message  (:message m)
-                  :expected (str (:expected m))
-                  :actual   (str (:actual m))}]
-      (rd/error detail)
-      )
-    )
+  (t/inc-report-counter :error)
+  (let [detail {:where      (clojure.test/testing-vars-str m)
+                :message    (:message m)
+                :expected   (str (:expected m))
+                :actual     (str (:actual m))
+                :raw-actual (:actual m)
+                :extra      (:extra m)}]
+    (rd/error detail)))
 
 (defmethod untangled-report :fail [m]
-    (t/inc-report-counter :fail)
-    (let [detail {:where    (clojure.test/testing-vars-str m)
-                  :message  (:message m)
-                  :expected (str (:expected m))
-                  :actual   (str (:actual m))}]
-      (rd/fail detail)))
+  (t/inc-report-counter :fail)
+  (let [detail {:where      (clojure.test/testing-vars-str m)
+                :message    (:message m)
+                :expected   (str (:expected m))
+                :actual     (str (:actual m))
+                :raw-actual (:actual m)
+                :extra      (:extra m)}]
+    (rd/fail detail)))
 
 (defmethod untangled-report :begin-test-ns [m]
   (rd/begin-namespace (ns-name (:ns m)))
@@ -136,7 +180,8 @@
   )
 
 (defmethod untangled-report :summary [m]
-  (let [stats {:tested (:test m) :passed (:pass m) :failed (:fail m) :error (:error m)}]
+  (let [stats {:tested (:test m) :passed (:pass m)
+               :failed (:fail m) :error (:error m)}]
     (rd/summary stats)
     (print-report-data)
     )
@@ -144,7 +189,7 @@
 
 (defmacro with-untangled-output
   "Execute body with modified test reporting functions that produce
-  outline output"
+   outline output"
   [& body]
   `(binding [t/report untangled-report]
      ~@body))

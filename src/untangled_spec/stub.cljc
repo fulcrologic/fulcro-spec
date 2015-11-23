@@ -4,11 +4,15 @@
   #?(:cljs (:require-macros [cljs.test :refer (is)]))
   )
 
-(defn make-step [stub times] {:stub stub :times times :ncalled 0})
-(defn make-script [function steps] (atom {:function function :steps steps}))
+(defn make-step [stub times literals]
+  {:stub stub :times times
+   :ncalled 0 :literals literals})
+(defn make-script [function steps]
+  (atom {:function function
+         :steps steps}))
 
 #?(:clj
-   (defmacro tryo [f dflt]
+   (defmacro try-or [f dflt]
      #?(:cljs `(try ~f (catch js/Object ~'e ~dflt))
         :clj  `(try ~f (catch Exception ~'e ~dflt)))
      ))
@@ -31,32 +35,51 @@
     (= ncalled target-times)
     ))
 
+(defn check-matching [arg ?literal]
+  (case ?literal
+    :untangled-spec.provided/any true
+    (= arg ?literal)))
+
 (defn scripted-stub [script-atom]
   (let [step (atom 0)]
     (fn [& args]
       (let [target-function (:function @script-atom)
             max-calls (count (:steps @script-atom))]
         (if (< @step max-calls)
-          (let [stub (-> @script-atom :steps (nth @step) :stub)
-                rv (apply stub args)                                            ;; FIXME: exception handling for arg verification ONLY
-                ]
-            (increment-script-call-count script-atom @step)
-            (if (step-complete script-atom @step) (swap! step inc))
-            rv
+          (let [{:keys [stub literals]} (-> @script-atom :steps (nth @step))]
+            (when-not (and (= (count literals)
+                              (count args))
+                           (every? true?
+                                   (map check-matching
+                                        args literals)))
+              (throw (ex-info (str target-function
+                                   " was called with wrong arguments")
+                              {})))
+            (let [rv (apply stub args)]
+              (increment-script-call-count script-atom @step)
+              (if (step-complete script-atom @step) (swap! step inc))
+              rv)
             )
-          (throw (ex-info (str "VERIFY ERROR: " target-function " was called too many times!") {::verify-error true}))
+          (throw (ex-info (str "VERIFY ERROR: " target-function " was called too many times!")
+                          {::verify-error true
+                           :max-calls max-calls}))
           ))
       ))
   )
 
 
-(defn validate-step-counts [acc step]
-  (if (or (= (:ncalled step) (:times step))
-          (and (= (:times step) :many) (> (:ncalled step) 0))
-          )
-    (conj acc :ok)
-    (conj acc :error)
-    )
+(defn validate-step-counts
+  "argument step contains keys:
+   - :ncalled, actual number of times called
+   - :times, expected number of times called"
+  [errors step]
+  (conj errors
+        (if (or (= (:ncalled step) (:times step))
+                (and (= (:times step) :many)
+                     (> (:ncalled step) 0))
+                )
+          :ok :error
+          ))
   )
 
 (defn validate-target-function-counts [script-atoms]
@@ -64,9 +87,12 @@
     (if (not-empty atoms)
       (let [function @(first atoms)
             count-results (reduce validate-step-counts [] (:steps function))
-            errors? (not-every? #(= :ok %) count-results)]
-        (if errors?
-          (throw (ex-info (str "VERIFY ERROR: " (:function function) " was not called as many times as specified") {::verify-error true}))                    )
+            errors? (some #(= :error %) count-results)]
+        (when errors?
+          (throw (ex-info (str "VERIFY ERROR: "
+                               (:function function)
+                               " was not called as many times as specified")
+                          {::verify-error true})))
         (recur (rest atoms))))
     )
   )
