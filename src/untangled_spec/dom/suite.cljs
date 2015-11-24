@@ -175,7 +175,7 @@
                          (dom/div nil
                                   (if (:message test-result-data) (dom/h3 nil (:message test-result-data)))
                                   (dom/table nil
-                                             (dom/tbody
+                                             (dom/tbody nil
                                                (dom/tr nil (dom/td #js {:className "test-result-title"} "Actual")
                                                        (dom/td #js {:className "test-result"} (dom/code nil (:actual test-result-data))))
                                                (dom/tr nil (dom/td #js {:className "test-result-title"} "Expected")
