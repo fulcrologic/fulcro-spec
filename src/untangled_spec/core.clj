@@ -3,6 +3,7 @@
             [clojure.string :as s]
             [untangled-spec.provided :as p]
             [untangled-spec.async :as async]
+            [untangled-spec.assertions :refer [triple->assertion]]
             )
   )
 
@@ -25,9 +26,9 @@
    but must occur inside a specification. If the behavior is not machine
    testable then include the keyword :manual-test just after the string
    description instead of code.
-   
+
    (behavior \"blows up when the moon is full\" :manual-test)
-   
+
    "
   [string & body]
   (let [options (into #{} (take-while keyword? body))
@@ -54,7 +55,6 @@
      ~@forms
      )
   )
-
 
 (defmacro async
   "Adds an event to the event queue with the specified time and callback function.
@@ -85,10 +85,5 @@ Must be wrapped by with-timeline.
 
 (defmacro assertions [& forms]
   (let [triples (partition 3 forms)
-        asserts (map (fn [[actual _ expected]] (list 'is (list '= actual expected) (str "ASSERTION: " actual " => " expected))) triples)
-        ]
-    `(do
-       ~@asserts
-       )
-    )
-  )
+        asserts (map triple->assertion triples)]
+    `(do ~@asserts)))
