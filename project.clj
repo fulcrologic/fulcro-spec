@@ -15,10 +15,14 @@
   :plugins [[lein-cljsbuild "1.1.0"]
             [lein-figwheel "0.4.1"]]
 
-  :repositories [["releases" {:url           "https://artifacts.buehner-fry.com/artifactory/internal-release"
-                              :sign-releases false}
-                  "snapshots" {:url           "https://artifacts.buehner-fry.com/artifactory/internal-snapshots"
-                               :sign-releases false}]]
+  :repositories [["releases" "https://artifacts.buehner-fry.com/artifactory/internal-release"]
+                 ["third-party" "https://artifacts.buehner-fry.com/artifactory/internal-3rdparty"]]
+
+  :deploy-repositories [["releases" {:url           "https://artifacts.buehner-fry.com/artifactory/internal-release"
+                                     :snapshots     false
+                                     :sign-releases false}]
+                        ["snapshots" {:url           "https://artifacts.buehner-fry.com/artifactory/internal-snapshots"
+                                      :sign-releases false}]]
 
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js"]
   :cljsbuild {
