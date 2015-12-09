@@ -166,6 +166,7 @@
                                          )
                                )
                              )
+
                    (behavior "Can do mocking without output"
                                (let [expanded (p/provided-fn :skip-output '(f n) '=> '(+ n 1) '(f n) '=2x=> '(* 3 n) '(is (= 1 2)))
                                      redef-block (last expanded)
@@ -219,6 +220,12 @@
                                                ))
                                    )
                          )
+
+               (provided "allow stubs to throw exceptions"
+                         (my-square n) => (throw (ex-info "throw!" {}))
+                         (is (thrown? #?(:clj ExceptionInfo
+                                              :cljs js/Object)
+                                      (my-square 1))))
 
                (behavior "allows any number of trailing forms"
                          (let [detector (atom false)]
