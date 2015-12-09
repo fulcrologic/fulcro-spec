@@ -55,10 +55,13 @@
               (throw (ex-info (str target-function
                                    " was called with wrong arguments")
                               {})))
-            (let [rv (apply stub args)]
-              (increment-script-call-count script-atom @step)
-              (if (step-complete script-atom @step) (swap! step inc))
-              rv)
+            (try (apply stub args)
+                 (catch #?(:clj Exception :cljs js/Object) e
+                   (throw e))
+                 (finally
+                   (increment-script-call-count script-atom @step)
+                   (if (step-complete script-atom @step) (swap! step inc))
+                   ))
             )
           (throw (ex-info (str "VERIFY ERROR: " target-function " was called too many times!")
                           {::verify-error true

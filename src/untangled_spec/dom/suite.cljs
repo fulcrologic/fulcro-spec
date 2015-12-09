@@ -1,5 +1,6 @@
 (ns ^:figwheel-always untangled-spec.dom.suite
   (:require
+    goog.object
     [om.dom :as dom]
     [goog.dom :as gdom]
     [om.next :as om :refer-macros [defui]]

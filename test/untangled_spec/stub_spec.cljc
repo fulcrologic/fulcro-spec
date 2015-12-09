@@ -32,9 +32,11 @@
 
 (specification "step-complete"
                (let [script (make-simple-script)]
-                 (behavior "is false when call count is less than expected count" (is (not (s/step-complete script 0))))
+                 (behavior "is false when call count is less than expected count"
+                           (is (not (s/step-complete script 0))))
                  (s/increment-script-call-count script 0)
-                 (behavior "is true when call count reaches expected count" (is (s/step-complete script 0)))
+                 (behavior "is true when call count reaches expected count"
+                           (is (s/step-complete script 0)))
                  )
                )
 
@@ -43,6 +45,8 @@
                  [
                   (s/make-step to-call 1 (or literals []))
                   ]))
+
+(defn throws! [n] (inc n))
 
 (specification "scripted-stub"
                (behavior "calls the stub function"
