@@ -87,24 +87,22 @@
 (defn make-testreport
   ([] (make-testreport []))
   ([initial-items]
-   {
-    :id            (uuid/uuid-string (uuid/make-random-uuid))
+   {:id            (uuid/uuid-string (uuid/make-random-uuid))
     :report/filter :all
     :summary       ""
     :namespaces    []
     :passed        0
     :failed        0
-    :error         0 }))
+    :error         0}))
 
 
 (defn make-testitem
   [name]
-  {
-   :id           (uuid/uuid-string (uuid/make-random-uuid))
+  {:id           (uuid/uuid-string (uuid/make-random-uuid))
    :name         name
    :status       :pending
    :test-items   []
-   :test-results [] })
+   :test-results []})
 
 (defn make-manual [name] (make-testitem (str name " (MANUAL TEST)")))
 
@@ -121,12 +119,10 @@
   [name]
   {:id         (uuid/uuid-string (uuid/make-random-uuid))
    :name       name
-   :folded?    false
    :test-items []
-   :status     :pending })
+   :status     :pending})
 
 (defn item-path [item index] [:test-items :id (:id item) index])
-
 
 (defn result-path [item index] [:test-results :id (:id item) index])
 (defn itemclass [status]
@@ -187,9 +183,11 @@
 
 (declare test-item)
 
-(defui TestItem Object (render [this] (let [test-item-data (om/props this)
-                     filter (:report/filter test-item-data)
-                     ]
+(defui TestItem
+       Object
+       (render [this]
+               (let [test-item-data (om/props this)
+                     filter (:report/filter test-item-data) ]
                  (dom/li #js {:className "test-item "}
                          (dom/div #js {:className (filter-class test-item-data)}
                                   (dom/span #js {:className (itemclass (:status test-item-data))}
@@ -199,25 +197,23 @@
                                                 (:test-results test-item-data)))
                                   (dom/ul #js {:className "test-list"}
                                           (mapv (comp test-item #(assoc % :report/filter filter))
-                                                (:test-items test-item-data)))
-                                  )
-                         ))))
+                                                (:test-items test-item-data))))))))
 
 (def test-item (om/factory TestItem {:keyfn :id}))
 
 (defui TestNamespace
        Object
+       (initLocalState [this] {:folded? false})
        (render
          [this]
          (let [tests-by-namespace (om/props this)
                filter (:report/filter tests-by-namespace)
-               folded? (:folded? tests-by-namespace)
-               toggle-folded! (:toggle-folded! tests-by-namespace)]
+               {:keys [folded?]} (om/get-state this)]
            (dom/li #js {:className "test-item"}
                    (dom/div #js {:className "test-namespace"}
                             (dom/a #js {:href "#"
                                         :style #js {:textDecoration "none"} ;; TODO: refactor to css
-                                        :onClick   toggle-folded!}
+                                        :onClick   #(om/update-state! this update :folded? not)}
                                    (dom/h2 #js {:className (itemclass (:status tests-by-namespace))}
                                            (if folded? \u25BA \u25BC)
                                            " Testing " (:name tests-by-namespace)))
@@ -229,15 +225,14 @@
 
 (defui TestReport
        static om/IQuery
-       (query [this] [:top :report/filter :folded/namespaces])
+       (query [this] [:top :report/filter])
        Object
        (render [this]
                (let [props (om/props this)
                      test-report-data (-> props :top)
-                     current-filter (-> props :report/filter)
-                     folded-namespaces (-> props :folded/namespaces)
-                     make-toggle-fn (fn [n] #(om/transact! this `[(~'toggle-folded {:ns-name ~n})]))]
+                     current-filter (-> props :report/filter)]
                  (dom/section #js {:className "test-report"}
+                              ;TODO: move to defui filters
                               (dom/div #js {:name "filters" :className "filter-controls"}
                                        (dom/label #js {:htmlFor "filters"} "Filter: ")
                                        (dom/a #js {:className (if (= current-filter :all) "selected" "")
@@ -249,12 +244,11 @@
                                        (dom/a #js {:className (if (= current-filter :failed) "selected" "")
                                                    :onClick   #(om/transact! this '[(filter-failed)])}
                                               "Failed"))
-                              (dom/ul #js {:className "test-list"} (mapv (comp test-namespace
-                                                                               #(assoc %
-                                                                                       :report/filter current-filter
-                                                                                       :toggle-folded! (make-toggle-fn (:name %))
-                                                                                       :folded? (contains? folded-namespaces (:name %))))
-                                                                         (:namespaces test-report-data)))
+                              (dom/ul #js {:className "test-list"}
+                                      (mapv (comp test-namespace
+                                                  #(assoc % :report/filter current-filter))
+                                            (:namespaces test-report-data)))
+                              ;TODO: move to defui test-count
                               (let [rollup-stats (reduce (fn [acc item]
                                                            (let [counts [(:passed item) (:failed item) (:error item)
                                                                          (+ (:passed item) (:failed item) (:error item))]]
@@ -360,10 +354,6 @@
 (defmethod om-write 'filter-all [{:keys [state]} _ _] (swap! state assoc :report/filter :all))
 (defmethod om-write 'filter-failed [{:keys [state]} _ _] (swap! state assoc :report/filter :failed))
 (defmethod om-write 'filter-manual [{:keys [state]} _ _] (swap! state assoc :report/filter :manual))
-(defmethod om-write 'toggle-folded [{:keys [state]} _ {:keys [ns-name]}]
-  {:action #(swap! state update :folded/namespaces (fn [nss]
-                                                     ((if (nss ns-name) disj conj) nss ns-name)))
-   :value [:folded/namespaces]})
 
 (def test-parser (om/parser {:read om-read :mutate om-write}))
 
@@ -383,7 +373,6 @@
   [target]
   (let [state (atom {:top (make-testreport)
                      :report/filter :all
-                     :folded/namespaces #{}
                      :time (js/Date.)})]
     (map->TestSuite {:app-state      state
                      :reconciler     (om/reconciler {:state state :parser test-parser})
