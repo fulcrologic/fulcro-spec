@@ -223,6 +223,25 @@
 
 (def test-namespace (om/factory TestNamespace {:keyfn :name}))
 
+(defui Filters
+       Object
+       (render [this]
+               (let [{:current-filter :report/filter
+                      :keys [set-filter!]} (om/props this)]
+                 (dom/div #js {:name "filters" :className "filter-controls"}
+                        (dom/label #js {:htmlFor "filters"} "Filter: ")
+                        (dom/a #js {:className (if (= current-filter :all) "selected" "")
+                                    :onClick   (set-filter! :all)}
+                               "All")
+                        (dom/a #js {:className (if (= current-filter :manual) "selected" "")
+                                    :onClick   (set-filter! :manual)}
+                               "Manual")
+                        (dom/a #js {:className (if (= current-filter :failed) "selected" "")
+                                    :onClick   (set-filter! :failed)}
+                               "Failed")))))
+
+(def filters (om/factory Filters))
+
 (defui TestReport
        static om/IQuery
        (query [this] [:top :report/filter])
@@ -230,20 +249,12 @@
        (render [this]
                (let [props (om/props this)
                      test-report-data (-> props :top)
-                     current-filter (-> props :report/filter)]
+                     current-filter (-> props :report/filter)
+                     set-filter! (fn [new-filter]
+                                   #(om/transact! this `[(~'set-filter {:new-filter ~new-filter})]))]
                  (dom/section #js {:className "test-report"}
-                              ;TODO: move to defui filters
-                              (dom/div #js {:name "filters" :className "filter-controls"}
-                                       (dom/label #js {:htmlFor "filters"} "Filter: ")
-                                       (dom/a #js {:className (if (= current-filter :all) "selected" "")
-                                                   :onClick   #(om/transact! this '[(filter-all)])}
-                                              "All")
-                                       (dom/a #js {:className (if (= current-filter :manual) "selected" "")
-                                                   :onClick   #(om/transact! this '[(filter-manual)])}
-                                              "Manual")
-                                       (dom/a #js {:className (if (= current-filter :failed) "selected" "")
-                                                   :onClick   #(om/transact! this '[(filter-failed)])}
-                                              "Failed"))
+                              (filters {:report/filter current-filter
+                                        :set-filter! set-filter!})
                               (dom/ul #js {:className "test-list"}
                                       (mapv (comp test-namespace
                                                   #(assoc % :report/filter current-filter))
@@ -351,9 +362,8 @@
 
 (defn om-read [{:keys [state]} key _] {:value (get @state key)})
 (defmulti om-write om/dispatch)
-(defmethod om-write 'filter-all [{:keys [state]} _ _] (swap! state assoc :report/filter :all))
-(defmethod om-write 'filter-failed [{:keys [state]} _ _] (swap! state assoc :report/filter :failed))
-(defmethod om-write 'filter-manual [{:keys [state]} _ _] (swap! state assoc :report/filter :manual))
+(defmethod om-write 'set-filter [{:keys [state]} _ {:keys [new-filter]}]
+  (swap! state assoc :report/filter new-filter))
 
 (def test-parser (om/parser {:read om-read :mutate om-write}))
 
