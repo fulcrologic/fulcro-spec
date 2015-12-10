@@ -5,8 +5,9 @@
     [goog.dom :as gdom]
     [om.next :as om :refer-macros [defui]]
     [cljs-uuid-utils.core :as uuid]
-    )
-  )
+    [cljs.stacktrace :refer [parse-stacktrace]]))
+
+(enable-console-print!)
 
 (defprotocol ITest
   (render-tests [this] "Render the test results to the DOM")
@@ -25,21 +26,16 @@
   (end-specification [this] "Tests are reporting the end of a specification")
   (begin-namespace [this name] "Tests are reporting the start of a namespace")
   (push-test-item-path [this test-item index] "Push a new test items onto the test item path")
-  (pop-test-item-path [this] "Pops the last test item off of the test item path")
-  )
+  (pop-test-item-path [this] "Pops the last test item off of the test item path"))
 
 (defn- find-first [pred coll] (first (filter pred coll)))
 
 (defn checked-index [items index id-keyword value]
   (let [index-valid? (> (count items) index)
-        proposed-item (if index-valid? (get items index) nil)
-        ]
+        proposed-item (if index-valid? (get items index) nil) ]
     (cond (and proposed-item
                (= value (get proposed-item id-keyword))) index
-          :otherwise (->> (map-indexed vector items) (find-first #(= value (id-keyword (second %)))) (first))
-          )
-    )
-  )
+          :otherwise (->> (map-indexed vector items) (find-first #(= value (id-keyword (second %)))) (first)))))
 
 (defn resolve-data-path [state path-seq]
   (reduce (fn [real-path path-ele]
@@ -52,20 +48,14 @@
                         lookup-function (second path-ele)
                         target-value (nth path-ele 2)
                         proposed-index (nth path-ele 3)
-                        index (checked-index state-vector proposed-index lookup-function target-value)
-                        ]
+                        index (checked-index state-vector proposed-index lookup-function target-value) ]
                     (if index
                       (conj real-path vector-key index)
                       (do
                         (js/console.log "ERROR: NO ITEM FOUND AT DATA PATH")
                         (cljs.pprint/pprint path-seq)
-                        real-path
-                        )
-                      )
-                    )))
-              (conj real-path path-ele)
-              )
-            )
+                        real-path)))))
+              (conj real-path path-ele)))
           [] path-seq))
 
 (defn translate-item-path [app-state test-item-path]
@@ -76,8 +66,7 @@
       result
       (let [resolved-path (resolve-data-path data (vector (seq (take 4 path))))
             context-data (get-in data resolved-path)]
-        (recur context-data (drop 4 path) (concat result resolved-path))))
-    ))
+        (recur context-data (drop 4 path) (concat result resolved-path))))))
 
 (declare TestItem)
 
@@ -105,10 +94,7 @@
     :namespaces    []
     :passed        0
     :failed        0
-    :error         0
-    }
-    )
-  )
+    :error         0 }))
 
 
 (defn make-testitem
@@ -118,9 +104,7 @@
    :name         name
    :status       :pending
    :test-items   []
-   :test-results []
-   }
-  )
+   :test-results [] })
 
 (defn make-manual [name] (make-testitem (str name " (MANUAL TEST)")))
 
@@ -131,8 +115,7 @@
    :message  (:message result-detail)
    :where    (:where result-detail)
    :expected (:expected result-detail)
-   :actual   (:actual result-detail)}
-  )
+   :actual   (:actual result-detail)})
 
 (defn make-tests-by-namespace
   [name]
@@ -140,8 +123,7 @@
    :name       name
    :folded?    false
    :test-items []
-   :status     :pending
-   })
+   :status     :pending })
 
 (defn item-path [item index] [:test-items :id (:id item) index])
 
@@ -153,8 +135,7 @@
     (= status :manual) "test-manually"
     (= status :passed) "test-passed"
     (= status :error) "test-error"
-    (= status :failed) "test-failed")
-  )
+    (= status :failed) "test-failed"))
 
 (declare TestResult)
 
@@ -164,35 +145,49 @@
     (cond
       (and (= :failed filter) (not= :error state) (not= :failed state)) "hidden"
       (and (= :manual filter) (not= :manual state)) "hidden"
-      (= :all filter) ""
-      ))
-  )
+      (= :all filter) "")))
+
+(defn stack->trace [st] (parse-stacktrace {} st {} {}))
+
+(defui TestSubResult
+       Object
+       (initLocalState [this] {:folded? true})
+       (render [this]
+               (let [{:keys [title value]} (om/props this)
+                     {:keys [folded?]} (om/get-state this)]
+                 (dom/tr nil
+                         (dom/td #js {:className "test-result-title"} title)
+                         (dom/td #js {:className "test-result"
+                                      :onClick #(om/update-state! this update :folded? not)}
+                                 (if (.-stack value)
+                                   (dom/code #js {:className "stack-trace"}
+                                             (if folded? \u25BA \u25BC)
+                                             (str value)
+                                             (dom/div #js {:className (if folded? "hidden" nil)}
+                                                      (some-> value .-stack stack->trace)))
+                                   (dom/code nil (str value))))))))
+
+(def test-sub-result (om/factory TestSubResult))
 
 (defui TestResult
        Object
        (render [this]
-               (let [test-result-data (om/props this)]
+               (let [{:keys [message actual expected]} (om/props this)]
                  (dom/li nil
                          (dom/div nil
-                                  (if (:message test-result-data) (dom/h3 nil (:message test-result-data)))
+                                  (if message (dom/h3 nil message))
                                   (dom/table nil
                                              (dom/tbody nil
-                                               (dom/tr nil (dom/td #js {:className "test-result-title"} "Actual")
-                                                       (dom/td #js {:className "test-result"} (dom/code nil (:actual test-result-data))))
-                                               (dom/tr nil (dom/td #js {:className "test-result-title"} "Expected")
-                                                       (dom/td #js {:className "test-result"} (dom/code nil (:expected test-result-data))))))
-                                  )
-                         ))
-               ))
+                                                        (test-sub-result {:title "Actual"
+                                                                          :value actual})
+                                                        (test-sub-result {:title "Expected"
+                                                                          :value (or expected "")}))))))))
 
 (def test-result (om/factory TestResult {:keyfn :id}))
 
 (declare test-item)
 
-(defui TestItem
-       Object
-       (render [this]
-               (let [test-item-data (om/props this)
+(defui TestItem Object (render [this] (let [test-item-data (om/props this)
                      filter (:report/filter test-item-data)
                      ]
                  (dom/li #js {:className "test-item "}
@@ -228,9 +223,7 @@
                                            " Testing " (:name tests-by-namespace)))
                             (dom/ul #js {:className (if folded? "hidden" "test-list")}
                                     (mapv (comp test-item #(assoc % :report/filter filter))
-                                          (:test-items tests-by-namespace)))
-                            )
-                   ))))
+                                          (:test-items tests-by-namespace))))))))
 
 (def test-namespace (om/factory TestNamespace {:keyfn :name}))
 
@@ -260,14 +253,12 @@
                                                                                #(assoc %
                                                                                        :report/filter current-filter
                                                                                        :toggle-folded! (make-toggle-fn (:name %))
-                                                                                       :folded? (contains? folded-namespaces (:name %))
-                                                                                       ))
+                                                                                       :folded? (contains? folded-namespaces (:name %))))
                                                                          (:namespaces test-report-data)))
                               (let [rollup-stats (reduce (fn [acc item]
                                                            (let [counts [(:passed item) (:failed item) (:error item)
                                                                          (+ (:passed item) (:failed item) (:error item))]]
-                                                             (map + acc counts)
-                                                             ))
+                                                             (map + acc counts)))
                                                          [0 0 0 0] (:namespaces test-report-data))]
                                 (if (< 0 (+ (nth rollup-stats 1) (nth rollup-stats 2)))
                                   (change-favicon-to-color "#d00")
@@ -276,10 +267,7 @@
                                          (dom/h2 nil
                                                  (str "Tested " (count (:namespaces test-report-data)) " namespaces containing "
                                                       (nth rollup-stats 3) " assertions. "
-                                                      (nth rollup-stats 0) " passed " (nth rollup-stats 1) " failed " (nth rollup-stats 2) " errors")
-                                                 )
-                                         ))
-                              ))))
+                                                      (nth rollup-stats 0) " passed " (nth rollup-stats 1) " failed " (nth rollup-stats 2) " errors"))))))))
 
 (defrecord TestSuite [app-state dom-target reconciler renderer test-item-path]
   ITest
@@ -300,19 +288,15 @@
   (begin-namespace [this name]
     (let [namespaces (get-in @app-state [:top :namespaces])
           namespace-index (first (keep-indexed (fn [idx val] (when (= (:name val) name) idx)) namespaces))
-          name-space-location (if namespace-index namespace-index (count namespaces))
-          ]
+          name-space-location (if namespace-index namespace-index (count namespaces)) ]
       (reset! test-item-path [:namespaces :name name name-space-location])
-      (swap! app-state #(assoc-in % [:top :namespaces name-space-location] (make-tests-by-namespace name))))
-    )
+      (swap! app-state #(assoc-in % [:top :namespaces name-space-location] (make-tests-by-namespace name)))))
 
   (begin-specification [this spec]
     (let [test-item (make-testitem spec)
           test-items-count (count (get-in @app-state (concat (translate-item-path app-state @test-item-path) [:test-items])))]
       (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
-      (push-test-item-path this test-item test-items-count)
-      )
-    )
+      (push-test-item-path this test-item test-items-count)))
 
   (end-specification [this] (pop-test-item-path this))
 
@@ -321,9 +305,7 @@
           parent-test-item (get-in @app-state (translate-item-path app-state @test-item-path))
           test-items-count (count (:test-items parent-test-item))]
       (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
-      (push-test-item-path this test-item test-items-count)
-      )
-    )
+      (push-test-item-path this test-item test-items-count)))
 
   (end-behavior [this] (pop-test-item-path this))
 
@@ -332,9 +314,7 @@
           parent-test-item (get-in @app-state (translate-item-path app-state @test-item-path))
           test-items-count (count (:test-items parent-test-item))]
       (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
-      (push-test-item-path this test-item test-items-count)
-      )
-    )
+      (push-test-item-path this test-item test-items-count)))
 
   (end-manual [this]
     (set-test-result this :manual)
@@ -345,41 +325,36 @@
     (let [test-item (make-testitem provided)
           test-items-count (count (get-in @app-state (concat (translate-item-path app-state @test-item-path) [:test-items])))]
       (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
-      (push-test-item-path this test-item test-items-count)
-      )
-    )
+      (push-test-item-path this test-item test-items-count)))
 
   (end-provided [this] (pop-test-item-path this))
 
   (pass [this] (set-test-result this :passed))
 
-  (error [this detail] (let [translated-item-path (translate-item-path app-state @test-item-path)
-                             current-test-item (get-in @app-state translated-item-path)
-                             test-result (make-test-result :error detail)
-                             test-result-path (concat translated-item-path
-                                                      [:test-results (count (:test-results current-test-item))])]
-                         (set-test-result this :error)
-                         (swap! app-state #(assoc-in % test-result-path test-result))
-                         ))
+  (error [this detail]
+    (let [translated-item-path (translate-item-path app-state @test-item-path)
+          current-test-item (get-in @app-state translated-item-path)
+          test-result (make-test-result :error detail)
+          test-result-path (concat translated-item-path
+                                   [:test-results (count (:test-results current-test-item))])]
+      (set-test-result this :error)
+      (swap! app-state #(assoc-in % test-result-path test-result))))
 
-  (fail [this detail] (let [translated-item-path (translate-item-path app-state @test-item-path)
-                            current-test-item (get-in @app-state translated-item-path)
-                            test-result (make-test-result :failed detail)
-                            test-result-path (concat translated-item-path
-                                                     [:test-results (count (:test-results current-test-item))])]
-                        (set-test-result this :failed)
-                        (swap! app-state #(assoc-in % test-result-path test-result))
-                        ))
+  (fail [this detail]
+    (let [translated-item-path (translate-item-path app-state @test-item-path)
+          current-test-item (get-in @app-state translated-item-path)
+          test-result (make-test-result :failed detail)
+          test-result-path (concat translated-item-path
+                                   [:test-results (count (:test-results current-test-item))])]
+      (set-test-result this :failed)
+      (swap! app-state #(assoc-in % test-result-path test-result))))
 
   (summary [this stats]
     (let [translated-item-path (translate-item-path app-state @test-item-path)]
       (swap! app-state #(assoc-in % (concat translated-item-path [:passed]) (:passed stats)))
       (swap! app-state #(assoc-in % (concat translated-item-path [:failed]) (:failed stats)))
-      (swap! app-state #(assoc-in % (concat translated-item-path [:error]) (:error stats)))
-      ))
-  )
+      (swap! app-state #(assoc-in % (concat translated-item-path [:error]) (:error stats))))))
 
-(enable-console-print!)
 (defn om-read [{:keys [state]} key _] {:value (get @state key)})
 (defmulti om-write om/dispatch)
 (defmethod om-write 'filter-all [{:keys [state]} _ _] (swap! state assoc :report/filter :all))
@@ -388,8 +363,7 @@
 (defmethod om-write 'toggle-folded [{:keys [state]} _ {:keys [ns-name]}]
   {:action #(swap! state update :folded/namespaces (fn [nss]
                                                      ((if (nss ns-name) disj conj) nss ns-name)))
-   :value [:folded/namespaces]}
-  )
+   :value [:folded/namespaces]})
 
 (def test-parser (om/parser {:read om-read :mutate om-write}))
 
@@ -415,5 +389,4 @@
                      :reconciler     (om/reconciler {:state state :parser test-parser})
                      :renderer       TestReport
                      :dom-target     target
-                     :test-item-path (atom [])
-                     })))
+                     :test-item-path (atom []) })))
