@@ -242,6 +242,28 @@
 
 (def filters (om/factory Filters))
 
+(defui TestCount
+       Object
+       (render [this]
+               (let [namespaces (om/props this)
+                     rollup-stats (reduce (fn [acc item]
+                                            (let [counts [(:passed item) (:failed item) (:error item)
+                                                          (+ (:passed item) (:failed item) (:error item))]]
+                                              (map + acc counts)))
+                                          [0 0 0 0] namespaces)]
+                 (if (< 0 (+ (nth rollup-stats 1) (nth rollup-stats 2)))
+                   (change-favicon-to-color "#d00")
+                   (change-favicon-to-color "#0d0"))
+                 (dom/div #js {:className "test-count"}
+                          (dom/h2 nil
+                                  (str "Tested " (count namespaces) " namespaces containing "
+                                       (nth rollup-stats 3) " assertions. "
+                                       (nth rollup-stats 0) " passed "
+                                       (nth rollup-stats 1) " failed "
+                                       (nth rollup-stats 2) " errors"))))))
+
+(def test-count (om/factory TestCount))
+
 (defui TestReport
        static om/IQuery
        (query [this] [:top :report/filter])
@@ -259,20 +281,7 @@
                                       (mapv (comp test-namespace
                                                   #(assoc % :report/filter current-filter))
                                             (:namespaces test-report-data)))
-                              ;TODO: move to defui test-count
-                              (let [rollup-stats (reduce (fn [acc item]
-                                                           (let [counts [(:passed item) (:failed item) (:error item)
-                                                                         (+ (:passed item) (:failed item) (:error item))]]
-                                                             (map + acc counts)))
-                                                         [0 0 0 0] (:namespaces test-report-data))]
-                                (if (< 0 (+ (nth rollup-stats 1) (nth rollup-stats 2)))
-                                  (change-favicon-to-color "#d00")
-                                  (change-favicon-to-color "#0d0"))
-                                (dom/div #js {:className "test-count"}
-                                         (dom/h2 nil
-                                                 (str "Tested " (count (:namespaces test-report-data)) " namespaces containing "
-                                                      (nth rollup-stats 3) " assertions. "
-                                                      (nth rollup-stats 0) " passed " (nth rollup-stats 1) " failed " (nth rollup-stats 2) " errors"))))))))
+                              (test-count (:namespaces test-report-data))))))
 
 (defrecord TestSuite [app-state dom-target reconciler renderer test-item-path]
   ITest
