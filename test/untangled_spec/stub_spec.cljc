@@ -15,14 +15,6 @@
                   (s/make-step 'stub 1 [])
                   ]))
 (specification "increment-script-call-count"
-
-               (behavior "WIP TODO FIXME KILLME"
-                 (is (odd? 1))
-                 (is (thrown-with-msg? Exception #"asdf"
-                                       (throw (ex-info "asdf" {:foo :bar}))))
-                 (assertions
-                   (odd? 1) => true))
-
                (behavior "finds and increments the correct step"
                          (let [script (make-simple-script)]
 
