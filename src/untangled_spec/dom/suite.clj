@@ -1,6 +1,5 @@
 (ns untangled-spec.dom.suite)
 
-
 (defn define-test-methods [name test-report-keyword]
   `(
      (cljs.core/defmethod cljs.test/report ~(keyword name) [~'m])
@@ -10,18 +9,14 @@
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :error] [~'m]
        (cljs.test/inc-report-counter! :error)
-       (let [~'detail {:where    (cljs.test/testing-vars-str ~'m)
-                       :message  (:message ~'m)
-                       :expected (:expected ~'m)
-                       :actual   (:actual ~'m)}]
+       (println :M ~'m)
+       (let [~'detail (merge {:where (cljs.test/testing-vars-str ~'m)} ~'m)]
          (untangled-spec.dom.suite/fail ~name ~'detail))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :fail] [~'m]
        (cljs.test/inc-report-counter! :fail)
-       (let [~'detail {:where    (cljs.test/testing-vars-str ~'m)
-                       :message  (:message ~'m)
-                       :expected (:expected ~'m)
-                       :actual   (:actual ~'m)}]
+       (println :M ~'m)
+       (let [~'detail (merge {:where (cljs.test/testing-vars-str ~'m)} ~'m)]
          (untangled-spec.dom.suite/fail ~name ~'detail))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-test-ns] [~'m]
