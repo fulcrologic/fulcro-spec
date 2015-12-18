@@ -1,3 +1,3 @@
 lein jar
 lein pom
-lein localrepo install -p pom.xml target/untangled-spec-0.2.2-SNAPSHOT.jar untangled-spec 0.2.2-SNAPSHOT
+lein localrepo install -p pom.xml target/untangled-spec-0.2.3.jar untangled-spec 0.2.3
