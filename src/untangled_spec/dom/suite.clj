@@ -12,16 +12,16 @@
        (cljs.test/inc-report-counter! :error)
        (let [~'detail {:where    (cljs.test/testing-vars-str ~'m)
                        :message  (:message ~'m)
-                       :expected (str (:expected ~'m))
-                       :actual   (str (:actual ~'m))}]
+                       :expected (:expected ~'m)
+                       :actual   (:actual ~'m)}]
          (untangled-spec.dom.suite/fail ~name ~'detail))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :fail] [~'m]
        (cljs.test/inc-report-counter! :fail)
        (let [~'detail {:where    (cljs.test/testing-vars-str ~'m)
                        :message  (:message ~'m)
-                       :expected (str (:expected ~'m))
-                       :actual   (str (:actual ~'m))}]
+                       :expected (:expected ~'m)
+                       :actual   (:actual ~'m)}]
          (untangled-spec.dom.suite/fail ~name ~'detail))
        )
      (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-test-ns] [~'m]

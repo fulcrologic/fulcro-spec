@@ -81,7 +81,7 @@
                                         (first '~criteria)
                                         "' to be thrown!")
                                    {::type ::internal}))
-                          (catch #?(:clj Exception
+                          (catch #?(:clj Throwable
                                     :cljs js/Object) ~'e
                             (exception-matches? ~'e ~@criteria)))
                      (->msg '~should-throw '~arrow '~criteria)
