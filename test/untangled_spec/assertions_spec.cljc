@@ -87,6 +87,10 @@
           (ex-info x y) => (Exception. (str x y))
           (assertions
             [:foo :bar] =throws=> (Exception #"Expected an 'Exception'")))
+        (behavior "=throws=> can catch AssertionErrors"
+          (let [f (fn [x] {:pre [(even? x)]} (inc x))]
+            (assertions
+              (f 1) =throws=> (AssertionError #"even\? x"))))
         (behavior "=> catches unexpected exceptions"
           (let [e (ex-info "asdf" {})]
             (assertions
