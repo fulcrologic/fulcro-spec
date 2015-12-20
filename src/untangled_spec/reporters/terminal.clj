@@ -1,17 +1,18 @@
-(ns untangled-spec.report
+(ns untangled-spec.reporters.terminal
   (:require [clojure.test :as t :refer (are is deftest with-test run-tests testing testing-vars-str)]
             [clojure.stacktrace :as stack]
-            [untangled-spec.report-data :as rd]
+            [untangled-spec.reporters.impl.terminal :as report]
             [colorize.core :as c]
             [clojure.data :refer [diff]]
             [io.aviso.exception :refer [format-exception *traditional*]])
   (:import clojure.lang.ExceptionInfo))
 
 (defn color-str [status & strings]
-  (cond (= status :passed) (apply c/green strings)
-        (= status :failed) (apply c/red strings)
-        (= status :error) (apply c/red strings)
-        :otherwise (apply c/reset strings)))
+  (let [status->color {:passed c/green
+                       :failed c/red
+                       :error  c/red}
+        color-fn (or (status->color status) c/reset)]
+    (apply color-fn strings)))
 
 (defn space-level [level]
   (apply str (repeat (* 2 level) " ")))
@@ -96,7 +97,7 @@
   "Prints the current report data from the report data state and applies colors based on test results"
   []
   (t/with-test-out
-    (let [report-data @rd/*test-state*
+    (let [report-data @report/*test-state*
           namespaces (get report-data :namespaces)]
       (try (->> namespaces
                 (mapv #(print-namespace %)))
@@ -115,8 +116,8 @@
 (defmethod untangled-report :default [m])
 
 (defmethod untangled-report :pass [m]
-    (t/inc-report-counter :pass)
-    (rd/pass))
+  (t/inc-report-counter :pass)
+  (report/pass))
 
 (defmethod untangled-report :error [m]
   (t/inc-report-counter :error)
@@ -126,7 +127,7 @@
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
                 :extra      (:extra m)}]
-    (rd/error detail)))
+    (report/error detail)))
 
 (defmethod untangled-report :fail [m]
   (t/inc-report-counter :fail)
@@ -136,60 +137,47 @@
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
                 :extra      (:extra m)}]
-    (rd/fail detail)))
+    (report/fail detail)))
 
 (defmethod untangled-report :begin-test-ns [m]
-  (rd/begin-namespace (ns-name (:ns m)))
-  )
+  (report/begin-namespace (ns-name (:ns m))))
 
 (defmethod untangled-report :end-test-ns [m]
-  (rd/end-namespace)
-  )
-
+  (report/end-namespace))
 
 (defmethod untangled-report :begin-specification [m]
-  (rd/begin-specification (:string m)))
-
+  (report/begin-specification (:string m)))
 
 (defmethod untangled-report :end-specification [m]
-  (rd/end-specification)
-  )
+  (report/end-specification))
 
 (defmethod untangled-report :begin-behavior [m]
-  (rd/begin-behavior (:string m))
-  )
+  (report/begin-behavior (:string m)))
 
 (defmethod untangled-report :end-behavior [m]
-  (rd/end-behavior)
-  )
+  (report/end-behavior))
 
 (defmethod untangled-report :begin-manual [m]
-  (rd/begin-behavior (str (:string m) "(MANUAL)"))
-  )
+  (report/begin-behavior (str (:string m) "(MANUAL)")))
 
 (defmethod untangled-report :end-manual [m]
-  (rd/end-behavior)
-  )
+  (report/end-behavior))
 
 (defmethod untangled-report :begin-provided [m]
-  (rd/begin-provided (:string m))
-  )
+  (report/begin-provided (:string m)))
 
 (defmethod untangled-report :end-provided [m]
-  (rd/end-provided)
-  )
+  (report/end-provided))
 
 (defmethod untangled-report :summary [m]
   (let [stats {:tested (:test m) :passed (:pass m)
                :failed (:fail m) :error (:error m)}]
-    (rd/summary stats)
-    (print-report-data)
-    )
-  )
+    (report/summary stats)
+    (print-report-data)))
 
 (defmacro with-untangled-output
   "Execute body with modified test reporting functions that produce
-   outline output"
+  outline output"
   [& body]
   `(binding [t/report untangled-report]
      ~@body))

@@ -48,5 +48,5 @@
                                   }
                    :env          {:dev true}
                    }}
-  :test-refresh {:report untangled-spec.report/untangled-report}
+  :test-refresh {:report untangled-spec.reporters.terminal/untangled-report}
   )

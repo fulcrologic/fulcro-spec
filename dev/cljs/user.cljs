@@ -5,11 +5,10 @@
             untangled-spec.async-spec
             untangled-spec.stub-spec
             untangled-spec.provided-spec
-            untangled-spec.report
+            untangled-spec.reporters.console
             untangled-spec.timeline-spec
             untangled-spec.dom.events-spec
             untangled-spec.dom.util-spec
-            [untangled-spec.runner.browser :as b]
             [cljs.test :as t]))
 
 (enable-console-print!)

@@ -1,4 +1,4 @@
-(ns untangled-spec.report-data)
+(ns untangled-spec.reporters.impl.terminal)
 
 (defn make-testreport
   ([] (make-testreport []))
@@ -127,7 +127,6 @@
     (swap! *test-state* #(assoc-in % test-result-path test-result))
     ))
 
-
 (defn summary [stats]
   (let [translated-item-path @*test-scope*]
     (swap! *test-state* #(assoc-in % (concat translated-item-path [:tested]) (:tested stats)))
@@ -135,4 +134,3 @@
     (swap! *test-state* #(assoc-in % (concat translated-item-path [:failed]) (:failed stats)))
     (swap! *test-state* #(assoc-in % (concat translated-item-path [:error]) (:error stats)))
     ))
-
