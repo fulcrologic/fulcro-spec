@@ -158,7 +158,6 @@
     (set-test-result this :manual)
     (pop-test-item-path this))
 
-
   (begin-provided [this provided]
     (let [test-item (make-testitem provided)
           test-items-count (count (get-in @app-state (concat (translate-item-path app-state @test-item-path) [:test-items])))]

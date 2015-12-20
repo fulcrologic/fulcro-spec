@@ -3,6 +3,9 @@
     [cljs.test :as test :include-macros true :refer [report]]
     ))
 
+(defn itemclass [status]
+  (str "test-" (name status)))
+
 (defn color-favicon-data-url [color]
   (let [cvs (.createElement js/document "canvas")]
     (set! (.-width cvs) 16)
@@ -15,6 +18,16 @@
 (defn change-favicon-to-color [color]
   (let [icon (.getElementById js/document "favicon")]
     (set! (.-href icon) (color-favicon-data-url color))))
+
+(defn filter-class [test-item]
+  (let [filter (:report/filter test-item)
+        state (:status test-item)]
+    (cond
+      (and (= :failed filter) (not= :error state) (not= :failed state)) "hidden"
+      (and (= :manual filter) (not= :manual state)) "hidden"
+      (= :all filter) "")))
+
+(defn stack->trace [st] (parse-stacktrace {} st {} {}))
 
 (defmethod report [::test/default :summary] [m]
   (println "\nRan" (:test m) "tests containing"
