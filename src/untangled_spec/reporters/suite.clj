@@ -35,7 +35,7 @@
       (let [~'stats {:passed (:pass ~'m) :failed (:fail ~'m) :error (:error ~'m)}]
         (untangled-spec.reporters.impl.suite/summary ~name ~'stats)))))
 
-(defmacro test-suite [name & test-namespaces]
+(defmacro def-test-suite [name & test-namespaces]
   (let [state-name (symbol (str name "-state"))
         test-report-keyword (keyword (str *ns* "/" name))
         target (str name)]

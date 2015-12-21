@@ -97,19 +97,16 @@
   "Prints the current report data from the report data state and applies colors based on test results"
   []
   (t/with-test-out
-    (let [report-data @impl/*test-state*
-          namespaces (get report-data :namespaces)]
+    (let [{:keys [namespaces tested passed failed error]} @impl/*test-state*]
       (try (->> namespaces
-                (mapv #(print-namespace %)))
+                (mapv print-namespace))
            (catch Exception e
              (when-not (->> e ex-data ::stop?)
                (print-exception e))))
-      (println "\nRan" (:tested report-data) "tests containing"
-               (+ (:passed report-data)
-                  (:failed report-data)
-                  (:error report-data)) "assertions.")
-      (println (:failed report-data) "failures,"
-               (:error report-data) "errors."))))
+      (println "\nRan" tested "tests containing"
+               (+ passed failed error) "assertions.")
+      (println failed "failures,"
+               error "errors."))))
 
 (defmulti ^:dynamic untangled-report :type)
 
