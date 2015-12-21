@@ -8,8 +8,7 @@
                                              find-element
                                              render-as-dom
                                              is-rendered-element?]]
-            [cljs.test :refer-macros [is]])
-  (:require-macros [untangled-spec.reporters.suite :refer [test-suite]]))
+            [cljs.test :refer-macros [is]]))
 
 (def sample-doc
   (render-as-dom

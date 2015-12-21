@@ -1,6 +1,7 @@
 (ns ^:figwheel-always untangled-spec.reporters.impl.browser
   (:require
     [cljs.test :as test :include-macros true :refer [report]]
+    [cljs.stacktrace :refer [parse-stacktrace]]
     ))
 
 (defn itemclass [status]

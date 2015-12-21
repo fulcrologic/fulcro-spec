@@ -6,7 +6,6 @@
     [goog.dom :as gdom]
     [om.next :as om :refer-macros [defui]]
     [cljs-uuid-utils.core :as uuid]
-    [cljs.stacktrace :refer [parse-stacktrace]]
 
     [untangled-spec.reporters.impl.browser :as impl]))
 

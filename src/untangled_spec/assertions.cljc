@@ -55,8 +55,7 @@
   (case arrow
     =>
     (let [actual left]
-      `(let [actual# (try ~actual (catch #?(:clj Exception
-                                            :cljs js/Object) ~'e
+      `(let [actual# (try ~actual (catch #?(:clj Exception :cljs js/Object) ~'e
                                     (handle-exception ~'e)))
              expected# ~expected]
          (untangled-is (= actual# expected#)
@@ -68,8 +67,7 @@
     =fn=>
     (let [checker expected
           arg left]
-      `(let [arg# (try ~arg (catch #?(:clj Exception
-                                      :cljs js/Object) ~'e
+      `(let [arg# (try ~arg (catch #?(:clj Exception :cljs js/Object) ~'e
                               (handle-exception ~'e)))]
          (untangled-is (~checker arg#)
                        (->msg '~arg '~arrow '~checker)
@@ -86,8 +84,7 @@
                                         (first '~criteria)
                                         "' to be thrown!")
                                    {::type ::internal}))
-                          (catch #?(:clj Throwable
-                                    :cljs js/Object) ~'e
+                          (catch #?(:clj Throwable :cljs js/Object) ~'e
                             (exception-matches? ~'e ~@criteria)))
                      (->msg '~should-throw '~arrow '~criteria)
                      {:arrow '~arrow
