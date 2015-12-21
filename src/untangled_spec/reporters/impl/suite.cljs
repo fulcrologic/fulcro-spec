@@ -88,38 +88,32 @@
       (reset! test-item-path [:namespaces :name name name-space-location])
       (swap! app-state #(assoc-in % [:top :namespaces name-space-location] (impl/make-tests-by-namespace name)))))
 
-  (begin-specification [this spec]
-    (let [test-item (impl/make-testitem spec)
-          test-items-count (count (get-in @app-state (concat (translate-item-path app-state @test-item-path) [:test-items])))]
-      (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
+  (begin-specification [this x]
+    (let [path (translate-item-path app-state @test-item-path)
+          [test-item test-items-count] (impl/begin x app-state path)]
       (push-test-item-path this test-item test-items-count)))
 
   (end-specification [this] (pop-test-item-path this))
 
-  (begin-behavior [this behavior]
-    (let [test-item (impl/make-testitem behavior)
-          parent-test-item (get-in @app-state (translate-item-path app-state @test-item-path))
-          test-items-count (count (:test-items parent-test-item))]
-      (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
+  (begin-behavior [this x]
+    (let [path (translate-item-path app-state @test-item-path)
+          [test-item test-items-count] (impl/begin x app-state path)]
       (push-test-item-path this test-item test-items-count)))
 
   (end-behavior [this] (pop-test-item-path this))
 
-  (begin-manual [this behavior]
-    (let [test-item (impl/make-manual behavior)
-          parent-test-item (get-in @app-state (translate-item-path app-state @test-item-path))
-          test-items-count (count (:test-items parent-test-item))]
-      (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
+  (begin-manual [this x]
+    (let [path (translate-item-path app-state @test-item-path)
+          [test-item test-items-count] (impl/begin x app-state path)]
       (push-test-item-path this test-item test-items-count)))
 
   (end-manual [this]
     (set-test-result this :manual)
     (pop-test-item-path this))
 
-  (begin-provided [this provided]
-    (let [test-item (impl/make-testitem provided)
-          test-items-count (count (get-in @app-state (concat (translate-item-path app-state @test-item-path) [:test-items])))]
-      (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
+  (begin-provided [this x]
+    (let [path (translate-item-path app-state @test-item-path)
+          [test-item test-items-count] (impl/begin x app-state path)]
       (push-test-item-path this test-item test-items-count)))
 
   (end-provided [this] (pop-test-item-path this))

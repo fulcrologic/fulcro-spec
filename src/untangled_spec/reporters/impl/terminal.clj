@@ -25,36 +25,24 @@
   (pop-test-scope)
   )
 
-(defn begin-specification [spec]
-  (let [test-item (impl/make-testitem spec)
-        test-items-count (count (get-in @*test-state* (concat @*test-scope* [:test-items])))]
-    (swap! *test-state* #(assoc-in % (concat @*test-scope* [:test-items test-items-count]) test-item))
-    (push-test-scope test-item test-items-count)
-    )
-  )
+(defn begin-specification [x]
+  (let [[test-item test-items-count]
+        (impl/begin x *test-state* @*test-scope*)]
+    (push-test-scope test-item test-items-count)))
 
 (defn end-specification [] (pop-test-scope))
 
-
-(defn begin-behavior [behavior]
-  (let [test-item (impl/make-testitem behavior)
-        parent-test-item (get-in @*test-state* @*test-scope*)
-        test-items-count (count (:test-items parent-test-item))]
-    (swap! *test-state* #(assoc-in % (concat @*test-scope* [:test-items test-items-count]) test-item))
-    (push-test-scope test-item test-items-count)
-    )
-  )
+(defn begin-behavior [x]
+  (let [[test-item test-items-count]
+        (impl/begin x *test-state* @*test-scope*)]
+    (push-test-scope test-item test-items-count)))
 
 (defn end-behavior [] (pop-test-scope))
 
-
-(defn begin-provided [provided]
-  (let [test-item (impl/make-testitem provided)
-        test-items-count (count (get-in @*test-state* (concat @*test-scope* [:test-items])))]
-    (swap! *test-state* #(assoc-in % (concat @*test-scope* [:test-items test-items-count]) test-item))
-    (push-test-scope test-item test-items-count)
-    )
-  )
+(defn begin-provided [x]
+  (let [[test-item test-items-count]
+        (impl/begin x *test-state* @*test-scope*)]
+    (push-test-scope test-item test-items-count)))
 
 (defn end-provided [] (pop-test-scope))
 
