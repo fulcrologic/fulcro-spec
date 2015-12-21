@@ -71,3 +71,7 @@
 (def error (internal :error))
 
 (def fail (internal :failed))
+
+(defn summary [stats path test-state]
+  (doseq [stat (keys stats)]
+    (swap! test-state #(assoc-in % (concat path [stat]) (stat stats)))))

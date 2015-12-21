@@ -54,12 +54,4 @@
   (impl/fail detail *test-state* @*test-scope*))
 
 (defn summary [stats]
-  (let [translated-item-path @*test-scope*]
-    (swap! *test-state* #(assoc-in % (concat translated-item-path [:tested])
-                                   (:tested stats)))
-    (swap! *test-state* #(assoc-in % (concat translated-item-path [:passed])
-                                   (:passed stats)))
-    (swap! *test-state* #(assoc-in % (concat translated-item-path [:failed])
-                                   (:failed stats)))
-    (swap! *test-state* #(assoc-in % (concat translated-item-path [:error])
-                                   (:error stats)))))
+  (impl/summary stats @*test-scope* *test-state*))

@@ -133,13 +133,8 @@
                (translate-item-path app-state @test-item-path)))
 
   (summary [this stats]
-    (let [translated-item-path (translate-item-path app-state @test-item-path)]
-      (swap! app-state #(assoc-in % (concat translated-item-path [:passed])
-                                  (:passed stats)))
-      (swap! app-state #(assoc-in % (concat translated-item-path [:failed])
-                                  (:failed stats)))
-      (swap! app-state #(assoc-in % (concat translated-item-path [:error])
-                                  (:error stats))))))
+    (let [path (translate-item-path app-state @test-item-path)]
+      (impl/summary stats path app-state)))
 
 (defn om-read [{:keys [state]} key _] {:value (get @state key)})
 (defmulti om-write om/dispatch)
