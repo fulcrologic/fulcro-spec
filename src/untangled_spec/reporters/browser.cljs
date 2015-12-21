@@ -115,7 +115,9 @@
       (.start @timeout interval))))
 
 (def notification (atom nil))
-(defn *notify-failure! [[passed failed errors total]]
+(defn *notify-failure!
+  "for more info: https://developer.mozilla.org/en-US/docs/Web/API/Notification/Notification"
+  [[passed failed errors total]]
   (let [notify-str (str (+ failed errors)
                         " tests failed out of " total)]
     (cond

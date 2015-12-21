@@ -94,7 +94,10 @@
     (->> (:test-items make-tests-by-namespace)
          (mapv #(print-test-item % 1)))))
 
-(defn notify [text & {:keys [title]}]
+(defn notify
+  "for more info: https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man1/osascript.1.html
+  & http://apple.stackexchange.com/questions/57412/how-can-i-trigger-a-notification-center-notification-from-an-applescript-or-shel?answertab=votes#tab-top"
+  [text & {:keys [title]}]
   (when (= "Mac OS X" (System/getProperty "os.name"))
     (clojure.java.shell/sh "osascript" "-e"
                            (str "display notification \"" text "\" "
