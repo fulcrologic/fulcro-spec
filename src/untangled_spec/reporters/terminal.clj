@@ -23,6 +23,7 @@
     (print (format-exception e {:frame-limit 10}))))
 
 (defn get-exp-act [test-result]
+  (println test-result)
   (if-let [{:keys [arrow actual expected]} (:extra test-result)]
     (if (instance? Exception actual)
       (let [e actual]
@@ -127,15 +128,15 @@
   (t/inc-report-counter :error)
   (impl/error (-> m
                   (merge {:where (clojure.test/testing-vars-str m)})
-                  (update :expected str
-                          :actual   str))))
+                  (update :expected str)
+                  (update :actual   str))))
 
 (defmethod untangled-report :fail [m]
   (t/inc-report-counter :fail)
   (impl/fail (-> m
                  (merge {:where (clojure.test/testing-vars-str m)})
-                 (update :expected str
-                         :actual   str))))
+                 (update :expected str)
+                 (update :actual   str))))
 
 (defmethod untangled-report :begin-test-ns [m]
   (impl/begin-namespace (ns-name (:ns m))))
