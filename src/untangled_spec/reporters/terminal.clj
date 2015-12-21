@@ -5,7 +5,8 @@
             [colorize.core :as c]
             [clojure.data :refer [diff]]
             [io.aviso.exception :refer [format-exception *traditional*]])
-  (:import clojure.lang.ExceptionInfo))
+  (:import clojure.lang.ExceptionInfo
+           apple.applescript.AppleScriptEngineFactory))
 
 (defn color-str [status & strings]
   (let [status->color {:passed c/green
@@ -93,6 +94,12 @@
     (->> (:test-items make-tests-by-namespace)
          (mapv #(print-test-item % 1)))))
 
+(defn notify [text & {:keys [title]}]
+  (when (= "Mac OS X" (System/getProperty "os.name"))
+    (clojure.java.shell/sh "osascript" "-e"
+                           (str "display notification \"" text "\" "
+                                "with title \"" title "\""))))
+
 (defn print-report-data
   "Prints the current report data from the report data state and applies colors based on test results"
   []
@@ -106,7 +113,10 @@
       (println "\nRan" tested "tests containing"
                (+ passed failed error) "assertions.")
       (println failed "failures,"
-               error "errors."))))
+               error "errors.")
+      (when (or (pos? failed) (pos? error))
+        (notify (str (+ failed error) " tests failed out of " tested)
+                :title (str "clj tests failed"))))))
 
 (defmulti ^:dynamic untangled-report :type)
 
