@@ -1,7 +1,7 @@
 (ns untangled-spec.reporters.terminal
   (:require [clojure.test :as t :refer (are is deftest with-test run-tests testing testing-vars-str)]
             [clojure.stacktrace :as stack]
-            [untangled-spec.reporters.impl.terminal :as report]
+            [untangled-spec.reporters.impl.terminal :as impl]
             [colorize.core :as c]
             [clojure.data :refer [diff]]
             [io.aviso.exception :refer [format-exception *traditional*]])
@@ -97,7 +97,7 @@
   "Prints the current report data from the report data state and applies colors based on test results"
   []
   (t/with-test-out
-    (let [report-data @report/*test-state*
+    (let [report-data @impl/*test-state*
           namespaces (get report-data :namespaces)]
       (try (->> namespaces
                 (mapv #(print-namespace %)))
@@ -117,7 +117,7 @@
 
 (defmethod untangled-report :pass [m]
   (t/inc-report-counter :pass)
-  (report/pass))
+  (impl/pass))
 
 (defmethod untangled-report :error [m]
   (t/inc-report-counter :error)
@@ -127,7 +127,7 @@
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
                 :extra      (:extra m)}]
-    (report/error detail)))
+    (impl/error detail)))
 
 (defmethod untangled-report :fail [m]
   (t/inc-report-counter :fail)
@@ -137,42 +137,42 @@
                 :actual     (str (:actual m))
                 :raw-actual (:actual m)
                 :extra      (:extra m)}]
-    (report/fail detail)))
+    (impl/fail detail)))
 
 (defmethod untangled-report :begin-test-ns [m]
-  (report/begin-namespace (ns-name (:ns m))))
+  (impl/begin-namespace (ns-name (:ns m))))
 
 (defmethod untangled-report :end-test-ns [m]
-  (report/end-namespace))
+  (impl/end-namespace))
 
 (defmethod untangled-report :begin-specification [m]
-  (report/begin-specification (:string m)))
+  (impl/begin-specification (:string m)))
 
 (defmethod untangled-report :end-specification [m]
-  (report/end-specification))
+  (impl/end-specification))
 
 (defmethod untangled-report :begin-behavior [m]
-  (report/begin-behavior (:string m)))
+  (impl/begin-behavior (:string m)))
 
 (defmethod untangled-report :end-behavior [m]
-  (report/end-behavior))
+  (impl/end-behavior))
 
 (defmethod untangled-report :begin-manual [m]
-  (report/begin-behavior (str (:string m) "(MANUAL)")))
+  (impl/begin-behavior (str (:string m) "(MANUAL)")))
 
 (defmethod untangled-report :end-manual [m]
-  (report/end-behavior))
+  (impl/end-behavior))
 
 (defmethod untangled-report :begin-provided [m]
-  (report/begin-provided (:string m)))
+  (impl/begin-provided (:string m)))
 
 (defmethod untangled-report :end-provided [m]
-  (report/end-provided))
+  (impl/end-provided))
 
 (defmethod untangled-report :summary [m]
   (let [stats {:tested (:test m) :passed (:pass m)
                :failed (:fail m) :error (:error m)}]
-    (report/summary stats)
+    (impl/summary stats)
     (print-report-data)))
 
 (defmacro with-untangled-output
