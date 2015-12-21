@@ -73,14 +73,9 @@
   ITest
   (render-tests [this] (om/add-root! reconciler renderer (gdom/getElement dom-target)))
   (set-test-result [this status]
-    (let [translated-item-path (translate-item-path app-state @test-item-path)]
-      (loop [current-test-result-path translated-item-path]
-        (if (> (count current-test-result-path) 1)
-          (let [target (get-in @app-state current-test-result-path)
-                current-status (:status target)]
-            (if (not (or (= current-status :manual) (= current-status :error) (= current-status :failed)))
-              (swap! app-state #(assoc-in % (concat current-test-result-path [:status]) status)))
-            (recur (drop-last 2 current-test-result-path)))))))
+    (impl/set-test-result app-state
+                          (translate-item-path app-state @test-item-path)
+                          status))
 
   (push-test-item-path [this test-item index] (swap! test-item-path #(conj % :test-items :id (:id test-item) index)))
 

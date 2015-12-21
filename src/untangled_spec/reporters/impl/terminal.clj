@@ -10,13 +10,7 @@
 (defn pop-test-scope [] (swap! *test-scope* #(-> % (pop) (pop))))
 
 (defn set-test-result [status]
-  (loop [current-test-result-path @*test-scope*]
-    (if (> (count current-test-result-path) 1)
-      (let [target (get-in @*test-state* current-test-result-path)
-            current-status (:status target)]
-        (if (not (or (= current-status :error) (= current-status :failed)))
-          (swap! *test-state* #(assoc-in % (concat current-test-result-path [:status]) status)))
-        (recur (drop-last 2 current-test-result-path))))))
+  (impl/set-test-result *test-state* @*test-scope* status))
 
 (defn begin-namespace [name]
   (let [namespaces (get @*test-state* :namespaces)

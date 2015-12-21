@@ -1,7 +1,6 @@
 (ns untangled-spec.reporters.impl.base-reporter
   #?(:cljs (:require [cljs-uuid-utils.core :as uuid])))
 
-
 (defn make-testreport
   ([] (make-testreport []))
   ([initial-items]
@@ -36,3 +35,12 @@
    :test-items []
    :status     :pending})
 
+(defn set-test-result [test-state path status]
+  (loop [current-test-result-path path]
+    (if (> (count current-test-result-path) 1)
+      (let [target (get-in @test-state current-test-result-path)
+            current-status (:status target)]
+        (if-not (#{:manual :error :failed} current-status)
+          (swap! test-state #(assoc-in % (concat current-test-result-path [:status])
+                                      status)))
+        (recur (drop-last 2 current-test-result-path))))))
