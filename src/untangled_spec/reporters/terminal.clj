@@ -22,8 +22,8 @@
   (when (instance? java.lang.Exception e)
     (print (format-exception e {:frame-limit 10}))))
 
-(defn get-exp-act [{:keys [extra] :as test-result}]
-  (let [{:keys [arrow actual expected]} extra]
+(defn get-exp-act [test-result]
+  (if-let [{:keys [arrow actual expected]} (:extra test-result)]
     (if (instance? Exception actual)
       (let [e actual]
         (print-exception e)
@@ -38,7 +38,9 @@
         =throws=>
         [(:actual test-result) expected]
 
-        (throw (ex-info "invalid arrow" {:arrow arrow}))))))
+        (throw (ex-info "invalid arrow" {:arrow arrow}))))
+
+    [(:actual test-result) (:expected test-result)]))
 
 (defn ?print-diff [act exp {:keys [raw-actual arrow]} print-fn]
   (when (and (= arrow '=>)

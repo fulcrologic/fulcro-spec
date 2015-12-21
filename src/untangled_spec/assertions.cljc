@@ -51,7 +51,6 @@
 
 (defn ->msg [l a r] (str l " " a " " r))
 
-;TODO: try adding meta instead of using :extra
 (defn triple->assertion [[left arrow expected]]
   (case arrow
     =>
