@@ -28,17 +28,9 @@
       (let [e actual]
         (print-exception e)
         [(str e) expected])
-      (case (or arrow '=is=>)
+      (case arrow
         =>
         [actual expected]
-
-        =is=>
-        (let [{:keys [raw-actual actual expected]} test-result]
-          (if (instance? Exception raw-actual)
-            (let [e raw-actual]
-              (print-exception e)
-              [actual expected])
-            [actual expected]))
 
         =fn=>
         [actual expected]
