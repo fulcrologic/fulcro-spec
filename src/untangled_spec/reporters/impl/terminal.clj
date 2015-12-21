@@ -26,14 +26,8 @@
 
 (defn make-test-result
   [result result-detail]
-  {:status     result
-   :message    (:message result-detail)
-   :where      (:where result-detail)
-   :expected   (:expected result-detail)
-   :actual     (:actual result-detail)
-   :raw-actual (:raw-actual result-detail)
-   :extra      (:extra result-detail)
-   })
+  (merge result-detail
+         {:status result}))
 
 (defn make-tests-by-namespace
   [name]

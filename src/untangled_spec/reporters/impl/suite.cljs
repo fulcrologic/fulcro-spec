@@ -73,7 +73,6 @@
   ([] (make-testreport []))
   ([initial-items]
    {:id            (uuid/uuid-string (uuid/make-random-uuid))
-    :report/filter :all
     :summary       ""
     :namespaces    []
     :passed        0
@@ -92,12 +91,9 @@
 
 (defn make-test-result
   [result result-detail]
-  {:id       (uuid/uuid-string (uuid/make-random-uuid))
-   :status   result
-   :message  (:message result-detail)
-   :where    (:where result-detail)
-   :expected (:expected result-detail)
-   :actual   (:actual result-detail)})
+  (merge result-detail
+         {:id (uuid/uuid-string (uuid/make-random-uuid))
+          :status result}))
 
 (defn make-tests-by-namespace
   [name]

@@ -121,23 +121,17 @@
 
 (defmethod untangled-report :error [m]
   (t/inc-report-counter :error)
-  (let [detail {:where      (clojure.test/testing-vars-str m)
-                :message    (:message m)
-                :expected   (str (:expected m))
-                :actual     (str (:actual m))
-                :raw-actual (:actual m)
-                :extra      (:extra m)}]
-    (impl/error detail)))
+  (impl/error (-> m
+                  (merge {:where (clojure.test/testing-vars-str m)})
+                  (update :expected str
+                          :actual   str))))
 
 (defmethod untangled-report :fail [m]
   (t/inc-report-counter :fail)
-  (let [detail {:where      (clojure.test/testing-vars-str m)
-                :message    (:message m)
-                :expected   (str (:expected m))
-                :actual     (str (:actual m))
-                :raw-actual (:actual m)
-                :extra      (:extra m)}]
-    (impl/fail detail)))
+  (impl/fail (-> m
+                 (merge {:where (clojure.test/testing-vars-str m)})
+                 (update :expected str
+                         :actual   str))))
 
 (defmethod untangled-report :begin-test-ns [m]
   (impl/begin-namespace (ns-name (:ns m))))
