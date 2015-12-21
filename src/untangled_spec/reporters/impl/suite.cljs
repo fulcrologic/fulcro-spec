@@ -3,8 +3,8 @@
     goog.object
     [goog.dom :as gdom]
     [om.next :as om]
-    [cljs-uuid-utils.core :as uuid]
-    [untangled-spec.reporters.browser :refer [TestReport]]))
+    [untangled-spec.reporters.browser :refer [TestReport]]
+    [untangled-spec.reporters.impl.base-reporter :as impl]))
 
 (enable-console-print!)
 
@@ -69,39 +69,6 @@
             context-data (get-in data resolved-path)]
         (recur context-data (drop 4 path) (concat result resolved-path))))))
 
-(defn make-testreport
-  ([] (make-testreport []))
-  ([initial-items]
-   {:id            (uuid/uuid-string (uuid/make-random-uuid))
-    :summary       ""
-    :namespaces    []
-    :passed        0
-    :failed        0
-    :error         0}))
-
-(defn make-testitem
-  [name]
-  {:id           (uuid/uuid-string (uuid/make-random-uuid))
-   :name         name
-   :status       :pending
-   :test-items   []
-   :test-results []})
-
-(defn make-manual [name] (make-testitem (str name " (MANUAL TEST)")))
-
-(defn make-test-result
-  [result result-detail]
-  (merge result-detail
-         {:id (uuid/uuid-string (uuid/make-random-uuid))
-          :status result}))
-
-(defn make-tests-by-namespace
-  [name]
-  {:id         (uuid/uuid-string (uuid/make-random-uuid))
-   :name       name
-   :test-items []
-   :status     :pending})
-
 (defrecord TestSuite [app-state dom-target reconciler renderer test-item-path]
   ITest
   (render-tests [this] (om/add-root! reconciler renderer (gdom/getElement dom-target)))
@@ -124,10 +91,10 @@
           namespace-index (first (keep-indexed (fn [idx val] (when (= (:name val) name) idx)) namespaces))
           name-space-location (if namespace-index namespace-index (count namespaces)) ]
       (reset! test-item-path [:namespaces :name name name-space-location])
-      (swap! app-state #(assoc-in % [:top :namespaces name-space-location] (make-tests-by-namespace name)))))
+      (swap! app-state #(assoc-in % [:top :namespaces name-space-location] (impl/make-tests-by-namespace name)))))
 
   (begin-specification [this spec]
-    (let [test-item (make-testitem spec)
+    (let [test-item (impl/make-testitem spec)
           test-items-count (count (get-in @app-state (concat (translate-item-path app-state @test-item-path) [:test-items])))]
       (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
       (push-test-item-path this test-item test-items-count)))
@@ -135,7 +102,7 @@
   (end-specification [this] (pop-test-item-path this))
 
   (begin-behavior [this behavior]
-    (let [test-item (make-testitem behavior)
+    (let [test-item (impl/make-testitem behavior)
           parent-test-item (get-in @app-state (translate-item-path app-state @test-item-path))
           test-items-count (count (:test-items parent-test-item))]
       (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
@@ -144,7 +111,7 @@
   (end-behavior [this] (pop-test-item-path this))
 
   (begin-manual [this behavior]
-    (let [test-item (make-manual behavior)
+    (let [test-item (impl/make-manual behavior)
           parent-test-item (get-in @app-state (translate-item-path app-state @test-item-path))
           test-items-count (count (:test-items parent-test-item))]
       (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
@@ -155,7 +122,7 @@
     (pop-test-item-path this))
 
   (begin-provided [this provided]
-    (let [test-item (make-testitem provided)
+    (let [test-item (impl/make-testitem provided)
           test-items-count (count (get-in @app-state (concat (translate-item-path app-state @test-item-path) [:test-items])))]
       (swap! app-state #(assoc-in % (concat (translate-item-path app-state @test-item-path) [:test-items test-items-count]) test-item))
       (push-test-item-path this test-item test-items-count)))
@@ -167,7 +134,7 @@
   (error [this detail]
     (let [translated-item-path (translate-item-path app-state @test-item-path)
           current-test-item (get-in @app-state translated-item-path)
-          test-result (make-test-result :error detail)
+          test-result (impl/make-test-result :error detail)
           test-result-path (concat translated-item-path
                                    [:test-results (count (:test-results current-test-item))])]
       (set-test-result this :error)
@@ -176,7 +143,7 @@
   (fail [this detail]
     (let [translated-item-path (translate-item-path app-state @test-item-path)
           current-test-item (get-in @app-state translated-item-path)
-          test-result (make-test-result :failed detail)
+          test-result (impl/make-test-result :failed detail)
           test-result-path (concat translated-item-path
                                    [:test-results (count (:test-results current-test-item))])]
       (set-test-result this :failed)
@@ -209,7 +176,7 @@
   - `:history n` : Set the history size. The default is 100.
   "
   [target]
-  (let [state (atom {:top (make-testreport)
+  (let [state (atom {:top (impl/make-testreport)
                      :report/filter :all
                      :time (js/Date.)})]
     (map->TestSuite {:app-state      state

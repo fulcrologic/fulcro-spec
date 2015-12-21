@@ -1,43 +1,8 @@
-(ns untangled-spec.reporters.impl.terminal)
+(ns untangled-spec.reporters.impl.terminal
+  (:require
+    [untangled-spec.reporters.impl.base-reporter :as impl]))
 
-(defn make-testreport
-  ([] (make-testreport []))
-  ([initial-items]
-   {
-    :summary    ""
-    :namespaces []
-    :tested     0
-    :passed     0
-    :failed     0
-    :error      0
-    }
-   )
-  )
-
-(defn make-testitem
-  [name]
-  {
-   :name         name
-   :status       :pending
-   :test-items   []
-   :test-results []
-   }
-  )
-
-(defn make-test-result
-  [result result-detail]
-  (merge result-detail
-         {:status result}))
-
-(defn make-tests-by-namespace
-  [name]
-  {
-   :name       name
-   :test-items []
-   :status     :pending
-   })
-
-(def ^:dynamic *test-state* (atom (make-testreport)))
+(def ^:dynamic *test-state* (atom (impl/make-testreport)))
 (def ^:dynamic *test-scope* (atom []))
 
 (defn push-test-scope [test-item index] (swap! *test-scope* #(conj % :test-items index)))
@@ -59,7 +24,7 @@
         name-space-location (if namespace-index namespace-index (count namespaces))
         ]
     (reset! *test-scope* [:namespaces name-space-location])
-    (swap! *test-state* #(assoc-in % [:namespaces name-space-location] (make-tests-by-namespace name))))
+    (swap! *test-state* #(assoc-in % [:namespaces name-space-location] (impl/make-tests-by-namespace name))))
   )
 
 (defn end-namespace []
@@ -67,7 +32,7 @@
   )
 
 (defn begin-specification [spec]
-  (let [test-item (make-testitem spec)
+  (let [test-item (impl/make-testitem spec)
         test-items-count (count (get-in @*test-state* (concat @*test-scope* [:test-items])))]
     (swap! *test-state* #(assoc-in % (concat @*test-scope* [:test-items test-items-count]) test-item))
     (push-test-scope test-item test-items-count)
@@ -78,7 +43,7 @@
 
 
 (defn begin-behavior [behavior]
-  (let [test-item (make-testitem behavior)
+  (let [test-item (impl/make-testitem behavior)
         parent-test-item (get-in @*test-state* @*test-scope*)
         test-items-count (count (:test-items parent-test-item))]
     (swap! *test-state* #(assoc-in % (concat @*test-scope* [:test-items test-items-count]) test-item))
@@ -90,7 +55,7 @@
 
 
 (defn begin-provided [provided]
-  (let [test-item (make-testitem provided)
+  (let [test-item (impl/make-testitem provided)
         test-items-count (count (get-in @*test-state* (concat @*test-scope* [:test-items])))]
     (swap! *test-state* #(assoc-in % (concat @*test-scope* [:test-items test-items-count]) test-item))
     (push-test-scope test-item test-items-count)
@@ -104,7 +69,7 @@
 (defn error [detail]
   (let [translated-item-path @*test-scope*
         current-test-item (get-in @*test-state* translated-item-path)
-        test-result (make-test-result :error detail)
+        test-result (impl/make-test-result :error detail)
         test-result-path (concat translated-item-path
                                  [:test-results (count (:test-results current-test-item))])]
     (set-test-result :error)
@@ -114,7 +79,7 @@
 (defn fail [detail]
   (let [translated-item-path @*test-scope*
         current-test-item (get-in @*test-state* translated-item-path)
-        test-result (make-test-result :failed detail)
+        test-result (impl/make-test-result :failed detail)
         test-result-path (concat translated-item-path
                                  [:test-results (count (:test-results current-test-item))])]
     (set-test-result :failed)
