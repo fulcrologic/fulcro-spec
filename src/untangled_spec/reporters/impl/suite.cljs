@@ -71,22 +71,26 @@
 
 (defrecord TestSuite [app-state dom-target reconciler renderer test-item-path]
   ITest
-  (render-tests [this] (om/add-root! reconciler renderer (gdom/getElement dom-target)))
+  (render-tests [this]
+    (om/add-root! reconciler renderer (gdom/getElement dom-target)))
+
   (set-test-result [this status]
     (impl/set-test-result app-state
                           (translate-item-path app-state @test-item-path)
                           status))
 
-  (push-test-item-path [this test-item index] (swap! test-item-path #(conj % :test-items :id (:id test-item) index)))
+  (push-test-item-path [this test-item index]
+    (swap! test-item-path #(conj % :test-items :id (:id test-item) index)))
 
-  (pop-test-item-path [this] (swap! test-item-path #(-> % (pop) (pop) (pop) (pop))))
+  (pop-test-item-path [this]
+    (swap! test-item-path #(-> % (pop) (pop) (pop) (pop))))
 
   (begin-namespace [this name]
     (let [namespaces (get-in @app-state [:top :namespaces])
-          namespace-index (first (keep-indexed (fn [idx val] (when (= (:name val) name) idx)) namespaces))
-          name-space-location (if namespace-index namespace-index (count namespaces)) ]
+          name-space-location (impl/get-namespace-location namespaces name) ]
       (reset! test-item-path [:namespaces :name name name-space-location])
-      (swap! app-state #(assoc-in % [:top :namespaces name-space-location] (impl/make-tests-by-namespace name)))))
+      (swap! app-state #(assoc-in % [:top :namespaces name-space-location]
+                                  (impl/make-tests-by-namespace name)))))
 
   (begin-specification [this x]
     (let [path (translate-item-path app-state @test-item-path)
@@ -121,28 +125,21 @@
   (pass [this] (set-test-result this :passed))
 
   (error [this detail]
-    (let [translated-item-path (translate-item-path app-state @test-item-path)
-          current-test-item (get-in @app-state translated-item-path)
-          test-result (impl/make-test-result :error detail)
-          test-result-path (concat translated-item-path
-                                   [:test-results (count (:test-results current-test-item))])]
-      (set-test-result this :error)
-      (swap! app-state #(assoc-in % test-result-path test-result))))
+    (impl/error detail app-state
+                (translate-item-path app-state @test-item-path)))
 
   (fail [this detail]
-    (let [translated-item-path (translate-item-path app-state @test-item-path)
-          current-test-item (get-in @app-state translated-item-path)
-          test-result (impl/make-test-result :failed detail)
-          test-result-path (concat translated-item-path
-                                   [:test-results (count (:test-results current-test-item))])]
-      (set-test-result this :failed)
-      (swap! app-state #(assoc-in % test-result-path test-result))))
+    (impl/fail detail app-state
+               (translate-item-path app-state @test-item-path)))
 
   (summary [this stats]
     (let [translated-item-path (translate-item-path app-state @test-item-path)]
-      (swap! app-state #(assoc-in % (concat translated-item-path [:passed]) (:passed stats)))
-      (swap! app-state #(assoc-in % (concat translated-item-path [:failed]) (:failed stats)))
-      (swap! app-state #(assoc-in % (concat translated-item-path [:error]) (:error stats))))))
+      (swap! app-state #(assoc-in % (concat translated-item-path [:passed])
+                                  (:passed stats)))
+      (swap! app-state #(assoc-in % (concat translated-item-path [:failed])
+                                  (:failed stats)))
+      (swap! app-state #(assoc-in % (concat translated-item-path [:error])
+                                  (:error stats))))))
 
 (defn om-read [{:keys [state]} key _] {:value (get @state key)})
 (defmulti om-write om/dispatch)

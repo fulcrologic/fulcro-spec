@@ -51,3 +51,23 @@
     (swap! test-state #(assoc-in % (concat path [:test-items test-items-count])
                                  test-item))
     [test-item test-items-count]))
+
+(defn get-namespace-location [namespaces nsname]
+  (let [namespace-index (first (keep-indexed (fn [idx val]
+                                               (when (= (:name val) nsname)
+                                                 idx))
+                                             namespaces))]
+    (if namespace-index namespace-index
+      (count namespaces))))
+
+(defn internal [failure-type]
+  (fn [detail test-state path]
+    (let [{:keys [test-results]} (get-in @test-state path)
+          test-result (make-test-result failure-type detail)
+          test-result-path (concat path [:test-results (count test-results)])]
+      (set-test-result test-state path failure-type)
+      (swap! test-state #(assoc-in % test-result-path test-result)))))
+
+(def error (internal :error))
+
+(def fail (internal :failed))
