@@ -38,11 +38,13 @@
                           (find-first #(= value (id-keyword (second %))))
                           (first)))))
 
+(def path-ele-length 4)
+
 (defn resolve-data-path [state path-seq]
   (reduce (fn [real-path path-ele]
             (if (sequential? path-ele)
               (do
-                (if (not= 4 (count path-ele))
+                (if (not= path-ele-length (count path-ele))
                   (js/console.log "ERROR: VECTOR BASED DATA ACCESS MUST HAVE A 4-TUPLE KEY")
                   (let [vector-key (first path-ele)
                         state-vector (get-in state (conj real-path vector-key))
@@ -65,9 +67,9 @@
          result [:top]]
     (if (empty? path)
       result
-      (let [resolved-path (resolve-data-path data (vector (seq (take 4 path))))
+      (let [resolved-path (resolve-data-path data (vector (seq (take path-ele-length path))))
             context-data (get-in data resolved-path)]
-        (recur context-data (drop 4 path) (concat result resolved-path))))))
+        (recur context-data (drop path-ele-length path) (concat result resolved-path))))))
 
 (defrecord TestSuite [app-state dom-target reconciler renderer test-item-path]
   ITest
@@ -80,10 +82,10 @@
                           status))
 
   (push-test-item-path [this test-item index]
-    (swap! test-item-path #(conj % :test-items :id (:id test-item) index)))
+    (swap! test-item-path conj :test-items :id (:id test-item) index))
 
   (pop-test-item-path [this]
-    (swap! test-item-path #(-> % (pop) (pop) (pop) (pop))))
+    (swap! test-item-path (apply comp (repeat path-ele-length pop))))
 
   (begin-namespace [this name]
     (let [namespaces (get-in @app-state [:top :namespaces])
@@ -134,7 +136,7 @@
 
   (summary [this stats]
     (let [path (translate-item-path app-state @test-item-path)]
-      (impl/summary stats path app-state)))
+      (impl/summary stats path app-state))))
 
 (defn om-read [{:keys [state]} key _] {:value (get @state key)})
 (defmulti om-write om/dispatch)
@@ -161,7 +163,8 @@
                      :report/filter :all
                      :time (js/Date.)})]
     (map->TestSuite {:app-state      state
-                     :reconciler     (om/reconciler {:state state :parser test-parser})
+                     :reconciler     (om/reconciler {:state state
+                                                     :parser test-parser})
                      :renderer       TestReport
                      :dom-target     target
                      :test-item-path (atom [])})))

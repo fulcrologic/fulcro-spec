@@ -6,10 +6,10 @@
 (def ^:dynamic *test-scope* (atom []))
 
 (defn push-test-scope [test-item index]
-  (swap! *test-scope* #(conj % :test-items index)))
+  (swap! *test-scope* conj :test-items index))
 
 (defn pop-test-scope []
-  (swap! *test-scope* #(-> % (pop) (pop))))
+  (swap! *test-scope* (apply comp (repeat 2 pop))))
 
 (defn set-test-result [status]
   (impl/set-test-result *test-state* @*test-scope* status))
@@ -21,8 +21,7 @@
     (swap! *test-state* #(assoc-in % [:namespaces name-space-location]
                                    (impl/make-tests-by-namespace name)))))
 
-(defn end-namespace []
-  (pop-test-scope))
+(defn end-namespace [] (pop-test-scope))
 
 (defn begin-specification [x]
   (let [[test-item test-items-count]

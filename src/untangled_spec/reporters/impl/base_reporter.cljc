@@ -69,8 +69,7 @@
       (swap! test-state #(assoc-in % test-result-path test-result)))))
 
 (def error (internal :error))
-
-(def fail (internal :failed))
+(def fail  (internal :failed))
 
 (defn summary [stats path test-state]
   (doseq [stat (keys stats)]
