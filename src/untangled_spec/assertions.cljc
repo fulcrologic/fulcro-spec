@@ -83,7 +83,7 @@
                                    (str "Expected an '"
                                         (first '~criteria)
                                         "' to be thrown!")
-                                   {::type ::internal}))
+                                   {:type ::internal}))
                           (catch #?(:clj Throwable :cljs js/Object) ~'e
                             (exception-matches? ~'e ~@criteria)))
                      (->msg '~should-throw '~arrow '~criteria)
