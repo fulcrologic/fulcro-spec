@@ -23,9 +23,8 @@
     (print (format-exception e {:frame-limit 10}))))
 
 (defn get-exp-act [test-result]
-  (println test-result)
   (if-let [{:keys [arrow actual expected]} (:extra test-result)]
-    (if (instance? Exception actual)
+    (if (instance? Throwable actual)
       (let [e actual]
         (print-exception e)
         [(str e) expected])
@@ -56,8 +55,7 @@
 (defn print-test-results [test-results print-fn]
   (->> test-results
        (remove #(= (:status %) :passed))
-       (mapv (fn [{:keys [message where status raw-actual]
-                   :as test-result}]
+       (mapv (fn [{:keys [message where status] :as test-result}]
                (let [[act exp] (get-exp-act test-result)]
                  (print-fn)
                  (print-fn (if (= status :error)

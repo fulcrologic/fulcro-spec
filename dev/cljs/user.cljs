@@ -12,7 +12,8 @@
             untangled-spec.provided-spec
             untangled-spec.timeline-spec
             untangled-spec.dom.events-spec
-            untangled-spec.dom.util-spec))
+            untangled-spec.dom.util-spec
+            ))
 
 (enable-console-print!)
 

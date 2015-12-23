@@ -8,7 +8,7 @@
   (if (cljs-env? env) cljs clj))
 
 (defn exception-matches? [& [e exp-type re f]]
-  (when (some-> (ex-data e) ::type
+  (when (some-> (ex-data e) :type
                 (= ::internal))
     (throw e))
   (and (or (= exp-type (type e))

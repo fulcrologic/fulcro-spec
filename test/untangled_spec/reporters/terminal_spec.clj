@@ -11,8 +11,10 @@
       (assertions
         (get-exp-act {:actual 0 :expected 1}) => [0 1]))
     (let [test-case (fn [x] (-> x triple->assertion eval get-exp-act))]
+
       (provided "with :extra, ie: from triple->assertion"
         (clojure.test/do-report x) => x
+
         (component "=>"
           (behavior "basic"
             (is (= [5 3] (test-case '(5 => 3)))))
@@ -32,4 +34,18 @@
 
         (component "=throws=>"
           (behavior "simple"
-            ))))))
+            (let [[act exp] (test-case '((throw (ex-info "foo" {}))
+                                         =throws=> (clojure.lang.ExceptionInfo #"foo")))]
+              (is (= 'clojure.lang.ExceptionInfo (first exp)))
+              (is (= "foo" (str (second exp))))
+              (is (= true act)))
+            (let [[act exp] (test-case '((throw (ex-info "foo" {}))
+                                         =throws=> (clojure.lang.ExceptionInfo #"asdf")))]
+              (is (= 'clojure.lang.ExceptionInfo (first exp)))
+              (is (= "asdf" (str (second exp))))
+              (is (= "clojure.lang.ExceptionInfo: exception's message did not match regex {:regex #\"asdf\", :msg \"foo\"}" (str act))))
+            (let [[act exp] (test-case '((+ 5 2) =throws=> (clojure.lang.ExceptionInfo)))]
+              (is (= 'clojure.lang.ExceptionInfo (first exp)))
+              (is (re-find #"Expected an '.*' to be thrown!" (.getMessage act)))
+              (is (= {:type :untangled-spec.assertions/internal}
+                     (ex-data act))))))))))
