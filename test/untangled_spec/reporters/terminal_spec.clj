@@ -1,5 +1,5 @@
 (ns untangled-spec.reporters.terminal-spec
-  (:require [untangled-spec.reporters.terminal :refer [get-exp-act]]
+  (:require [untangled-spec.reporters.terminal :refer [get-exp-act print-exception]]
             [untangled-spec.assertions :refer [triple->assertion]]
             [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report assert-expr)]
             [untangled-spec.core :refer [specification component behavior provided assertions]])
@@ -14,6 +14,7 @@
 
       (provided "with :extra, ie: from triple->assertion"
         (clojure.test/do-report x) => x
+        (print-exception _) => _
 
         (component "=>"
           (behavior "basic"
