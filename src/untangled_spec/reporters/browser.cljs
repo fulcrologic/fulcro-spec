@@ -20,10 +20,10 @@
                          (dom/td #js {:className "test-result"
                                       :onClick #(om/update-state! this update :folded? not)}
                                  (if (.-stack value)
-                                   (dom/code #js {:className "stack-trace"}
+                                   (dom/code nil
                                              (if folded? \u25BA \u25BC)
                                              (str value)
-                                             (dom/div #js {:className (if folded? "hidden" nil)}
+                                             (dom/div #js {:className (if folded? "hidden" "stack-trace")}
                                                       (some-> value .-stack impl/stack->trace)))
                                    (dom/code nil (str value))))))))
 
