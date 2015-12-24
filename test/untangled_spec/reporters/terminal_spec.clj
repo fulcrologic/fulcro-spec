@@ -19,7 +19,10 @@
           (behavior "basic"
             (is (= [5 3] (test-case '(5 => 3)))))
           (behavior "complex"
-            (is (= [5 3] (test-case '((+ 3 2) => (+ 2 1)))))))
+            (is (= [5 3] (test-case '((+ 3 2) => (+ 2 1))))))
+          (behavior "deals with unexpected exceptions"
+            (is (= ["clojure.lang.ExceptionInfo:  {}" 3]
+                   (test-case '((throw (ex-info "" {})) => 3))))))
 
         (component "=fn=>"
           (behavior "basic"
@@ -30,7 +33,10 @@
                               test-case second str))))
           (behavior "complex"
             (is (= [7 '(fn [x] (even? x))]
-                   (test-case '((+ 5 2) =fn=> (fn [x] (even? x))))))))
+                   (test-case '((+ 5 2) =fn=> (fn [x] (even? x)))))))
+          (behavior "deals with unexpected exceptions"
+            (is (= ["clojure.lang.ExceptionInfo:  {}" 'even?]
+                   (test-case '((throw (ex-info "" {})) =fn=> even?))))))
 
         (component "=throws=>"
           (behavior "simple"
