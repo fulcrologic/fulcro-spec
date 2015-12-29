@@ -49,6 +49,6 @@
                    :env          {:dev true}
                    }}
   :test-refresh {:report untangled-spec.reporters.terminal/untangled-report}
-  :aliases {"client" ["figwheel"]
-            "server" ["test-refresh"]}
+  :aliases {"test-client" ["figwheel"]
+            "test-server" ["test-refresh"]}
   )
