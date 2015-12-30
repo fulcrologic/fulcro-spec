@@ -9,7 +9,7 @@
 
     [untangled-spec.reporters.impl.browser :as impl]))
 
-(defui TestSubResult
+(defui ResultLine
        Object
        (initLocalState [this] {:folded? true})
        (render [this]
@@ -27,16 +27,16 @@
                                                       (some-> value .-stack impl/stack->trace)))
                                    (dom/code nil (str value))))))))
 
-(def <test-sub-result> (om/factory TestSubResult))
+(def <result-line> (om/factory ResultLine))
 
 (defui TestResult
        Object
        (render [this]
                (let [{:keys [message actual expected]} (om/props this)]
                  (->> (dom/tbody nil
-                                 (<test-sub-result> {:title "Actual"
+                                 (<result-line> {:title "Actual"
                                                      :value actual})
-                                 (<test-sub-result> {:title "Expected"
+                                 (<result-line> {:title "Expected"
                                                      :value (or expected "")}))
                       (dom/table nil)
                       (dom/div nil (when message (dom/h3 nil message)))
