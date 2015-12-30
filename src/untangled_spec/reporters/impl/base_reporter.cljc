@@ -42,7 +42,7 @@
             current-status (:status target)]
         (if-not (#{:manual :error :failed} current-status)
           (swap! test-state #(assoc-in % (concat current-test-result-path [:status])
-                                       status)))
+                                           status)))
         (recur (drop-last 2 current-test-result-path))))))
 
 (defn begin [n test-state path]
@@ -72,5 +72,6 @@
 (def fail  (internal :failed))
 
 (defn summary [stats path test-state]
-  (doseq [stat (keys stats)]
-    (swap! test-state #(assoc-in % (concat path [stat]) (stat stats)))))
+  (if (empty? path)
+    (swap! test-state merge stats)
+    (swap! test-state update-in path merge stats)))

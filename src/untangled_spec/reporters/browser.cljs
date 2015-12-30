@@ -140,23 +140,19 @@
 (defui TestCount
        Object
        (render [this]
-               (let [namespaces (om/props this)
-                     rollup-stats (reduce (fn [acc item]
-                                            (let [counts [(:passed item) (:failed item) (:error item)
-                                                          (+ (:passed item) (:failed item) (:error item))]]
-                                              (map + acc counts)))
-                                          [0 0 0 0] namespaces)]
-                 (if (< 0 (+ (nth rollup-stats 1) (nth rollup-stats 2)))
+               (let [{:keys [passed failed error namespaces]} (om/props this)
+                     total (+ passed failed error)]
+                 (if (< 0 (+ failed error))
                    (do (impl/change-favicon-to-color "#d00")
-                       (notify-failure! rollup-stats))
+                       (notify-failure! [passed failed error total]))
                    (impl/change-favicon-to-color "#0d0"))
                  (dom/div #js {:className "test-count"}
                           (dom/h2 nil
                                   (str "Tested " (count namespaces) " namespaces containing "
-                                       (nth rollup-stats 3) " assertions. "
-                                       (nth rollup-stats 0) " passed "
-                                       (nth rollup-stats 1) " failed "
-                                       (nth rollup-stats 2) " errors"))))))
+                                       total  " assertions. "
+                                       passed " passed "
+                                       failed " failed "
+                                       error  " errors"))))))
 
 (def <test-count> (om/factory TestCount))
 
@@ -177,4 +173,4 @@
                                       (mapv (comp <test-namespace>
                                                   #(assoc % :report/filter current-filter))
                                             (:namespaces test-report-data)))
-                              (<test-count> (:namespaces test-report-data))))))
+                              (<test-count> test-report-data)))))

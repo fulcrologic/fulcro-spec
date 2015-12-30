@@ -135,8 +135,7 @@
                (translate-item-path app-state @test-item-path)))
 
   (summary [this stats]
-    (let [path (translate-item-path app-state @test-item-path)]
-      (impl/summary stats path app-state))))
+    (impl/summary stats [:top] app-state)))
 
 (defn om-read [{:keys [state]} key _] {:value (get @state key)})
 (defmulti om-write om/dispatch)
