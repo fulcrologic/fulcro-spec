@@ -35,9 +35,9 @@
                (let [{:keys [message actual expected]} (om/props this)]
                  (->> (dom/tbody nil
                                  (<result-line> {:title "Actual"
-                                                     :value actual})
+                                                 :value actual})
                                  (<result-line> {:title "Expected"
-                                                     :value (or expected "")}))
+                                                 :value (or expected "")}))
                       (dom/table nil)
                       (dom/div nil (when message (dom/h3 nil message)))
                       (dom/li nil)))))
