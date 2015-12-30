@@ -1,5 +1,5 @@
 (ns clj.user
-  (:require [clojure.test :refer [is deftest run-tests testing]]
+  (:require [clojure.test :refer [is run-tests testing]]
             [untangled-spec.report :as report]
             untangled-spec.provided-spec
             untangled-spec.async-spec

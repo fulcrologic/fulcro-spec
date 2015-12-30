@@ -1,9 +1,8 @@
 (ns untangled-spec.dom.events-spec
-  (:require-macros [cljs.test :refer (is deftest testing)]
+  (:require-macros [cljs.test :refer [is]]
                    [untangled-spec.core :refer (specification behavior provided assertions)]
                    )
   (:require
-    [cljs.test :refer [do-report]]
     [untangled-spec.dom.assertions :refer [text-matches]]
     [untangled-spec.dom.fixtures :as f]
     [untangled-spec.dom.events :as evt]
