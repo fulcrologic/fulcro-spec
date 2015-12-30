@@ -1,7 +1,7 @@
 (ns ^:figwheel-always cljs.user
   (:require-macros [cljs.test
                     :refer (is deftest run-tests testing)]
-                   [untangled-spec.reporters.suite :refer [def-test-suite]])
+                   [untangled-spec.reporters.suite :refer [deftest-suite]])
   (:require untangled-spec.reporters.console
             untangled-spec.reporters.browser
             untangled-spec.reporters.impl.suite
@@ -17,7 +17,7 @@
 
 (enable-console-print!)
 
-(def-test-suite spec-report
+(deftest-suite spec-report
   'untangled-spec.async-spec
   'untangled-spec.stub-spec
   'untangled-spec.provided-spec
