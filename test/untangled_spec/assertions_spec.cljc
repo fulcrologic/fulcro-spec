@@ -2,8 +2,11 @@
   (:require [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
              [specification behavior provided assertions]]
             [untangled-spec.assertions
-             :refer [exception-matches? triple->assertion]]
-            #?(:clj [clojure.test :refer [is]]))
+             :refer [triple->assertion]]
+            [untangled-spec.assert-expr
+             :refer [exception-matches?]]
+            #?(:clj [clojure.test :refer [is]])
+            [contains.core :refer [*contains?]])
   #?(:clj
       (:import clojure.lang.ExceptionInfo)))
 
@@ -22,44 +25,45 @@
 #?(:clj
     (specification "untangled-spec.assertions-spec"
       (behavior "exception-matches?"
+        ;TODO: use anthony's *contains library
         (behavior "checks the exception is of the specified type or throws"
           (assertions
-            (exception-matches? (ex-info "foo" {})
+            (exception-matches? "msg1" (ex-info "foo" {})
                                 clojure.lang.ExceptionInfo)
-            => true
-            (exception-matches? (ex-info "foo" {})
+            =fn=> (*contains? {:type :passed :message "msg1"})
+            (exception-matches? "msg2" (ex-info "foo" {})
                                 java.lang.Error)
-            =throws=> (clojure.lang.ExceptionInfo #"")))
+            => {:type :fail :message "exception did not match type"
+                :actual clojure.lang.ExceptionInfo :expected java.lang.Error}))
         (behavior "checks the exception's message matches a regex or throws"
           (assertions
-            (exception-matches? (ex-info "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn" {})
+            (exception-matches? "msg3" (ex-info "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn" {})
                                 clojure.lang.ExceptionInfo #"(?i)cthulhu")
-            => true
-            (exception-matches? (ex-info "kthxbye" {})
+            =fn=> (*contains? {:type :passed :message "msg3"})
+            (exception-matches? "msg4" (ex-info "kthxbye" {})
                                 clojure.lang.ExceptionInfo #"cthulhu")
-            =throws=> (clojure.lang.ExceptionInfo #"not match regex"))))
+            => {:type :fail :message "exception's message did not match regex"
+                :actual "kthxbye" :expected "cthulhu"})))
 
       (behavior "triple->assertion"
         (behavior "checks equality with the => arrow"
           (assertions
             (triple->assertion false '(left => right))
-            =fn=> (check-assertion #(->> % first (= 'clojure.core/=)))))
+            =fn=> #(and (-> % first name (= "is"))
+                        (-> % second second (= 'left))
+                        (-> % second last (= 'right)))))
         (behavior "verifies actual with the =fn=> function"
           (assertions
             (triple->assertion false '(left =fn=> right))
             =fn=> #(and (-> % first name (= "is"))
                         (-> % second first (= 'call))
                         (-> % second second (= 'right))
-                        (-> % second last (= 'left))
-                        (-> % (nth 2) first name (= "->msg")))))
+                        (-> % second last (= 'left)))))
         (behavior "verifies that actual threw an exception with the =throws=> arrow"
           (assertions
             (triple->assertion false '(left =throws=> (right)))
-            =fn=> (check-assertion
-                    #(and (->> % first (= 'try))
-                          (->> % second (= 'left))
-                          (-> % (nth 2) first (= 'throw))
-                          (->> % last first (= 'catch))))))
+            =fn=> #(and (->> % first name (= "is"))
+                        (->> % second first (= 'throws?)))))
         (defn index-of [sub]
           (fn [s] (.indexOf s sub)))
         (behavior "any other arrow, throws an ex-info"
@@ -81,8 +85,4 @@
             (assertions
               (f 1) =throws=> (AssertionError #"even\? x")
               (f 6) => 7
-              (f 2) => 3)))
-        (behavior "=> catches unexpected exceptions"
-          (let [e (ex-info "asdf" {})]
-            (assertions
-              (throw e) => e))))))
+              (f 2) => 3))))))

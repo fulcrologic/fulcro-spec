@@ -1,5 +1,5 @@
 (ns untangled-spec.reporters.terminal
-  (:require [clojure.test :as t :refer (are is deftest with-test run-tests testing testing-vars-str)]
+  (:require [clojure.test :as t]
             [clojure.stacktrace :as stack]
             [untangled-spec.reporters.impl.terminal :as impl]
             [colorize.core :as c]
@@ -23,26 +23,6 @@
   (when (instance? java.lang.Exception e)
     (print (format-exception e {:frame-limit 10}))))
 
-(defn get-exp-act [test-result]
-  (if-let [{:keys [arrow actual expected]} (:extra test-result)]
-    (if (instance? Throwable actual)
-      (let [e actual]
-        (print-exception e)
-        [(str e) expected])
-      (case arrow
-        =>
-        [actual expected]
-
-        =fn=>
-        [actual expected]
-
-        =throws=>
-        [(:actual test-result) expected]
-
-        (throw (ex-info "invalid arrow" {:arrow arrow}))))
-
-    [(:actual test-result) (:expected test-result)]))
-
 (defn ?print-diff [act exp {:keys [raw-actual arrow]} print-fn]
   (when (and (= arrow '=>)
              (coll? exp)
@@ -56,16 +36,15 @@
 (defn print-test-results [test-results print-fn]
   (->> test-results
        (remove #(= (:status %) :passed))
-       (mapv (fn [{:keys [message where status] :as test-result}]
-               (let [[act exp] (get-exp-act test-result)]
+       (mapv (fn [{:keys [message where status actual expected]}]
                  (print-fn)
                  (print-fn (if (= status :error)
                              "Error" "Failed") "in" where)
                  (when message (print-fn "ASSERTION:" message))
-                 (print-fn "expected:" exp)
-                 (print-fn "  actual:" act)
+                 (print-fn "expected:" expected)
+                 (print-fn "  actual:" actual)
                  ;(?print-diff act exp test-result print-fn)
-                 (print-fn))
+                 (print-fn)
                (when true
                  ;TODO: ^true -> :key in config?
                  (throw (ex-info "" {::stop? true})))))))

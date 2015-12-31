@@ -1,14 +1,12 @@
 (ns untangled-spec.core
-  (:require [clojure.string :as s]
+  (:require #?(:clj [clojure.string :as s])
             #?(:clj [untangled-spec.provided :as p])
             [untangled-spec.async :as async]
             [untangled-spec.assertions :refer [triple->assertion]]
             [untangled-spec.stub]
             #?(:clj [untangled-spec.assert-expr :as ae])
             #?(:clj [clojure.test])
-            #?(:cljs [cljs.test])
-            )
-  #?(:cljs (:require-macros [cljs.test]))
+            #?(:cljs [cljs.test :include-macros true]))
   )
 
 (defn cljs-env?
@@ -23,22 +21,26 @@
       (defmethod clojure.test/assert-expr 'call [msg form]
         `(clojure.test/do-report ~(ae/assert-expr 'call msg form)))
 
+      (defmethod clojure.test/assert-expr 'clojure.core/= [msg form]
+        `(clojure.test/do-report ~(ae/assert-expr 'eq msg form)))
+
+      (defmethod clojure.test/assert-expr 'throws? [msg form]
+        `(clojure.test/do-report ~(ae/assert-expr 'throws? msg form)))
+
       (defmacro specification
         "Defines a specificaiton which is translated into a what a deftest macro produces with report hooks for the
         description. Technically outputs a deftest with additional output reporting.
         When *load-tests* is false, the specificaiton is ignored."
         [description & body]
         (let [var-name-from-string (fn [s] (symbol (s/lower-case (s/replace s #"[()~'\"`!@#$;%^& ]" "-"))))
-              name (var-name-from-string description)]
-          (let [prefix (if-cljs &env "cljs.test" "clojure.test")]
-            `(~(symbol prefix "deftest") ~name
-                       (~(symbol prefix "do-report")
-                                 {:type :begin-specification :string ~description})
-                       ~@body
-                       (~(symbol prefix "do-report")
-                                 {:type :end-specification :string ~description})))
-          )
-        )
+              name (var-name-from-string description)
+              prefix (if-cljs &env "cljs.test" "clojure.test")]
+          `(fuckyou ~name
+                    (~(symbol prefix "do-report")
+                              {:type :begin-specification :string ~description})
+                    ~@body
+                    (~(symbol prefix "do-report")
+                              {:type :end-specification :string ~description}))))
 
       (defmacro behavior
         "Adds a new string to the list of testing contexts.  May be nested,
@@ -57,12 +59,12 @@
               body (drop-while keyword? body)
               prefix (if-cljs &env "cljs.test" "clojure.test")]
           `(~(symbol prefix "testing") ~string
-             (~(symbol prefix "do-report")
-                       {:type ~startkw :string ~string})
-             ~@body
-             (~(symbol prefix "do-report")
-                       {:type ~stopkw :string ~string})
-             ))
+                     (~(symbol prefix "do-report")
+                               {:type ~startkw :string ~string})
+                     ~@body
+                     (~(symbol prefix "do-report")
+                               {:type ~stopkw :string ~string})
+                     ))
         )
 
       (defmacro component

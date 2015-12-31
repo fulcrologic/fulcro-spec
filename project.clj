@@ -11,6 +11,7 @@
                  [cljsjs/react-with-addons "0.14.0-1"]
                  [org.omcljs/om "1.0.0-alpha22" :scope "provided"]
                  [io.aviso/pretty "0.1.19"]
+                 [contains "1.0.0"]
                  ]
   :plugins [[lein-cljsbuild "1.1.0"]
             [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]]

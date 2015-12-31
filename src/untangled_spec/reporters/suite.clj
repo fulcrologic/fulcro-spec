@@ -5,6 +5,14 @@
 (defmethod cljs.test/assert-expr 'call [_ msg form]
   `(cljs.test/do-report ~(ae/assert-expr 'call msg form)))
 
+(defmethod cljs.test/assert-expr 'clojure.core/= [_ msg form]
+  `(cljs.test/do-report ~(ae/assert-expr 'eq msg form)))
+
+(defmethod cljs.test/assert-expr 'throws? [_ msg form]
+  `(cljs.test/do-report ~(ae/assert-expr 'throws? msg form)))
+
+;(ae/add-assert-expr-methods cljs.test/assert-expr "cljs.test")
+
 (defn define-test-methods [name test-report-keyword]
   `((cljs.core/defmethod cljs.test/report ~(keyword name) [~'m])
     (cljs.core/defmethod cljs.test/report [~test-report-keyword :pass] [~'m]
