@@ -1,4 +1,9 @@
-(ns untangled-spec.reporters.suite)
+(ns untangled-spec.reporters.suite
+  (:require cljs.test
+            [untangled-spec.assert-expr :as ae]))
+
+(defmethod cljs.test/assert-expr 'call [_ msg form]
+  `(cljs.test/do-report ~(ae/assert-expr 'call msg form)))
 
 (defn define-test-methods [name test-report-keyword]
   `((cljs.core/defmethod cljs.test/report ~(keyword name) [~'m])

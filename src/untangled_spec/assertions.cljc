@@ -51,7 +51,7 @@
 
 (defn ->msg [l a r] (str l " " a " " r))
 
-(defn triple->assertion [[left arrow expected]]
+(defn triple->assertion [cljs? [left arrow expected]]
   (case arrow
     =>
     (let [actual left]
@@ -67,13 +67,9 @@
     =fn=>
     (let [checker expected
           arg left]
-      `(let [arg# (try ~arg (catch #?(:clj Exception :cljs js/Object) ~'e
-                              (handle-exception ~'e)))]
-         (untangled-is (~checker arg#)
-                       (->msg '~arg '~arrow '~checker)
-                       {:arrow '~arrow
-                        :actual   arg#
-                        :expected '~checker})))
+      `(~(symbol (if cljs? "cljs.test" "clojure.test") "is")
+                (~'call ~checker ~arg)
+                (->msg '~arg '~arrow '~checker)))
 
     =throws=>
     (let [should-throw left

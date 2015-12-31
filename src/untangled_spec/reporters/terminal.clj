@@ -4,7 +4,8 @@
             [untangled-spec.reporters.impl.terminal :as impl]
             [colorize.core :as c]
             [clojure.data :refer [diff]]
-            [io.aviso.exception :refer [format-exception *traditional*]])
+            [io.aviso.exception :refer [format-exception *traditional*]]
+            clojure.java.shell)
   (:import clojure.lang.ExceptionInfo
            apple.applescript.AppleScriptEngineFactory))
 

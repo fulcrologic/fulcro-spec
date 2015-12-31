@@ -42,15 +42,19 @@
       (behavior "triple->assertion"
         (behavior "checks equality with the => arrow"
           (assertions
-            (triple->assertion '(left => right))
+            (triple->assertion false '(left => right))
             =fn=> (check-assertion #(->> % first (= 'clojure.core/=)))))
         (behavior "verifies actual with the =fn=> function"
           (assertions
-            (triple->assertion '(left =fn=> right))
-            =fn=> (check-assertion #(->> % first (= 'right)))))
+            (triple->assertion false '(left =fn=> right))
+            =fn=> #(and (-> % first name (= "is"))
+                        (-> % second first (= 'call))
+                        (-> % second second (= 'right))
+                        (-> % second last (= 'left))
+                        (-> % (nth 2) first name (= "->msg")))))
         (behavior "verifies that actual threw an exception with the =throws=> arrow"
           (assertions
-            (triple->assertion '(left =throws=> (right)))
+            (triple->assertion false '(left =throws=> (right)))
             =fn=> (check-assertion
                     #(and (->> % first (= 'try))
                           (->> % second (= 'left))
@@ -60,7 +64,7 @@
           (fn [s] (.indexOf s sub)))
         (behavior "any other arrow, throws an ex-info"
           (assertions
-            (triple->assertion '(left =bad-arrow=> right))
+            (triple->assertion false '(left =bad-arrow=> right))
             =throws=> (ExceptionInfo
                         #"invalid arrow"
                         #(-> % ex-data (= {:arrow '=bad-arrow=>}))))))
@@ -70,7 +74,7 @@
           (ex-info x y) => (Exception. (str x y))
           (assertions
             [:foo :bar] =throws=> (Exception #"Expected an 'Exception'")))
-        (behavior "TODO: =throws=> can catch AssertionErrors"
+        (behavior "=throws=> can catch AssertionErrors"
           (let [f (fn [x] {:pre [(even? x)]} (inc x))]
             (is (thrown? AssertionError (f 1)))
             (is (= 3 (f 2)))
@@ -81,9 +85,4 @@
         (behavior "=> catches unexpected exceptions"
           (let [e (ex-info "asdf" {})]
             (assertions
-              (throw e) => e)))
-        (provided "=fn=> catches unexpected exceptions"
-          (untangled-spec.assertions/handle-exception e) => 1
-          (let [e (ex-info "foobar" {})]
-            (assertions
-              (throw e) =fn=> odd?))))))
+              (throw e) => e))))))

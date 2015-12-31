@@ -10,11 +10,11 @@
     (behavior "with no :extra field, just returns [actual expected]"
       (assertions
         (get-exp-act {:actual 0 :expected 1}) => [0 1]))
-    (let [test-case (fn [x] (-> x triple->assertion eval get-exp-act))]
+    (let [test-case (fn [x] (binding [t/report (fn [m] m)]
+                              (->> x (triple->assertion false) eval get-exp-act)))]
 
       (provided "with :extra, ie: from triple->assertion"
         (clojure.test/do-report x) => x
-        (print-exception _) => _
 
         (component "=>"
           (behavior "basic"
@@ -25,7 +25,7 @@
             (is (= ["clojure.lang.ExceptionInfo:  {}" 3]
                    (test-case '((throw (ex-info "" {})) => 3))))))
 
-        (component "=fn=>"
+        (component "TODO: =fn=>"
           (behavior "basic"
             (is (= [5 'even?] (test-case '(5 =fn=> even?)))))
           (behavior "lambda"
@@ -34,10 +34,7 @@
                               test-case second str))))
           (behavior "complex"
             (is (= [7 '(fn [x] (even? x))]
-                   (test-case '((+ 5 2) =fn=> (fn [x] (even? x)))))))
-          (behavior "deals with unexpected exceptions"
-            (is (= ["clojure.lang.ExceptionInfo:  {}" 'even?]
-                   (test-case '((throw (ex-info "" {})) =fn=> even?))))))
+                   (test-case '((+ 5 2) =fn=> (fn [x] (even? x))))))))
 
         (component "=throws=>"
           (behavior "simple"

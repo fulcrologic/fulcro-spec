@@ -4,6 +4,7 @@
             [untangled-spec.async :as async]
             [untangled-spec.assertions :refer [triple->assertion]]
             [untangled-spec.stub]
+            #?(:clj [untangled-spec.assert-expr :as ae])
             #?(:clj [clojure.test])
             #?(:cljs [cljs.test])
             )
@@ -19,6 +20,9 @@
 
 #?(:clj
     (do
+      (defmethod clojure.test/assert-expr 'call [msg form]
+        `(clojure.test/do-report ~(ae/assert-expr 'call msg form)))
+
       (defmacro specification
         "Defines a specificaiton which is translated into a what a deftest macro produces with report hooks for the
         description. Technically outputs a deftest with additional output reporting.
@@ -103,5 +107,5 @@
 
       (defmacro assertions [& forms]
         (let [triples (partition 3 forms)
-              asserts (map triple->assertion triples)]
+              asserts (map (partial triple->assertion (cljs-env? &env)) triples)]
           `(do ~@asserts)))))
