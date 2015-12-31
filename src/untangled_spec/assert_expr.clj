@@ -13,7 +13,6 @@
      {:type (if result# :pass :fail) :message ~msg
       :actual act# :expected exp#}))
 
-;TODO: make more lazy based on if criteria are not nil
 (defn exception-matches? [msg e exp-type & [re f]]
   (cond
     (some-> (ex-data e) :type (= ::internal))
@@ -24,11 +23,11 @@
     {:type :fail :message "exception did not match type"
      :actual (type e) :expected exp-type}
 
-    (not (re-find (or re #"") (.getMessage e)))
+    (and re (not (re-find re (.getMessage e))))
     {:type :fail :message "exception's message did not match regex"
      :actual (.getMessage e) :expected (str re)}
 
-    (not ((or f (fn [_] true)) e))
+    (and f (not (f e)))
     {:type :fail :message "checker function failed"
      :actual e :expected f}
 
