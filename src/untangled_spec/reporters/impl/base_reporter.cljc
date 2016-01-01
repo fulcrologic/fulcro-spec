@@ -1,5 +1,6 @@
 (ns untangled-spec.reporters.impl.base-reporter
-  #?(:cljs (:require [cljs-uuid-utils.core :as uuid])))
+  #?(:cljs (:require [cljs-uuid-utils.core :as uuid]
+                     [cljs.stacktrace :refer [parse-stacktrace]])))
 
 (defn make-testreport
   ([] (make-testreport []))
@@ -22,11 +23,17 @@
 
 (defn make-manual [name] (make-testitem (str name " (MANUAL TEST)")))
 
+#?(:cljs (defn- stack->trace [st] (parse-stacktrace {} st {} {})))
+
 (defn make-test-result
   [result result-detail]
-  (merge result-detail
-         {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
-          :status result}))
+  (-> result-detail
+      (merge {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
+              :status result})
+      #?(:cljs (#(if (some-> % :actual .-stack)
+                   (assoc % :stack (-> % :actual .-stack stack->trace))
+                   %)))
+      ))
 
 (defn make-tests-by-namespace
   [name]
@@ -35,14 +42,14 @@
    :test-items []
    :status     :pending})
 
-(defn set-test-result [test-state path status]
+(defn set-test-result [test-state path status & [f]]
   (loop [current-test-result-path path]
     (if (> (count current-test-result-path) 1)
       (let [target (get-in @test-state current-test-result-path)
             current-status (:status target)]
         (if-not (#{:manual :error :failed} current-status)
           (swap! test-state #(assoc-in % (concat current-test-result-path [:status])
-                                           status)))
+                                        status)))
         (recur (drop-last 2 current-test-result-path))))))
 
 (defn begin [n test-state path]

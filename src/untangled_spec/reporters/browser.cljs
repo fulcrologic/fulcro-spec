@@ -13,29 +13,30 @@
        Object
        (initLocalState [this] {:folded? true})
        (render [this]
-               (let [{:keys [title value]} (om/props this)
+               (let [{:keys [title value stack]} (om/props this)
                      {:keys [folded?]} (om/get-state this)]
                  (dom/tr nil
                          (dom/td #js {:className "test-result-title"} title)
                          (dom/td #js {:className "test-result"
                                       :onClick #(om/update-state! this update :folded? not)}
-                                 (if (.-stack value)
-                                   (dom/code nil
-                                             (if folded? \u25BA \u25BC)
-                                             (str value)
+                                 (dom/code nil
+                                           (when stack
+                                             (if folded? \u25BA \u25BC))
+                                           (str value)
+                                           (when stack
                                              (dom/div #js {:className (if folded? "hidden" "stack-trace")}
-                                                      (some-> value .-stack impl/stack->trace)))
-                                   (dom/code nil (str value))))))))
+                                                      stack))))))))
 
 (def <result-line> (om/factory ResultLine))
 
 (defui TestResult
        Object
        (render [this]
-               (let [{:keys [message actual expected]} (om/props this)]
+               (let [{:keys [message actual expected stack]} (om/props this)]
                  (->> (dom/tbody nil
                                  (<result-line> {:title "Actual"
-                                                 :value actual})
+                                                 :value actual
+                                                 :stack stack})
                                  (<result-line> {:title "Expected"
                                                  :value (or expected "")}))
                       (dom/table nil)
