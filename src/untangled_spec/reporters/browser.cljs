@@ -27,25 +27,25 @@
                                              (dom/div #js {:className (if folded? "hidden" "stack-trace")}
                                                       stack))))))))
 
-(def <result-line> (om/factory ResultLine))
+(def ui-result-line (om/factory ResultLine))
 
 (defui TestResult
        Object
        (render [this]
                (let [{:keys [message actual expected stack]} (om/props this)]
                  (->> (dom/tbody nil
-                                 (<result-line> {:title "Actual"
+                                 (ui-result-line {:title "Actual"
                                                  :value actual
                                                  :stack stack})
-                                 (<result-line> {:title "Expected"
+                                 (ui-result-line {:title "Expected"
                                                  :value (or expected "")}))
                       (dom/table nil)
                       (dom/div nil (when message (dom/h3 nil message)))
                       (dom/li nil)))))
 
-(def <test-result> (om/factory TestResult {:keyfn :id}))
+(def ui-test-result (om/factory TestResult {:keyfn :id}))
 
-(declare <test-item>)
+(declare ui-test-item)
 
 (defui TestItem
        Object
@@ -57,13 +57,13 @@
                                   (dom/span #js {:className (impl/itemclass (:status test-item-data))}
                                             (:name test-item-data))
                                   (dom/ul #js {:className "test-list"}
-                                          (mapv <test-result>
+                                          (mapv ui-test-result
                                                 (:test-results test-item-data)))
                                   (dom/ul #js {:className "test-list"}
-                                          (mapv (comp <test-item> #(assoc % :report/filter filter))
+                                          (mapv (comp ui-test-item #(assoc % :report/filter filter))
                                                 (:test-items test-item-data))))))))
 
-(def <test-item> (om/factory TestItem {:keyfn :id}))
+(def ui-test-item (om/factory TestItem {:keyfn :id}))
 
 (defui TestNamespace
        Object
@@ -82,10 +82,10 @@
                                            (if folded? \u25BA \u25BC)
                                            " Testing " (:name tests-by-namespace)))
                             (dom/ul #js {:className (if folded? "hidden" "test-list")}
-                                    (mapv (comp <test-item> #(assoc % :report/filter filter))
+                                    (mapv (comp ui-test-item #(assoc % :report/filter filter))
                                           (:test-items tests-by-namespace))))))))
 
-(def <test-namespace> (om/factory TestNamespace {:keyfn :name}))
+(def ui-test-namespace (om/factory TestNamespace {:keyfn :name}))
 
 (defui Filters
        Object
@@ -104,7 +104,7 @@
                                       :onClick   (set-filter! :failed)}
                                  "Failed")))))
 
-(def <filters> (om/factory Filters))
+(def ui-filters (om/factory Filters))
 
 (defn debounce [f interval]
   (let [timeout (atom nil)]
@@ -155,7 +155,7 @@
                                        failed " failed "
                                        error  " errors"))))))
 
-(def <test-count> (om/factory TestCount))
+(def ui-test-count (om/factory TestCount))
 
 (defui TestReport
        static om/IQuery
@@ -168,10 +168,10 @@
                      set-filter! (fn [new-filter]
                                    #(om/transact! this `[(~'set-filter {:new-filter ~new-filter})]))]
                  (dom/section #js {:className "test-report"}
-                              (<filters> {:report/filter current-filter
+                              (ui-filters {:report/filter current-filter
                                           :set-filter! set-filter!})
                               (dom/ul #js {:className "test-list"}
-                                      (mapv (comp <test-namespace>
+                                      (mapv (comp ui-test-namespace
                                                   #(assoc % :report/filter current-filter))
                                             (:namespaces test-report-data)))
-                              (<test-count> test-report-data)))))
+                              (ui-test-count test-report-data)))))
