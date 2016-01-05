@@ -34,8 +34,8 @@
                (instance? Throwable actual))
       (print-throwable actual))
     (when message (print-fn "ASSERTION:" message))
-    (print-fn "expected:" expected)
-    (print-fn "  actual:" actual)
+    (print-fn "expected:" (pr-str expected))
+    (print-fn "  actual:" (pr-str actual))
     (print-fn)
     (when true
       ;TODO: ^true -> :key in config?
