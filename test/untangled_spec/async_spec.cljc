@@ -10,8 +10,6 @@
 (defn mock-fn2 [] (identity 0))
 (defn mock-fn3 [] (identity 0))
 
-#?(:clj (println (macroexpand '(specification "why i no work?" (is (= 0 1))))))
-
 (specification "async-queue"
                (behavior "associates an event correctly with its time"
                          (let [queue (async/make-async-queue)]

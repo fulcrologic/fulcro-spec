@@ -1,9 +1,10 @@
 (ns ^:figwheel-always cljs.user
+  (:require-macros [untangled-spec.reporters.suite
+                    :refer [deftest-suite]])
   (:require untangled-spec.reporters.console
             untangled-spec.reporters.browser
             untangled-spec.reporters.impl.suite
 
-            [untangled-spec.reporters.suite :refer-macros [deftest-suite]]
             [cljs.test :refer-macros [run-tests]]
 
             untangled-spec.async-spec

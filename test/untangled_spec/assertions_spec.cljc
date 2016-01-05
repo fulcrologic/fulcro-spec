@@ -3,10 +3,10 @@
              [specification behavior provided assertions]]
             [untangled-spec.assertions
              :refer [triple->assertion]]
-            [untangled-spec.assert-expr
-             :refer [exception-matches?]]
+            #?(:clj [untangled-spec.assert-expr
+             :refer [exception-matches?]])
             #?(:clj [clojure.test :refer [is]])
-            [contains.core :refer [*contains?]])
+            #?(:clj [contains.core :refer [*contains?]]))
   #?(:clj
       (:import clojure.lang.ExceptionInfo)))
 
@@ -25,7 +25,6 @@
 #?(:clj
     (specification "untangled-spec.assertions-spec"
       (behavior "exception-matches?"
-        ;TODO: use anthony's *contains library
         (behavior "checks the exception is of the specified type or throws"
           (assertions
             (exception-matches? "msg1" (ex-info "foo" {})
