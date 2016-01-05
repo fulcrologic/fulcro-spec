@@ -1,13 +1,17 @@
 (ns untangled-spec.timeline-spec
   #?(:clj
-     (:require [untangled-spec.core :as c :refer [with-timeline provided async tick specification behavior]]
-               [clojure.test :as t :refer [is]]
-               ))
+      (:require [untangled-spec.core :as c :refer [with-timeline provided async tick specification behavior]]
+                [clojure.test :as t :refer [is]]
+                ))
   #?(:cljs (:require-macros [cljs.test :refer [is]]
-                            [untangled-spec.core :refer [with-timeline provided async tick specification behavior]]
+                            ))
+  #?(:cljs (:require
+             [untangled-spec.core
+              :refer-macros [with-timeline provided async
+                             tick specification behavior]]
              ))
   #?(:clj
-     (:import clojure.lang.ExceptionInfo))
+      (:import clojure.lang.ExceptionInfo))
   )
 
 

@@ -12,13 +12,11 @@
   #?(:cljs (:require-macros
              [cljs.test :refer [is]]
              [untangled-spec.provided :as p]
-             [untangled-spec.core
-              :refer [specification behavior provided
-                      with-timeline async tick assertions
-                      when-mocking]]
              ))
-  #?(:cljs (:require [untangled-spec.assertions])
-           )
+  #?(:cljs (:require [untangled-spec.core
+                      :refer-macros [specification behavior provided
+                                     with-timeline async tick assertions
+                                     when-mocking]]))
   #?(:clj
       (:import clojure.lang.ExceptionInfo))
   )

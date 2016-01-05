@@ -6,10 +6,13 @@
                 ))
   #?(:clj
       (:import clojure.lang.ExceptionInfo))
-  #?(:cljs (:require-macros [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
-                            [cljs.test :refer [is]]
-                            ))
+  #?(:cljs (:require-macros
+             [cljs.test :refer [is]]
+             ))
   #?(:cljs (:require
+             [untangled-spec.core
+              :refer-macros [specification behavior provided
+                             with-timeline async tick assertions]]
              [untangled-spec.stub :as s :include-macros true]
              ))
   )
