@@ -1,6 +1,6 @@
 (ns ^:figwheel-always cljs.user
   (:require-macros [cljs.test
-                    :refer (is deftest run-tests testing)])
+                    :refer (is run-tests testing)])
   (:require [untangled-spec.dom.suite :as ts :include-macros true]
             untangled-spec.async-spec
             untangled-spec.stub-spec

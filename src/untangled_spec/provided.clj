@@ -62,7 +62,7 @@
   )
 
 (defn provided-fn
-  [string & forms]
+  [cljs? string & forms]
   (let [groups (partition-all 3 forms)
         triples (->> groups (take-while #(and (= 3 (count %))
                                               (is-arrow? (second %)))))
@@ -89,9 +89,13 @@
            ))
       `(let [~@script-let-pairs]
          (with-redefs [~@redef-pairs]
-           (~'do-report {:type :begin-provided :string ~string})
+           (~(symbol (if cljs? "cljs.test" "clojure.test")
+                     "do-report")
+                     {:type :begin-provided :string ~string})
            ~@behaviors
            (stub/validate-target-function-counts [~@script-symbols])
-           (~'do-report {:type :end-provided :string ~string})
+           (~(symbol (if cljs? "cljs.test" "clojure.test")
+                     "do-report")
+                     {:type :end-provided :string ~string})
            ))
       )))

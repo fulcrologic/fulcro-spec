@@ -1,19 +1,10 @@
 (ns untangled-spec.assertions-spec
+  (:require [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
+             [specification behavior provided assertions]]
+            [untangled-spec.assertions
+             :refer [exception-matches? triple->assertion]])
   #?(:clj
-      (:require [untangled-spec.core :as c
-                 :refer [specification behavior provided assertions]]
-                [clojure.test :as t
-                 :refer [are is deftest with-test run-tests testing do-report]]
-                [untangled-spec.assertions
-                 :refer [exception-matches? triple->assertion]]
-                ))
-  #?(:clj
-      (:import clojure.lang.ExceptionInfo))
-  )
-
-(defn spy [tag x]
-  (println (str "TAG[" tag "]:") x)
-  x)
+      (:import clojure.lang.ExceptionInfo)))
 
 (defn check-assertion [expected]
   (fn [actual]
@@ -68,13 +59,6 @@
                           (->> % last first (= 'catch))))))
         (defn index-of [sub]
           (fn [s] (.indexOf s sub)))
-        (behavior "pipes directly to clojure.test/is using the =is=> arrow"
-          (assertions
-            (/ 1 2) =is=> (= 1/2)
-            (/ 1 0) =is=> (thrown? ArithmeticException)
-            (/ 9 3) =is=> (odd?)
-            "stuff" =is=> ((comp #(= 1 %) (index-of "tuf")))
-            ))
         (behavior "any other arrow, throws an ex-info"
           (assertions
             (triple->assertion '(left =bad-arrow=> right))

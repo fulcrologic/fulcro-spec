@@ -1,5 +1,12 @@
 (ns untangled-spec.assertions)
 
+(defn cljs-env?
+  "https://github.com/Prismatic/schema/blob/master/src/clj/schema/macros.clj"
+  [env] (boolean (:ns env)))
+
+(defn if-cljs [env cljs clj]
+  (if (cljs-env? env) cljs clj))
+
 (defn exception-matches? [& [e exp-type re f]]
   (when (some-> (ex-data e) ::type
                 (= ::internal))
@@ -14,28 +21,31 @@
        (or ((or f (fn [_] true)) e)
            (throw e))))
 
-(defn assert-expr [form msg extra]
+(defn assert-expr [form msg extra cljs?]
   (cond
     (nil? form)
-    `(~'do-report {:type :fail
-                              :message ~msg
-                              :extra ~extra})
+    `(~(symbol (if cljs? "cljs.test" "clojure.test") "do-report")
+               {:type :fail
+                :message ~msg
+                :extra ~extra})
 
     :else
     `(let [value# ~form]
-       (~'do-report {:type (if value# :pass :fail)
-                                :message ~msg, :expected '~form
-                                :actual value#, :extra ~extra})
+       (~(symbol (if cljs? "cljs.test" "clojure.test") "do-report")
+                 {:type (if value# :pass :fail)
+                  :message ~msg, :expected '~form
+                  :actual value#, :extra ~extra})
        value#)))
 
 #?(:clj
     (defmacro untangled-is [form & [msg extra]]
-      `(try ~(assert-expr form msg extra)
+      `(try ~(assert-expr form msg extra (cljs-env? &env))
             (catch #?(:clj Throwable
                       :cljs js/Object) t#
-              (~'do-report {:type :error, :message ~msg
-                                       :expected '~form, :actual t#
-                                       :extra ~extra})))))
+              (~(symbol (if-cljs &env "cljs.test" "clojure.test") "do-report")
+                        {:type :error, :message ~msg
+                         :expected '~form, :actual t#
+                         :extra ~extra})))))
 
 (defn handle-exception [e] e)
 
@@ -55,10 +65,6 @@
                        {:arrow '~arrow
                         :actual   actual#
                         :expected expected#})))
-
-    =is=>
-    `(~'is (~@expected ~left)
-           (->msg '~left '~arrow '~expected))
 
     =fn=>
     (let [checker expected

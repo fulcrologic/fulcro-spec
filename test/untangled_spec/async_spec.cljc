@@ -1,18 +1,10 @@
 (ns untangled-spec.async-spec
-  #?(:clj
-     (:require [untangled-spec.core :as c :refer [specification behavior provided with-timeline async tick assertions]]
-               [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report)]
-               [untangled-spec.async :as async]
-               ))
-  #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-             [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
-             ))
-  #?(:cljs (:require
-             [untangled-spec.async :as async]
-             [cljs.test :refer [do-report]]
-             )
-     )
-)
+  (:require [untangled-spec.async :as async]
+            [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
+             [specification behavior provided
+              with-timeline async tick assertions]]
+            #?(:clj [clojure.test :refer [is]])
+            #?(:cljs [cljs.test :refer-macros [is]])))
 
 (defn mock-fn1 [] (identity 0))
 (defn mock-fn2 [] (identity 0))
