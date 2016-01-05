@@ -23,39 +23,27 @@
   (when (instance? java.lang.Exception e)
     (print (format-exception e {:frame-limit 10}))))
 
-(defn ?print-diff [act exp {:keys [raw-actual arrow]} print-fn]
-  (when (and (= arrow '=>)
-             (coll? exp)
-             (not (map? exp))
-             (not (instance? java.lang.Exception raw-actual)))
-    ;clojure.data/diff does basic eq check for strings & maps -> redundant
-    (let [[plus minus eq] (clojure.data/diff act exp)]
-      (print-fn "    diff: -" minus)
-      (print-fn "    diff: +" plus))))
-
-(defn print-test-results [test-results print-fn]
-  (->> test-results
-       (remove #(= (:status %) :passed))
-       (mapv (fn [{:keys [message where status actual expected]}]
-                 (print-fn)
-                 (print-fn (if (= status :error)
-                             "Error" "Failed") "in" where)
-                 (when message (print-fn "ASSERTION:" message))
-                 (print-fn "expected:" expected)
-                 (print-fn "  actual:" actual)
-                 ;(?print-diff act exp test-result print-fn)
-                 (print-fn)
-               (when true
-                 ;TODO: ^true -> :key in config?
-                 (throw (ex-info "" {::stop? true})))))))
+(defn print-test-result [{:keys [message where status actual expected]} print-level]
+  (let [print-fn (partial println (space-level print-level))]
+    (print-fn)
+    (print-fn (if (= status :error)
+                "Error" "Failed") "in" where)
+    (when message (print-fn "ASSERTION:" message))
+    (print-fn "expected:" expected)
+    (print-fn "  actual:" actual)
+    (print-fn)
+    (when true
+      ;TODO: ^true -> :key in config?
+      (throw (ex-info "" {::stop? true})))))
 
 (defn print-test-item [test-item print-level]
   (t/with-test-out
     (println (space-level print-level)
              (color-str (:status test-item)
                         (:name test-item)))
-    (print-test-results (:test-results test-item)
-                        (partial println (space-level (inc print-level))))
+    (->> (:test-results test-item)
+         (remove #(= (:status %) :passed))
+         (mapv #(print-test-result % (inc print-level))))
     (->> (:test-items test-item)
          (mapv #(print-test-item % (inc print-level))))))
 

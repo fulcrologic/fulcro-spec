@@ -35,10 +35,10 @@
                (let [{:keys [message actual expected stack]} (om/props this)]
                  (->> (dom/tbody nil
                                  (ui-result-line {:title "Actual"
-                                                 :value actual
-                                                 :stack stack})
+                                                  :value actual
+                                                  :stack stack})
                                  (ui-result-line {:title "Expected"
-                                                 :value (or expected "")}))
+                                                  :value (or expected "")}))
                       (dom/table nil)
                       (dom/div nil (when message (dom/h3 nil message)))
                       (dom/li nil)))))
