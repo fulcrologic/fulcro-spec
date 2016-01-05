@@ -37,8 +37,7 @@
     (print-fn "expected:" (pr-str expected))
     (print-fn "  actual:" (pr-str actual))
     (print-fn)
-    (when true
-      ;TODO: ^true -> :key in config?
+    (when true ;TODO: -> env/cfg
       (throw (ex-info "" {::stop? true})))))
 
 (defn print-test-item [test-item print-level]

@@ -87,6 +87,17 @@
 
 (def ui-test-namespace (om/factory TestNamespace {:keyfn :name}))
 
+(defui FilterSelector
+       Object
+       (render [this]
+               (let [{:keys [current-filter this-filter set-filter!]} (om/props this)]
+                 (dom/a #js {:className (if (= current-filter this-filter)
+                                          "selected" "")
+                             :onClick (set-filter! this-filter)}
+                        (str this-filter)))))
+
+(def ui-filter-selector (om/factory FilterSelector))
+
 (defui Filters
        Object
        (render [this]
@@ -94,15 +105,10 @@
                       :keys [set-filter!]} (om/props this)]
                  (dom/div #js {:name "filters" :className "filter-controls"}
                           (dom/label #js {:htmlFor "filters"} "Filter: ")
-                          (dom/a #js {:className (if (= current-filter :all) "selected" "")
-                                      :onClick   (set-filter! :all)}
-                                 "All")
-                          (dom/a #js {:className (if (= current-filter :manual) "selected" "")
-                                      :onClick   (set-filter! :manual)}
-                                 "Manual")
-                          (dom/a #js {:className (if (= current-filter :failed) "selected" "")
-                                      :onClick   (set-filter! :failed)}
-                                 "Failed")))))
+                          (mapv #(ui-filter-selector {:current-filter current-filter
+                                                      :set-filter! set-filter!
+                                                      :this-filter %})
+                                [:all :manual :failed])))))
 
 (def ui-filters (om/factory Filters))
 
