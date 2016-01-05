@@ -184,8 +184,7 @@
                                      (my-square n) =1x=> (+ n 5)
                                      (my-square n) =1x=> (+ n 7)
 
-                                     (is (thrown? #?(:clj ExceptionInfo
-                                                     :cljs js/Object)
+                                     (is (thrown? #?(:clj ExceptionInfo :cljs js/Object)
                                                   (+ (my-square 1)
                                                      (my-square 1)
                                                      (my-square 1))))

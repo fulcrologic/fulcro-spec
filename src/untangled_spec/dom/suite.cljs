@@ -5,7 +5,9 @@
     [goog.dom :as gdom]
     [om.next :as om :refer-macros [defui]]
     [cljs-uuid-utils.core :as uuid]
-    [cljs.stacktrace :refer [parse-stacktrace]]))
+    [cljs.stacktrace :refer [parse-stacktrace]]
+
+    [untangled-spec.dom.edn-renderer :refer [html-edn]]))
 
 (enable-console-print!)
 
@@ -83,7 +85,6 @@
   (let [icon (.getElementById js/document "favicon")]
     (set! (.-href icon) (color-favicon-data-url color))))
 
-
 (defn make-testreport
   ([] (make-testreport []))
   ([initial-items]
@@ -94,7 +95,6 @@
     :passed        0
     :failed        0
     :error         0}))
-
 
 (defn make-testitem
   [name]
@@ -108,12 +108,9 @@
 
 (defn make-test-result
   [result result-detail]
-  {:id       (uuid/uuid-string (uuid/make-random-uuid))
-   :status   result
-   :message  (:message result-detail)
-   :where    (:where result-detail)
-   :expected (:expected result-detail)
-   :actual   (:actual result-detail)})
+  (merge {:id (uuid/uuid-string (uuid/make-random-uuid))
+          :status result}
+         result-detail))
 
 (defn make-tests-by-namespace
   [name]
@@ -149,8 +146,9 @@
        Object
        (initLocalState [this] {:folded? true})
        (render [this]
-               (let [{:keys [title value]} (om/props this)
+               (let [{:keys [title value extra]} (om/props this)
                      {:keys [folded?]} (om/get-state this)]
+                 (println :extra extra)
                  (dom/tr nil
                          (dom/td #js {:className "test-result-title"} title)
                          (dom/td #js {:className "test-result"
@@ -158,26 +156,30 @@
                                  (if (.-stack value)
                                    (dom/code #js {:className "stack-trace"}
                                              (if folded? \u25BA \u25BC)
-                                             (str value)
+                                             (if extra (html-edn extra) (str value))
                                              (dom/div #js {:className (if folded? "hidden" nil)}
                                                       (some-> value .-stack stack->trace)))
-                                   (dom/code nil (str value))))))))
+                                   (dom/code nil
+                                             (if extra (html-edn extra) (str value)))))))))
 
 (def test-sub-result (om/factory TestSubResult))
 
 (defui TestResult
        Object
        (render [this]
-               (let [{:keys [message actual expected]} (om/props this)]
+               (let [{:keys [message actual expected extra]} (om/props this)]
+                 (println (om/props this))
                  (dom/li nil
                          (dom/div nil
                                   (if message (dom/h3 nil message))
                                   (dom/table nil
                                              (dom/tbody nil
                                                         (test-sub-result {:title "Actual"
-                                                                          :value actual})
+                                                                          :value actual
+                                                                          :extra (:actual extra)})
                                                         (test-sub-result {:title "Expected"
-                                                                          :value (or expected "")}))))))))
+                                                                          :value (or expected "")
+                                                                          :extra (:expected extra)}))))))))
 
 (def test-result (om/factory TestResult {:keyfn :id}))
 
