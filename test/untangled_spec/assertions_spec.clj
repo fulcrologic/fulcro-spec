@@ -29,11 +29,23 @@
       (assertions
         (exception-matches? "msg3" (ex-info "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn" {})
                             clojure.lang.ExceptionInfo #"(?i)cthulhu")
-        =fn=> (*contains? {:type :passed :message "msg3"})
+        =fn=> (*contains? {:type :passed})
         (exception-matches? "msg4" (ex-info "kthxbye" {})
                             clojure.lang.ExceptionInfo #"cthulhu")
         => {:type :fail :message "exception's message did not match regex"
-            :actual "kthxbye" :expected "cthulhu"})))
+            :actual "kthxbye" :expected "cthulhu"}))
+    (behavior "checks the exception with the user's function"
+      (let [cthulhu-bored (ex-info "Haskell 101" {:cthulhu :snores})]
+        (assertions
+          (exception-matches? "msg5" (ex-info "H.P. Lovecraft" {:cthulhu :rises})
+                              clojure.lang.ExceptionInfo #"(?i)lovecraft"
+                              #(-> % ex-data :cthulhu (= :rises)))
+          =fn=> (*contains? {:type :passed})
+          (exception-matches? "msg6" cthulhu-bored
+                              clojure.lang.ExceptionInfo #"Haskell"
+                              #(-> % ex-data :cthulhu (= :rises)))
+          =fn=> (*contains? {:type :fail :actual cthulhu-bored
+                             :message "checker function failed"})))))
 
   (behavior "triple->assertion"
     (behavior "checks equality with the => arrow"

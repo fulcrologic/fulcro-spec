@@ -1,8 +1,6 @@
 (ns ^:figwheel-always untangled-spec.reporters.impl.browser
   (:require
-    [cljs.test :as test :include-macros true :refer [report]]
-    [cljs.stacktrace :refer [parse-stacktrace]]
-    ))
+    [cljs.stacktrace :refer [parse-stacktrace]]))
 
 (defn itemclass [status]
   (str "test-" (name status)))
@@ -29,11 +27,3 @@
       (= :all filter) "")))
 
 (defn stack->trace [st] (parse-stacktrace {} st {} {}))
-
-(defmethod report [::test/default :summary] [m]
-  (println "\nRan" (:test m) "tests containing"
-           (+ (:pass m) (:fail m) (:error m)) "assertions.")
-  (println (:fail m) "failures," (:error m) "errors.")
-  (if (< 0 (+ (:fail m) (:error m)))
-    (change-favicon-to-color "#d00")
-    (change-favicon-to-color "#0d0")))

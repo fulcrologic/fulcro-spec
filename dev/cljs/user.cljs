@@ -13,6 +13,7 @@
             untangled-spec.timeline-spec
             untangled-spec.dom.events-spec
             untangled-spec.dom.util-spec
+            untangled-spec.reporters.browser-spec
             ))
 
 (enable-console-print!)
@@ -24,6 +25,7 @@
   'untangled-spec.timeline-spec
   'untangled-spec.dom.events-spec
   'untangled-spec.dom.util-spec
+  'untangled-spec.reporters.browser-spec
   )
 
 (defn on-load []

@@ -19,15 +19,20 @@
 (defn space-level [level]
   (apply str (repeat (* 2 level) " ")))
 
-(defn print-exception [e]
-  (when (instance? java.lang.Exception e)
-    (print (format-exception e {:frame-limit 10}))))
+(defn print-throwable [e]
+  (print (format-exception e {:frame-limit 10})))
+
+(defmethod print-method Throwable [e w]
+  (print-method (c/red e) w))
 
 (defn print-test-result [{:keys [message where status actual expected]} print-level]
   (let [print-fn (partial println (space-level print-level))]
     (print-fn)
     (print-fn (if (= status :error)
                 "Error" "Failed") "in" where)
+    (when (and (= status :error)
+               (instance? Throwable actual))
+      (print-throwable actual))
     (when message (print-fn "ASSERTION:" message))
     (print-fn "expected:" expected)
     (print-fn "  actual:" actual)
@@ -73,7 +78,7 @@
                 (mapv print-namespace))
            (catch Exception e
              (when-not (->> e ex-data ::stop?)
-               (print-exception e))))
+               (print-throwable e))))
       (println "\nRan" tested "tests containing"
                (+ passed failed error) "assertions.")
       (println failed "failures,"
@@ -92,17 +97,11 @@
 
 (defmethod untangled-report :error [m]
   (t/inc-report-counter :error)
-  (impl/error (-> m
-                  (merge {:where (clojure.test/testing-vars-str m)})
-                  (update :expected str)
-                  (update :actual   str))))
+  (impl/error (-> m (merge {:where (clojure.test/testing-vars-str m)}))))
 
 (defmethod untangled-report :fail [m]
   (t/inc-report-counter :fail)
-  (impl/fail (-> m
-                 (merge {:where (clojure.test/testing-vars-str m)})
-                 (update :expected str)
-                 (update :actual   str))))
+  (impl/fail (-> m (merge {:where (clojure.test/testing-vars-str m)}))))
 
 (defmethod untangled-report :begin-test-ns [m]
   (impl/begin-namespace (ns-name (:ns m))))
