@@ -2,9 +2,8 @@
   (:require [clojure.string :as s]
             [untangled-spec.provided :as p]
             [untangled-spec.async :as async]
-            [untangled-spec.assertions :refer [triple->assertion]]
+            [untangled-spec.assertions :as ae]
             [untangled-spec.stub]
-            [untangled-spec.assert-expr :as ae]
             [clojure.test]))
 
 (defn cljs-env?
@@ -59,9 +58,7 @@
                          {:type ~startkw :string ~string})
                ~@body
                (~(symbol prefix "do-report")
-                         {:type ~stopkw :string ~string})
-               ))
-  )
+                         {:type ~stopkw :string ~string}))))
 
 (defmacro component
   "An alias for behavior. Makes some specification code easier to read where a given specification is describing subcomponents of a whole."
@@ -72,24 +69,20 @@
   "Adds the infrastructure required for doing timeline testing"
   [& forms]
   `(let [~'*async-queue* (async/make-async-queue)]
-     ~@forms
-     )
-  )
+     ~@forms))
 
 (defmacro async
   "Adds an event to the event queue with the specified time and callback function.
   Must be wrapped by with-timeline.
   "
   [tm cb]
-  `(async/schedule-event ~'*async-queue* ~tm (fn [] ~cb))
-  )
+  `(async/schedule-event ~'*async-queue* ~tm (fn [] ~cb)))
 
 (defmacro tick
   "Advances the timer by the specified number of ticks.
   Must be wrapped by with-timeline."
   [tm]
-  `(async/advance-clock ~'*async-queue* ~tm)
-  )
+  `(async/advance-clock ~'*async-queue* ~tm))
 
 (defmacro provided
   "A macro for using a Midje-style provided clause within any testing framework. This macro rewrites
@@ -105,5 +98,5 @@
 
 (defmacro assertions [& forms]
   (let [triples (partition 3 forms)
-        asserts (map (partial triple->assertion (cljs-env? &env)) triples)]
+        asserts (map (partial ae/triple->assertion (cljs-env? &env)) triples)]
     `(do ~@asserts)))

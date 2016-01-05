@@ -17,10 +17,7 @@
                       (binding [t/report (fn [m] m)]
                         (as-> x x (triple->assertion false x) (eval x) (get-exp-act x msg?))))
           test-case-msg #(test-case % true)]
-      (provided "with :extra, ie: from triple->assertion"
-        ;(clojure.test/do-report x) => x
-        ;TODO: FIX/TEST ME
-
+      (behavior "with :extra, ie: from triple->assertion"
         (component "=>"
           (behavior "basic"
             (is (= [5 3] (test-case '(5 => 3)))))

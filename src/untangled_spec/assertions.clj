@@ -1,4 +1,4 @@
-(ns untangled-spec.assert-expr)
+(ns untangled-spec.assertions)
 
 (defn fn-assert-expr [msg [f arg :as form]]
   `(let [arg# ~arg
@@ -50,3 +50,26 @@
     "eq"      (eq-assert-expr     msg (rest form))
     "throws?" (throws-assert-expr msg (rest form))
     :else {:type :fail :message "ELSE" :actual "BAD" :expected ""}))
+
+(defn triple->assertion [cljs? [left arrow expected]]
+  (let [prefix (if cljs? "cljs.test" "clojure.test")
+        is (symbol prefix "is")]
+    (case arrow
+      =>
+      (let [actual left]
+        `(~is (= ~actual ~expected)
+              (str '~actual " " '~arrow " " ~expected)))
+
+      =fn=>
+      (let [checker expected
+            arg left]
+        `(~is (~'call ~checker ~arg)
+              (str '~arg " " '~arrow " " '~checker)))
+
+      =throws=>
+      (let [should-throw left
+            criteria expected]
+        `(~is (~'throws? ~cljs? ~should-throw ~@criteria)
+              (str '~should-throw " " '~arrow " " '~criteria)))
+
+      (throw (ex-info "invalid arrow" {:arrow arrow})))))
