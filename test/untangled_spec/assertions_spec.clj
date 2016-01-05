@@ -1,9 +1,9 @@
 (ns untangled-spec.assertions-spec
   (:require [untangled-spec.core :refer
-             [specification behavior provided assertions]]
+             [specification component behavior provided assertions]]
             [untangled-spec.assertions
              :refer [triple->assertion exception-matches?]]
-            [clojure.test :refer [is]]
+            [clojure.test :as t :refer [is]]
             [contains.core :refer [*contains?]])
   (:import clojure.lang.ExceptionInfo))
 
@@ -55,16 +55,50 @@
                     #"invalid arrow"
                     #(-> % ex-data (= {:arrow '=bad-arrow=>}))))))
 
-  (behavior "assertion arrow"
-    (provided "=throws=> fails if nothing threw an Exception"
+  (behavior "throws assertion arrow"
+    (provided "fails if nothing threw an Exception"
       (ex-info x y) => (Exception. (str x y))
       (assertions
         [:foo :bar] =throws=> (Exception #"Expected an 'Exception'")))
-    (behavior "=throws=> can catch AssertionErrors"
+    (behavior "catches AssertionErrors"
       (let [f (fn [x] {:pre [(even? x)]} (inc x))]
         (is (thrown? AssertionError (f 1)))
         (is (= 3 (f 2)))
         (assertions
           (f 1) =throws=> (AssertionError #"even\? x")
           (f 6) => 7
-          (f 2) => 3)))))
+          (f 2) => 3))))
+
+  (behavior "running assertions reports the correct data"
+    (let [get-exp-act (fn [{exp :expected act :actual msg :message} & [msg?]]
+                        (if msg? [act exp msg] [act exp]))
+          test-case (fn [x & [msg?]]
+                      (binding [t/report (fn [m] m)]
+                        (as-> x x (triple->assertion false x) (eval x) (get-exp-act x msg?))))
+          test-case-msg #(test-case % true)]
+      (component "=>"
+        (behavior "literals"
+          (is (= [5 3] (test-case '(5 => 3)))))
+        (behavior "forms"
+          (is (= [5 3] (test-case '((+ 3 2) => (+ 2 1)))))))
+
+      (component "=fn=>"
+        (behavior "literals"
+          (is (= [5 'even?] (test-case '(5 =fn=> even?)))))
+        (behavior "lambda"
+          (is (re-find #"even\?"
+                       (->> '(7 =fn=> #(even? %))
+                            test-case second str))))
+        (behavior "forms"
+          (is (= [7 '(fn [x] (even? x))]
+                 (test-case '((+ 5 2) =fn=> (fn [x] (even? x))))))))
+
+      (component "=throws=>"
+        (behavior "simple"
+          (is (= ["foo" "asdf" "exception's message did not match regex"]
+                 (test-case-msg '((throw (ex-info "foo" {}))
+                                  =throws=> (clojure.lang.ExceptionInfo #"asdf")))))
+          (is (= ["it to throw" "Expected an 'clojure.lang.ExceptionInfo' to be thrown!"]
+                 (-> '((+ 5 2) =throws=> (clojure.lang.ExceptionInfo #"asdf"))
+                     test-case-msg rest)))))))
+  )
