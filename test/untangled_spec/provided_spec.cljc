@@ -1,25 +1,13 @@
 (ns untangled-spec.provided-spec
+  (:require #?(:clj [untangled-spec.provided :as p])
+            [untangled-spec.stub]
+            [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
+             [specification behavior provided
+              with-timeline async tick assertions when-mocking]]
+            #?(:clj [clojure.test :refer [is]])
+            #?(:cljs [cljs.test :refer-macros [is]]))
   #?(:clj
-      (:require [untangled-spec.core :as c
-                 :refer [specification behavior provided
-                         with-timeline async tick assertions
-                         when-mocking]]
-                [clojure.test
-                 :refer [is]]
-                [untangled-spec.provided :as p]
-                [untangled-spec.stub]
-                ))
-  #?(:cljs (:require-macros
-             [cljs.test :refer [is]]
-             [untangled-spec.provided :as p]
-             ))
-  #?(:cljs (:require [untangled-spec.core
-                      :refer-macros [specification behavior provided
-                                     with-timeline async tick assertions
-                                     when-mocking]]))
-  #?(:clj
-      (:import clojure.lang.ExceptionInfo))
-  )
+      (:import clojure.lang.ExceptionInfo)))
 
 #?(:clj
     (specification "parse-arrow-count"

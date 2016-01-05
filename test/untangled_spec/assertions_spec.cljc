@@ -1,18 +1,10 @@
 (ns untangled-spec.assertions-spec
+  (:require [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
+             [specification behavior provided assertions]]
+            [untangled-spec.assertions
+             :refer [exception-matches? triple->assertion]])
   #?(:clj
-      (:require [untangled-spec.core :as c
-                 :refer [specification behavior provided assertions]]
-                [untangled-spec.assertions
-                 :refer [exception-matches? triple->assertion]]
-                [clojure.test]
-                ))
-  #?(:clj
-      (:import clojure.lang.ExceptionInfo))
-  )
-
-(defn spy [tag x]
-  (println (str "TAG[" tag "]:") x)
-  x)
+      (:import clojure.lang.ExceptionInfo)))
 
 (defn check-assertion [expected]
   (fn [actual]

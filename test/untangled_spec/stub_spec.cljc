@@ -1,21 +1,13 @@
 (ns untangled-spec.stub-spec
+  (:require [untangled-spec.stub :as s
+             #?@(:cljs [:include-macros true])]
+            [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
+             [specification behavior provided
+              with-timeline async tick assertions]]
+            #?(:clj [clojure.test :refer [is]])
+            #?(:cljs [cljs.test :refer-macros [is]]))
   #?(:clj
-      (:require [untangled-spec.stub :as s]
-                [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
-                [clojure.test :refer [is]]
-                ))
-  #?(:clj
-      (:import clojure.lang.ExceptionInfo))
-  #?(:cljs (:require-macros
-             [cljs.test :refer [is]]
-             ))
-  #?(:cljs (:require
-             [untangled-spec.core
-              :refer-macros [specification behavior provided
-                             with-timeline async tick assertions]]
-             [untangled-spec.stub :as s :include-macros true]
-             ))
-  )
+      (:import clojure.lang.ExceptionInfo)))
 
 (defn make-simple-script []
   (s/make-script "something"

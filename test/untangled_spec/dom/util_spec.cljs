@@ -1,18 +1,15 @@
 (ns untangled-spec.dom.util-spec
-  (:require-macros
-    [cljs.test :refer [is]]
-    [untangled-spec.dom.suite :refer [test-suite]])
-  (:require
-    [untangled-spec.core
-     :refer-macros (specification behavior provided assertions)]
-    [goog.dom :as gd]
-    [om.dom :as dom]
-    [untangled-spec.dom.assertions :refer [text-matches]]
-    [untangled-spec.dom.util :refer [node-contains-text?
-                                     find-element
-                                     render-as-dom
-                                     is-rendered-element?]]
-    ))
+  (:require [untangled-spec.core :refer-macros
+             [specification behavior provided assertions]]
+            [goog.dom :as gd]
+            [om.dom :as dom]
+            [untangled-spec.dom.assertions :refer [text-matches]]
+            [untangled-spec.dom.util :refer [node-contains-text?
+                                             find-element
+                                             render-as-dom
+                                             is-rendered-element?]]
+            [cljs.test :refer-macros [is]]
+            [untangled-spec.dom.suite :refer-macros [test-suite]]))
 
 (def sample-doc
   (render-as-dom
