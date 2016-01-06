@@ -15,6 +15,7 @@
   :plugins [[lein-cljsbuild "1.1.0"]
             [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]]
 
+  :resource-paths ["src" "resources"]
   :repositories [["releases" "https://artifacts.buehner-fry.com/artifactory/internal-release"]
                  ["third-party" "https://artifacts.buehner-fry.com/artifactory/internal-3rdparty"]]
 
