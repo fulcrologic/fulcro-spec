@@ -89,7 +89,8 @@
                           [act exp]))
           test-case (fn [x & [opt]]
                       (binding [t/report (fn [m] m)]
-                        (as-> x x (triple->assertion false x) (eval x) (get-exp-act x opt))))]
+                        (as-> x x (triple->assertion false x) (eval x) (get-exp-act x opt))))
+          ]
       (component "=>"
         (behavior "literals"
           (is (= [5 3] (test-case '(5 => 3)))))

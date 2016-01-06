@@ -9,14 +9,24 @@
 (specification "untangled-spec.reporters.terminal-spec"
   (component "print-test-result"
     (provided "prints machine readable expected and actual"
-      (pr-str "exp") =1x=> "exp"
-      (pr-str "act") =1x=> "act"
+      (rt/pretty-str "exp" 5) =1x=> "exp"
+      (rt/pretty-str "act" 5) =1x=> "act"
       (assertions
-        (rt/print-test-result {:actual "act" :expected "exp"} (constantly nil))
+        (rt/print-test-result {:actual "act" :expected "exp"} (constantly nil) 0)
         =throws=> (clojure.lang.ExceptionInfo #"" stop?)))
     (provided "if (isa? actual Throwable) & (= status :error), it should print-throwable"
       (rt/print-throwable _) => _
       (let [e (ex-info "howdy" {})]
         (assertions
-          (rt/print-test-result {:status :error :actual e} (constantly nil))
-          =throws=> (clojure.lang.ExceptionInfo #"" stop?))))))
+          (rt/print-test-result {:status :error :actual e} (constantly nil) 0)
+          =throws=> (clojure.lang.ExceptionInfo #"" stop?)))))
+  (let [big-thing (zipmap (range 5)
+                          (repeat (zipmap (range 5) (range))))]
+    (component "pretty-str"
+      (behavior "put newlines in between lines"
+        (assertions
+          (rt/pretty-str big-thing 1) => (str "{0 {0 0, 1 1, 2 2, 3 3, 4 4},\n    "
+                                              "1 {0 0, 1 1, 2 2, 3 3, 4 4},\n    "
+                                              "2 {0 0, 1 1, 2 2, 3 3, 4 4},\n    "
+                                              "3 {0 0, 1 1, 2 2, 3 3, 4 4},\n    "
+                                              "4 {0 0, 1 1, 2 2, 3 3, 4 4}}"))))))

@@ -1,12 +1,12 @@
 (ns untangled-spec.reporters.terminal
-  (:require [clojure.test :as t]
+  ( :require [clojure.test :as t]
             [clojure.stacktrace :as stack]
             [untangled-spec.reporters.impl.terminal :as impl]
             [colorize.core :as c]
             [clojure.string]
-            [clojure.data :refer [diff]]
             [io.aviso.exception :refer [format-exception *traditional*]]
-            clojure.java.shell)
+            clojure.java.shell
+            [clojure.pprint :refer [pprint]] )
   (:import clojure.lang.ExceptionInfo
            apple.applescript.AppleScriptEngineFactory))
 
@@ -17,8 +17,10 @@
         color-fn (or (status->color status) c/reset)]
     (apply color-fn strings)))
 
+(defn pad [pad n] (apply str (repeat n pad)))
+
 (defn space-level [level]
-  (apply str (repeat (* 2 level) " ")))
+  (pad " " (* 2 level)))
 
 (defn print-throwable [e]
   (println (format-exception e {:frame-limit 10})))
@@ -26,7 +28,12 @@
 (defmethod print-method Throwable [e w]
   (print-method (c/red e) w))
 
-(defn print-test-result [{:keys [message where status actual expected assertion throwable]} print-fn]
+(defn pretty-str [s n]
+  (as-> (with-out-str (pprint s)) s
+    (clojure.string/split s #"\n")
+    (apply str (interpose (str "\n" (pad " " (inc (* 2 n)))) s))))
+
+(defn print-test-result [{:keys [message where status actual expected assertion throwable]} print-fn print-level]
   (print-fn)
   (print-fn (c/white (if (= status :error)
                        "Error" "Failed") " in " where))
@@ -35,8 +42,8 @@
     (print-throwable actual))
   (when throwable (print-throwable throwable))
   (when assertion (print-fn (c/magenta "ASSERTION:") assertion))
-  (print-fn (c/cyan "expected:") (pr-str expected))
-  (print-fn (c/red "  actual:") (pr-str actual))
+  (print-fn (c/cyan "expected:") (pretty-str expected (+ 5 print-level)))
+  (print-fn (c/red "  actual:") (pretty-str actual (+ 5 print-level)))
   (when message (print-fn (c/yellow " message:") message))
   (when true ;TODO: -> env/cfg
     (throw (ex-info "" {::stop? true}))))
@@ -48,7 +55,7 @@
                         (:name test-item)))
     (->> (:test-results test-item)
          (remove #(= (:status %) :passed))
-         (mapv #(print-test-result % (partial println (space-level (inc print-level))))))
+         (mapv #(print-test-result % (partial println (space-level (inc print-level))) (inc print-level))))
     (->> (:test-items test-item)
          (mapv #(print-test-item % (inc print-level))))))
 
