@@ -19,6 +19,9 @@
 (defmethod clojure.test/assert-expr 'clojure.core/= [msg form]
   `(clojure.test/do-report ~(ae/assert-expr 'eq msg form)))
 
+(defmethod clojure.test/assert-expr '= [msg form]
+  `(clojure.test/do-report ~(ae/assert-expr 'eq msg form)))
+
 (defmethod clojure.test/assert-expr 'throws? [msg form]
   `(clojure.test/do-report ~(ae/assert-expr 'throws? msg form)))
 
