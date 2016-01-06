@@ -3,6 +3,7 @@
             [clojure.stacktrace :as stack]
             [untangled-spec.reporters.impl.terminal :as impl]
             [colorize.core :as c]
+            [clojure.string]
             [clojure.data :refer [diff]]
             [io.aviso.exception :refer [format-exception *traditional*]]
             clojure.java.shell)
@@ -20,25 +21,25 @@
   (apply str (repeat (* 2 level) " ")))
 
 (defn print-throwable [e]
-  (print (format-exception e {:frame-limit 10})))
+  (println (format-exception e {:frame-limit 10})))
 
 (defmethod print-method Throwable [e w]
   (print-method (c/red e) w))
 
-(defn print-test-result [{:keys [message where status actual expected]} print-level]
-  (let [print-fn (partial println (space-level print-level))]
-    (print-fn)
-    (print-fn (if (= status :error)
-                "Error" "Failed") "in" where)
-    (when (and (= status :error)
-               (instance? Throwable actual))
-      (print-throwable actual))
-    (when message (print-fn "ASSERTION:" message))
-    (print-fn "expected:" (pr-str expected))
-    (print-fn "  actual:" (pr-str actual))
-    (print-fn)
-    (when true ;TODO: -> env/cfg
-      (throw (ex-info "" {::stop? true})))))
+(defn print-test-result [{:keys [message where status actual expected assertion throwable]} print-fn]
+  (print-fn)
+  (print-fn (c/white (if (= status :error)
+                       "Error" "Failed") " in " where))
+  (when (and (= status :error)
+             (instance? Throwable actual))
+    (print-throwable actual))
+  (when throwable (print-throwable throwable))
+  (when assertion (print-fn (c/magenta "ASSERTION:") assertion))
+  (print-fn (c/cyan "expected:") (pr-str expected))
+  (print-fn (c/red "  actual:") (pr-str actual))
+  (when message (print-fn (c/yellow " message:") message))
+  (when true ;TODO: -> env/cfg
+    (throw (ex-info "" {::stop? true}))))
 
 (defn print-test-item [test-item print-level]
   (t/with-test-out
@@ -47,7 +48,7 @@
                         (:name test-item)))
     (->> (:test-results test-item)
          (remove #(= (:status %) :passed))
-         (mapv #(print-test-result % (inc print-level))))
+         (mapv #(print-test-result % (partial println (space-level (inc print-level))))))
     (->> (:test-items test-item)
          (mapv #(print-test-item % (inc print-level))))))
 
