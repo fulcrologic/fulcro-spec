@@ -32,8 +32,7 @@
               :status result})
       #?(:cljs (#(if (some-> % :actual .-stack)
                    (assoc % :stack (-> % :actual .-stack stack->trace))
-                   %)))
-      ))
+                   %)))))
 
 (defn make-tests-by-namespace
   [name]

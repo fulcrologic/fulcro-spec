@@ -18,12 +18,11 @@
   (let [icon (.getElementById js/document "favicon")]
     (set! (.-href icon) (color-favicon-data-url color))))
 
-(defn filter-class [test-item]
-  (let [filter (:report/filter test-item)
-        state (:status test-item)]
-    (cond
-      (and (= :failed filter) (not= :error state) (not= :failed state)) "hidden"
-      (and (= :manual filter) (not= :manual state)) "hidden"
-      (= :all filter) "")))
+(defn filter-class [{:keys [report/filter status]}]
+  (when (or (and (#{:failed} filter)
+                 (not (#{:error :failed} status)))
+            (and (=    :manual filter)
+                 (not= :manual status)))
+    "hidden"))
 
 (defn stack->trace [st] (parse-stacktrace {} st {} {}))
