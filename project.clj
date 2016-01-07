@@ -13,7 +13,7 @@
                  [lein-doo "0.1.6" :scope "test"]]
 
   :plugins [[lein-cljsbuild "1.1.1"]
-            [lein-doo "0.1.6"]
+            [lein-doo "0.1.6"] ; for cljs CI tests
             [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]]
 
   :repositories [["releases" "https://artifacts.buehner-fry.com/artifactory/internal-release"]
@@ -30,6 +30,7 @@
   :test-paths ["test"]
   :resource-paths ["src" "resources"]
 
+  ; CI tests: Set up to support karma runner. Recommend running against chrome. See README
   :doo {:build "automated-tests"
         :paths {:karma "node_modules/.bin/karma"}}
 
@@ -49,6 +50,7 @@
                                               :optimizations        :none
                                               }
                                }
+                              ;; FOR CI tests. Runs via doo
                               {:id           "automated-tests"
                                :source-paths ["src" "test"]
                                :compiler     {:output-to     "resources/private/js/unit-tests.js"
