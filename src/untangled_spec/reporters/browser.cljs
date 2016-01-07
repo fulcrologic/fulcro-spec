@@ -32,15 +32,20 @@
 (defui TestResult
        Object
        (render [this]
-               (let [{:keys [message actual expected stack]} (om/props this)]
+               (let [{:keys [message extra actual expected stack]} (om/props this)]
                  (->> (dom/tbody nil
+                                 (when message
+                                   (ui-result-line {:title "ASSERTION: "
+                                                    :value message}))
                                  (ui-result-line {:title "Actual"
                                                   :value actual
                                                   :stack stack})
                                  (ui-result-line {:title "Expected"
-                                                  :value (or expected "")}))
+                                                  :value (or expected "")})
+                                 (when extra
+                                   (ui-result-line {:title "Message: "
+                                                    :value extra})))
                       (dom/table nil)
-                      (dom/div nil (when message (dom/h3 nil message)))
                       (dom/li nil)))))
 
 (def ui-test-result (om/factory TestResult {:keyfn :id}))
@@ -91,7 +96,8 @@
        Object
        (render [this]
                (let [{:keys [current-filter this-filter set-filter!]} (om/props this)]
-                 (dom/a #js {:className (if (= current-filter this-filter)
+                 (dom/a #js {:href "#"
+                             :className (if (= current-filter this-filter)
                                           "selected" "")
                              :onClick (set-filter! this-filter)}
                         (str this-filter)))))

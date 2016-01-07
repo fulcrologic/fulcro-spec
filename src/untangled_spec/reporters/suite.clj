@@ -5,9 +5,6 @@
 (defmethod cljs.test/assert-expr 'call [_ msg form]
   `(cljs.test/do-report ~(ae/assert-expr 'call msg form)))
 
-(defmethod cljs.test/assert-expr 'clojure.core/= [_ msg form]
-  `(cljs.test/do-report ~(ae/assert-expr 'eq msg form)))
-
 (defmethod cljs.test/assert-expr 'throws? [_ msg form]
   `(cljs.test/do-report ~(ae/assert-expr 'throws? msg form)))
 

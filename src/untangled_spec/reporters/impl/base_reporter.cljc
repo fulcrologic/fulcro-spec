@@ -25,19 +25,11 @@
 
 #?(:cljs (defn- stack->trace [st] (parse-stacktrace {} st {} {})))
 
-(defn ?swap [test-result status]
-  (if (and (not (:assertion test-result)) (= status :error))
-    (-> test-result
-      (assoc :assertion (:message test-result))
-      (dissoc :message))
-    test-result))
-
 (defn make-test-result
   [result result-detail]
   (-> result-detail
       (merge {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
               :status result})
-      (?swap result)
       #?(:cljs (#(if (some-> % :actual .-stack)
                    (assoc % :stack (-> % :actual .-stack stack->trace))
                    %)))))
