@@ -4,7 +4,7 @@
   `(let [arg# ~arg
          result# (~f arg#)]
      {:type (if result# :pass :fail)
-      :assertion ~msg :message ~msg
+      :assertion ~msg
       :actual arg# :expected '~f}))
 
 (defn eq-assert-expr [msg [act exp :as form]]
@@ -12,7 +12,7 @@
          exp# ~exp
          result# (= act# exp#)]
      {:type (if result# :pass :fail)
-      :assertion ~msg :message ~msg
+      :assertion ~msg
       :actual act# :expected exp#}))
 
 (defn exception-matches? [msg e exp-type & [re f f+]]
