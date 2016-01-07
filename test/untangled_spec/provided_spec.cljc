@@ -168,6 +168,8 @@
 
 (defn my-square [x] (* x x))
 
+(defn my-varargs-sum [n & nums] (apply + n nums))
+
 (specification "provided and when-mocking macros"
                (behavior "cause stubbing to work"
                          (provided "that functions are mocked the correct number of times, with the correct output values."
@@ -204,6 +206,14 @@
                                                ))
                                    )
                          )
+
+               (provided "we can mock a var args function"
+                 (my-varargs-sum x y) =1x=> [x y]
+                 (my-varargs-sum x y z) => [x y z]
+                 (assertions
+                   (my-varargs-sum 1 2) => [1 2]
+                   (my-varargs-sum 1 2 3) => [1 2 3]
+                   ))
 
                (provided "allow stubs to throw exceptions"
                          (my-square n) => (throw (ex-info "throw!" {}))
