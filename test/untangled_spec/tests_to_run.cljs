@@ -1,4 +1,4 @@
-(ns untangled-spec.test-symbols
+(ns untangled-spec.tests-to-run
   (:require untangled-spec.async-spec
             untangled-spec.stub-spec
             untangled-spec.provided-spec
