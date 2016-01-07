@@ -25,11 +25,19 @@
 
 #?(:cljs (defn- stack->trace [st] (parse-stacktrace {} st {} {})))
 
+(defn ?swap [test-result status]
+  (if (and (not (:assertion test-result)) (= status :error))
+    (-> test-result
+      (assoc :assertion (:message test-result))
+      (dissoc :message))
+    test-result))
+
 (defn make-test-result
   [result result-detail]
   (-> result-detail
       (merge {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
               :status result})
+      (?swap result)
       #?(:cljs (#(if (some-> % :actual .-stack)
                    (assoc % :stack (-> % :actual .-stack stack->trace))
                    %)))))
@@ -72,7 +80,8 @@
           test-result (make-test-result failure-type detail)
           test-result-path (concat path [:test-results (count test-results)])]
       (set-test-result test-state path failure-type)
-      (swap! test-state #(assoc-in % test-result-path test-result)))))
+      (swap! test-state #(assoc-in % test-result-path test-result))
+      test-result)))
 
 (def error (internal :error))
 (def fail  (internal :failed))
