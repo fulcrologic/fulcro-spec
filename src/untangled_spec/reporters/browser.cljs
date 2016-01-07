@@ -17,12 +17,15 @@
                      {:keys [folded?]} (om/get-state this)]
                  (dom/tr nil
                          (dom/td #js {:className "test-result-title"} title)
-                         (dom/td #js {:className "test-result"
-                                      :onClick #(om/update-state! this update :folded? not)}
+                         (dom/td #js {:className "test-result"}
                                  (dom/code nil
-                                           (when stack
-                                             (if folded? \u25BA \u25BC))
-                                           (str value)
+                                           (if stack
+                                             (dom/a #js {:href "#"
+                                                         :className "error"
+                                                         :onClick #(om/update-state! this update :folded? not)}
+                                                    (if folded? \u25BA \u25BC)
+                                                    (str value))
+                                             (str value))
                                            (when stack
                                              (dom/div #js {:className (if folded? "hidden" "stack-trace")}
                                                       stack))))))))
@@ -181,7 +184,7 @@
                                    #(om/transact! this `[(~'set-filter {:new-filter ~new-filter})]))]
                  (dom/section #js {:className "test-report"}
                               (ui-filters {:report/filter current-filter
-                                          :set-filter! set-filter!})
+                                           :set-filter! set-filter!})
                               (dom/ul #js {:className "test-list"}
                                       (mapv (comp ui-test-namespace
                                                   #(assoc % :report/filter current-filter))
