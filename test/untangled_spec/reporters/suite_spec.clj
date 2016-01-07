@@ -9,4 +9,4 @@
   (behavior "adds methods to cljs.test/assert-expr"
     (assertions
       (methods t/assert-expr)
-      =fn=> (*contains? '[clojure.core/= call throws?] :keys))))
+      =fn=> (*contains? '[= call throws?] :keys))))
