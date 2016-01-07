@@ -55,8 +55,7 @@
 (defmacro test-suite [name & test-namespaces]
   (let [state-name (symbol (str name "-state"))
         test-report-keyword (keyword (str *ns* "/" name))
-        target (str name)
-        ]
+        target (str name)]
     `(do
        (cljs.core/defonce ~state-name (untangled-spec.dom.suite/new-test-suite ~target))
        (cljs.core/defn ~name []
