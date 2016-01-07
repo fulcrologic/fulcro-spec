@@ -1,7 +1,6 @@
 (ns untangled-spec.all-tests
   (:require
-    [untangled-spec.test-symbols :as ts]
-    [doo.runner :refer-macros [doo-all-tests]]
-    [cljs.test]))
+    untangled-spec.test-symbols
+    [doo.runner :refer-macros [doo-all-tests]]))
 
-(doo-all-tests #"untangled.*")
+(doo-all-tests #"untangled.*-spec")

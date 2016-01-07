@@ -68,4 +68,20 @@
     )
   )
 
+(defmacro test-all-suite [name regex]
+  (let [state-name (symbol (str name "-state"))
+        test-report-keyword (keyword (str *ns* "/" name))
+        target (str name)]
+    `(do
+       (cljs.core/defonce ~state-name (untangled-spec.dom.suite/new-test-suite ~target))
+       (cljs.core/defn ~name []
+         (cljs.test/run-all-tests ~regex (cljs.test/empty-env ~test-report-keyword))
+         (untangled-spec.dom.suite/render-tests ~state-name)
+         )
+       (untangled-spec.dom.suite/render-tests ~state-name)
+       ~@(define-test-methods state-name test-report-keyword)
+       )
+    )
+  )
+
 
