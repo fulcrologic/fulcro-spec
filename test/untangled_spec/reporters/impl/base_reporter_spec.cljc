@@ -6,4 +6,17 @@
     #?(:clj [clojure.test :refer [is]])
     #?(:cljs [cljs.test :refer-macros [is]])))
 
-(specification "base-reporter-spec")
+(specification "base-reporter-spec"
+  (component "tuplize"
+    (behavior "yes"
+      (assertions
+        (base/tuplize {:A [1 {:B :D}
+                           2 {:E :G}]})
+        => {})))
+
+  (component "mutations->paths"
+    (behavior "maybe"
+      (assertions
+        (base/mutations->paths {:A [[1 {:B :D}]
+                                    [2 {:E :G}]]})
+        => {}))))
