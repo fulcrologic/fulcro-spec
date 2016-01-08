@@ -13,10 +13,10 @@
        Object
        (initLocalState [this] {:folded? true})
        (render [this]
-               (let [{:keys [title value stack]} (om/props this)
+               (let [{:keys [title value stack] type- :type} (om/props this)
                      {:keys [folded?]} (om/get-state this)]
                  (dom/tr nil
-                         (dom/td #js {:className "test-result-title"} title)
+                         (dom/td #js {:className (str "test-result-title " (name type-))} title)
                          (dom/td #js {:className "test-result"}
                                  (dom/code nil
                                            (if stack
@@ -38,21 +38,27 @@
                (let [{:keys [message extra actual expected stack diff]} (om/props this)]
                  (->> (dom/tbody nil
                                  (when message
-                                   (ui-result-line {:title "ASSERTION: "
+                                   (ui-result-line {:type :normal
+                                                    :title "ASSERTION: "
                                                     :value message}))
-                                 (ui-result-line {:title "Actual"
+                                 (ui-result-line {:type :normal
+                                                  :title "Actual"
                                                   :value actual
                                                   :stack stack})
-                                 (ui-result-line {:title "Expected"
+                                 (ui-result-line {:type :normal
+                                                  :title "Expected"
                                                   :value (or expected "")})
                                  (when extra
-                                   (ui-result-line {:title "Message: "
+                                   (ui-result-line {:type :normal
+                                                    :title "Message: "
                                                     :value extra}))
                                  (when diff
-                                   (ui-result-line {:title "Updates "
+                                   (ui-result-line {:type :diff
+                                                    :title "Updates "
                                                     :value (:mutations diff)}))
                                  (when diff
-                                   (ui-result-line {:title "Removals "
+                                   (ui-result-line {:type :diff
+                                                    :title "Removals "
                                                     :value (:removals diff)}))
                         )
                       (dom/table nil)

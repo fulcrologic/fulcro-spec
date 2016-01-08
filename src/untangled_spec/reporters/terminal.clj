@@ -11,9 +11,13 @@
            apple.applescript.AppleScriptEngineFactory))
 
 (defn color-str [status & strings]
-  (let [status->color {:passed c/green
-                       :failed c/red
-                       :error  c/red}
+  (let [color? (#{"1" "true"} (System/getenv "US_COLOR"))
+        status->color (cond-> {:passed c/green
+                               :failed c/red
+                               :error  c/red}
+                        color? (merge {:normal (comp c/bold c/yellow)
+                                       :diff (comp c/bold c/cyan)
+                                       :where (comp c/bold c/white)}))
         color-fn (or (status->color status) c/reset)]
     (apply color-fn strings)))
 
@@ -33,25 +37,23 @@
     (clojure.string/split s #"\n")
     (apply str (interpose (str "\n" (pad " " (inc (* 2 n)))) s))))
 
-(def color (comp c/bold c/cyan))
-
-(def diff-color (comp c/bold c/yellow))
-
-(defn print-test-result [{:keys [message where status actual expected extra throwable diff]} print-fn print-level]
+(defn print-test-result [{:keys [message where status actual
+                                 expected extra throwable diff]}
+                         print-fn print-level]
   (print-fn)
-  (print-fn (c/white (if (= status :error)
-                       "Error" "Failed") " in " where))
+  (print-fn (color-str :where (if (= status :error)
+                           "Error" "Failed") " in " where))
   (when (and (= status :error)
              (instance? Throwable actual))
     (print-throwable actual))
   (when throwable (print-throwable throwable))
-  (when message (print-fn (color "ASSERTION:") message))
-  (print-fn (color "expected:") (pretty-str expected (+ 5 print-level)))
-  (print-fn (color "  actual:") (pretty-str actual (+ 5 print-level)))
-  (when extra (print-fn (color "   extra:") extra))
+  (when message (print-fn (color-str :normal "ASSERTION:") message))
+  (print-fn (color-str :normal "expected:") (pretty-str expected (+ 5 print-level)))
+  (print-fn (color-str :normal "  actual:") (pretty-str actual (+ 5 print-level)))
+  (when extra (print-fn (color-str :normal "   extra:") extra))
   (when diff
-    (print-fn (diff-color " updates:") (pretty-str (:mutations diff) (+ 5 print-level)))
-    (print-fn (diff-color "removals:") (pretty-str (:removals diff) (+ 5 print-level))))
+    (print-fn (color-str :diff " updates:") (pretty-str (:mutations diff) (+ 5 print-level)))
+    (print-fn (color-str :diff "removals:") (pretty-str (:removals diff) (+ 5 print-level))))
   (when true ;TODO: -> env/cfg
     (throw (ex-info "" {::stop? true}))))
 
