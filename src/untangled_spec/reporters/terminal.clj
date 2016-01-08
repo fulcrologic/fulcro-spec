@@ -33,7 +33,7 @@
     (clojure.string/split s #"\n")
     (apply str (interpose (str "\n" (pad " " (inc (* 2 n)))) s))))
 
-(defn print-test-result [{:keys [message where status actual expected extra throwable]} print-fn print-level]
+(defn print-test-result [{:keys [message where status actual expected extra throwable diff]} print-fn print-level]
   (print-fn)
   (print-fn (c/white (if (= status :error)
                        "Error" "Failed") " in " where))
@@ -45,6 +45,9 @@
   (print-fn (c/cyan "expected:") (pretty-str expected (+ 5 print-level)))
   (print-fn (c/red "  actual:") (pretty-str actual (+ 5 print-level)))
   (when extra (print-fn (c/yellow "   extra:") extra))
+  (when diff
+    (print-fn (c/cyan   " updates:") (pretty-str (:mutations diff) (+ 5 print-level)))
+    (print-fn (c/yellow "removals:") (pretty-str (:removals diff) (+ 5 print-level))))
   (when true ;TODO: -> env/cfg
     (throw (ex-info "" {::stop? true}))))
 

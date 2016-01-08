@@ -1,6 +1,7 @@
 (ns untangled-spec.reporters.impl.base-reporter
-  #?(:cljs (:require [cljs-uuid-utils.core :as uuid]
-                     [cljs.stacktrace :refer [parse-stacktrace]])))
+  (:require #?@(:cljs ([cljs-uuid-utils.core :as uuid]
+                        [cljs.stacktrace :refer [parse-stacktrace]]))
+    [differ.core :as differ]))
 
 (defn make-testreport
   ([] (make-testreport []))
@@ -25,11 +26,18 @@
 
 #?(:cljs (defn- stack->trace [st] (parse-stacktrace {} st {} {})))
 
+(defn merge-in-diff-results
+  [{:keys [actual expected] :as test-result}]
+  (let [[muts rems] (differ/diff expected actual)]
+    (assoc test-result :diff {:mutations muts
+                              :removals  rems})))
+
 (defn make-test-result
   [result result-detail]
   (-> result-detail
       (merge {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
               :status result})
+      (merge-in-diff-results)
       #?(:cljs (#(if (some-> % :actual .-stack)
                    (assoc % :stack (-> % :actual .-stack stack->trace))
                    %)))))

@@ -35,7 +35,7 @@
 (defui TestResult
        Object
        (render [this]
-               (let [{:keys [message extra actual expected stack]} (om/props this)]
+               (let [{:keys [message extra actual expected stack diff]} (om/props this)]
                  (->> (dom/tbody nil
                                  (when message
                                    (ui-result-line {:title "ASSERTION: "
@@ -47,7 +47,13 @@
                                                   :value (or expected "")})
                                  (when extra
                                    (ui-result-line {:title "Message: "
-                                                    :value extra})))
+                                                    :value extra}))
+                                 (when diff
+                                   (dom/div nil "Diff"
+                                     (ui-result-line {:title "updates: "
+                                                      :value (:mutations diff)})
+                                     (ui-result-line {:title "removals: "
+                                                      :value (:removals diff)}))))
                       (dom/table nil)
                       (dom/li nil)))))
 
