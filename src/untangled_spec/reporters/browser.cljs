@@ -49,11 +49,12 @@
                                    (ui-result-line {:title "Message: "
                                                     :value extra}))
                                  (when diff
-                                   (dom/div nil "Diff"
-                                     (ui-result-line {:title "updates: "
-                                                      :value (:mutations diff)})
-                                     (ui-result-line {:title "removals: "
-                                                      :value (:removals diff)}))))
+                                   (ui-result-line {:title "Updates "
+                                                    :value (:mutations diff)}))
+                                 (when diff
+                                   (ui-result-line {:title "Removals "
+                                                    :value (:removals diff)}))
+                        )
                       (dom/table nil)
                       (dom/li nil)))))
 

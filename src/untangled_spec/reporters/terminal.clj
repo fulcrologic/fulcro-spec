@@ -33,6 +33,10 @@
     (clojure.string/split s #"\n")
     (apply str (interpose (str "\n" (pad " " (inc (* 2 n)))) s))))
 
+(def color (comp c/bold c/cyan))
+
+(def diff-color (comp c/bold c/yellow))
+
 (defn print-test-result [{:keys [message where status actual expected extra throwable diff]} print-fn print-level]
   (print-fn)
   (print-fn (c/white (if (= status :error)
@@ -41,13 +45,13 @@
              (instance? Throwable actual))
     (print-throwable actual))
   (when throwable (print-throwable throwable))
-  (when message (print-fn (c/magenta "ASSERTION:") message))
-  (print-fn (c/cyan "expected:") (pretty-str expected (+ 5 print-level)))
-  (print-fn (c/red "  actual:") (pretty-str actual (+ 5 print-level)))
-  (when extra (print-fn (c/yellow "   extra:") extra))
+  (when message (print-fn (color "ASSERTION:") message))
+  (print-fn (color "expected:") (pretty-str expected (+ 5 print-level)))
+  (print-fn (color "  actual:") (pretty-str actual (+ 5 print-level)))
+  (when extra (print-fn (color "   extra:") extra))
   (when diff
-    (print-fn (c/cyan   " updates:") (pretty-str (:mutations diff) (+ 5 print-level)))
-    (print-fn (c/yellow "removals:") (pretty-str (:removals diff) (+ 5 print-level))))
+    (print-fn (diff-color " updates:") (pretty-str (:mutations diff) (+ 5 print-level)))
+    (print-fn (diff-color "removals:") (pretty-str (:removals diff) (+ 5 print-level))))
   (when true ;TODO: -> env/cfg
     (throw (ex-info "" {::stop? true}))))
 
