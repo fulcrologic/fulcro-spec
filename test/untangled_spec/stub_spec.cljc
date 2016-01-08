@@ -20,10 +20,7 @@
 
                            (s/increment-script-call-count script 0)
 
-                           (is (= 1 (get-in @script [:steps 0 :times])))
-                           )
-                         )
-               )
+                           (is (= 1 (get-in @script [:steps 0 :times]))))))
 
 (specification "step-complete"
                (let [script (make-simple-script)]

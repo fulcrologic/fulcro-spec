@@ -10,6 +10,8 @@
                  [cljsjs/react-with-addons "0.14.0-1"]
                  [org.omcljs/om "1.0.0-alpha22" :scope "provided"]
                  [io.aviso/pretty "0.1.19"]
+                 [contains "1.0.0"]
+                 [differ "0.2.1"]
                  [lein-doo "0.1.6" :scope "test"]]
 
   :plugins [[lein-cljsbuild "1.1.1"]
@@ -36,8 +38,7 @@
 
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js" "resources/private/js"]
 
-  :cljsbuild {
-              :test-commands {"unit-tests" ["phantomjs" "run-tests.js" "resources/private/unit-tests.html"]}
+  :cljsbuild {:test-commands {"unit-tests" ["phantomjs" "run-tests.js" "resources/private/unit-tests.html"]}
               :builds        [{:id           "test"
                                :jar          true
                                :source-paths ["src" "dev" "test"]
@@ -47,25 +48,23 @@
                                               :output-dir           "resources/public/js/test/out"
                                               :recompile-dependents true
                                               :asset-path           "js/test/out"
-                                              :optimizations        :none
-                                              }
-                               }
+                                              :optimizations        :none}}
                               ;; FOR CI tests. Runs via doo
                               {:id           "automated-tests"
                                :source-paths ["src" "test"]
                                :compiler     {:output-to     "resources/private/js/unit-tests.js"
                                               :main          untangled-spec.all-tests
-                                              :optimizations :none
-                                              }}]}
+                                              :optimizations :none}}]}
+
+  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
+
   :figwheel {:nrepl-port 7888}
-  :profiles {
-             :dev {
-                   :source-paths ["src" "test" "dev"]
-                   :repl-options {
-                                  :init-ns clj.user
-                                  :port    7001
-                                  }
-                   :env          {:dev true}
-                   }}
-  :test-refresh {:report untangled-spec.report/untangled-report}
-  )
+  :profiles {:dev {:source-paths ["src" "test" "dev"]
+                   :repl-options {:init-ns clj.user
+                                  :port    7001}
+                   :env          {:dev true}}}
+
+  :test-refresh {:report untangled-spec.reporters.terminal/untangled-report}
+
+  :aliases {"test-client" ["figwheel"]
+            "test-server" ["test-refresh"]})

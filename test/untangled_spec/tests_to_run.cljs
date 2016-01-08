@@ -5,7 +5,9 @@
             untangled-spec.report
             untangled-spec.timeline-spec
             untangled-spec.dom.events-spec
-            untangled-spec.dom.util-spec))
+            untangled-spec.dom.util-spec
+            untangled-spec.reporters.impl.base-reporter-spec
+            untangled-spec.reporters.browser-spec))
 
 ;********************************************************************************
 ; IMPORTANT:
