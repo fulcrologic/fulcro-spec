@@ -20,18 +20,7 @@
 
                            (s/increment-script-call-count script 0)
 
-                           (is (= 1 (get-in @script [:steps 0 :times])))
-                           (behavior "boom!"
-                             (is (=
-                                   {:foo [:a :b :c :d]}
-                                   {:foo [:e :c :d]}
-                                   #_{:one 1 :two 2 :more {:foo :baz}}
-                                   #_{:one 3 :two 2 :more {:foo :bar
-                                                           }})))
-
-                           )
-                         )
-               )
+                           (is (= 1 (get-in @script [:steps 0 :times]))))))
 
 (specification "step-complete"
                (let [script (make-simple-script)]

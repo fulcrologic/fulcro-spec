@@ -1,9 +1,7 @@
 (ns untangled-spec.reporters.impl.base-reporter
   (:require #?@(:cljs ([cljs-uuid-utils.core :as uuid]
                         [cljs.stacktrace :refer [parse-stacktrace]]))
-    [differ.core :as differ]
-    [clojure.walk :as w]
-    [com.rpl.specter :as specter]))
+    [differ.core :as differ]))
 
 (defn make-testreport
   ([] (make-testreport []))
@@ -27,34 +25,6 @@
 (defn make-manual [name] (make-testitem (str name " (MANUAL TEST)")))
 
 #?(:cljs (defn- stack->trace [st] (parse-stacktrace {} st {} {})))
-
-(defn tuplize [mutations]
-  (println mutations)
-  (specter/transform
-    (specter/walker vector?)
-    #(do
-      (println "hmm: " %)
-      (mapv vec (partition 2 %)))
-    mutations))
-
-(defn mutations->paths [mutations]
-  (let [first? (atom true)
-        path-stack (atom [])
-        paths (atom [])]
-    (w/postwalk
-      (fn [node]
-        (if (coll? node)
-          (do
-            (when @first?
-              (swap! paths conj @path-stack)
-              (swap! first? not))
-            (swap! path-stack pop))
-          (do
-            (swap! path-stack conj node)
-            (reset! first? true)))
-        node)
-      mutations)
-    @paths))
 
 (defn merge-in-diff-results
   [{:keys [actual expected] :as test-result}]

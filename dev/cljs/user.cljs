@@ -14,7 +14,6 @@
             untangled-spec.dom.events-spec
             untangled-spec.dom.util-spec
             untangled-spec.reporters.browser-spec
-            untangled-spec.reporters.impl.base-reporter-spec
             ))
 
 (enable-console-print!)
@@ -27,7 +26,6 @@
   'untangled-spec.dom.events-spec
   'untangled-spec.dom.util-spec
   'untangled-spec.reporters.browser-spec
-  'untangled-spec.reporters.impl.base-reporter-spec
   )
 
 (defn on-load []
