@@ -2,6 +2,7 @@
   (:require [untangled-spec.core :refer
              [specification component behavior provided assertions]]
             [untangled-spec.assertions
+             :as ae
              :refer [triple->assertion exception-matches?]]
             [clojure.test :as t :refer [is]]
             [contains.core :refer [*contains?]])
@@ -125,4 +126,76 @@
           (is (= ["it to throw", "(+ 5 2) =throws=> (clojure.lang.ExceptionInfo #\"asdf\")"
                   "Expected an 'clojure.lang.ExceptionInfo' to be thrown!"]
                  (-> '((+ 5 2) =throws=> (clojure.lang.ExceptionInfo #"asdf"))
-                     (test-case :all) rest))))))))
+                     (test-case :all) rest))))))
+
+    (component "triple?"
+      (behavior "=> must be a symbol"
+        (is (not (ae/triple? [:left "=>" :exp]))))
+      (behavior "arrow arg starts with = and ends with >"
+        (is (ae/triple? [:left '=> :exp]))
+        (is (ae/triple? [:left '=fn=> :exp]))))
+
+    (component "forms->blocks"
+      (behavior "groups forms into assertion blocks"
+        (is (=
+              '(("string1" (a => b) (c => d))
+                 ("string2" (d => e)))
+              (ae/forms->blocks '("string1"
+                                   a => b
+                                   c => d
+                                   "string2"
+                                   d => e)))))
+      (behavior "no behavior strings"
+        (is (=
+              '(((a => b) (c => d) (d => e)))
+              (ae/forms->blocks '(a => b
+                                   c => d
+                                   d => e)))))
+      (behavior "leading block lacks string but others have string"
+        (is (=
+              '(((a => b) (c => d))
+                 ("string2" (d => e)))
+              (ae/forms->blocks '(a => b
+                                   c => d
+                                   "string2"
+                                   d => e)))))
+      (behavior "fails when there are no blocks after string"
+        (is (thrown-with-msg?
+              AssertionError
+              #"behavior string without trailing assertions"
+              (ae/forms->blocks '("string1")))))
+
+      (behavior "fails when there are two consecutive strings"
+        (is (thrown-with-msg?
+              AssertionError
+              #"behavior string without trailing assertions"
+              (ae/forms->blocks '("string1" "string2" a => b)))))
+      (behavior "foo"
+        (is (thrown-with-msg?
+              AssertionError
+              #"malformed arrow"
+              (ae/forms->blocks '(a => b c =>))))))
+
+    (component "block->asserts"
+      (behavior "wraps triples in behavior do-reports"
+        (let [asserts (rest (ae/block->asserts true '("string2" (d => e))))]
+          (is (=
+                '(cljs.test/do-report {:type :begin-behavior :string "string2"})
+                (first asserts)))
+          (is (=
+                '(cljs.test/do-report {:type :end-behavior :string "string2"})
+                (last asserts)))))
+      (behavior "does not wrap in do-report if there is no string"
+        (let [asserts (rest (ae/block->asserts true '((d => e))))]
+          (is (not=
+                'cljs.test/do-report
+                (ffirst asserts)))))
+      (behavior "converts triples to assertions"
+        (let [asserts (drop-last (drop 2 (ae/block->asserts true '("string2" (d => e)))))]
+          (is (every?
+                #{'cljs.test/is}
+                (map first asserts))))
+        (let [asserts (drop-last (drop 2 (ae/block->asserts true '("string2" (d => e)))))]
+          (is (every?
+                #{'cljs.test/is}
+                (map first asserts))))))))

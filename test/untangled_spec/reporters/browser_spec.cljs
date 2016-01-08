@@ -4,6 +4,4 @@
             [cljs.test :as t]))
 
 (specification "untangled-spec.reporters.browser-spec"
-  (behavior "TODO"
-    (assertions
-      )))
+  (behavior "TODO"))

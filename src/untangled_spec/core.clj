@@ -97,6 +97,6 @@
   (apply p/provided-fn (cljs-env? &env) :skip-output forms))
 
 (defmacro assertions [& forms]
-  (let [triples (partition 3 forms)
-        asserts (map (partial ae/triple->assertion (cljs-env? &env)) triples)]
+  (let [blocks (ae/forms->blocks forms)
+        asserts (map (partial ae/block->asserts (cljs-env? &env)) blocks)]
     `(do ~@asserts)))
