@@ -1,0 +1,22 @@
+{
+  "name": "untangled-spec",
+  "version": "1.0.0",
+  "description": "Testing",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc",
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "karma": "^0.13.19",
+    "karma-chrome-launcher": "^0.2.2",
+    "karma-cljs-test": "^0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.buehner-fry.com:navis/untangled-spec.git"
+  },
+  "author": "",
+  "license": "NAVIS"
+}

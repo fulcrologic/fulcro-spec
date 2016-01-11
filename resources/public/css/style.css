@@ -1,6 +1,8 @@
 @import url(https://fonts.googleapis.com/css?family=Lato);
 @import url(https://fonts.googleapis.com/css?family=Cutive+Mono);
 
+@import url(edn.css);
+
 .overlay {
     background-color: rgb(230, 230, 240);
     width: 194px;
@@ -34,7 +36,7 @@
     font-size: 18pt;
 }
 
-.test-manually {
+.test-manual {
     color: orange;
 }
 
@@ -86,6 +88,7 @@
 .test-result-title {
     width: 100px;
     font-size: 16px;
+    font-weight: bold;
 }
 
 .test-count {

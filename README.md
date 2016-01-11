@@ -14,16 +14,23 @@ To run tests:
 - focus auto-run via the user.cljs on-load function
 
 
-## Install Notes
+## CI Testing
 
-- Add the lein plugin localrepo to your `~/.lein/profiles.clj`:
-  - Look on clojars for the current lein version: https://clojars.org/lein-localrepo
-  - E.g. `[lein-localrepo "0.5.3"]`
-- Be sure to run the publish-local script if other projects depend
-  on this library:
+To run the CLJ tests for this library:
 
-    bash$ ./bin/publish-local
+    lein test
+    
+To run the CLJS tests for this library:
 
+The CI server must have chrome, node, and npm installed. 
+
+At least once (to set up the tools):
+
+    npm install
+    
+To run the tests:
+
+    lein doo chrome automated-tests once
 
 ## Usage
 
@@ -60,7 +67,7 @@ To run tests:
 
 ## License
 
-Copyright © 2015 FIXME
+Copyright © 2015 NAVIS
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

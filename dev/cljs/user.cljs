@@ -1,30 +1,14 @@
 (ns ^:figwheel-always cljs.user
-  (:require-macros [cljs.test
-                    :refer (is deftest run-tests testing)])
-  (:require [untangled-spec.dom.suite :as ts :include-macros true]
-            untangled-spec.async-spec
-            untangled-spec.stub-spec
-            untangled-spec.provided-spec
-            untangled-spec.report
-            untangled-spec.timeline-spec
-            untangled-spec.dom.events-spec
-            untangled-spec.dom.util-spec
+  (:require-macros [untangled-spec.reporters.suite :as ts])
+  (:require untangled-spec.tests-to-run
             [untangled-spec.runner.browser :as b]
-            [cljs.test :as t]))
+            untangled-spec.reporters.impl.suite
+            [cljs.test :as t :include-macros true]))
 
 (enable-console-print!)
 
-(ts/test-suite spec-report
-               'untangled-spec.async-spec
-               'untangled-spec.stub-spec
-               'untangled-spec.provided-spec
-               'untangled-spec.timeline-spec
-               'untangled-spec.dom.events-spec
-               'untangled-spec.dom.util-spec
-               )
+(ts/deftest-all-suite spec-report #"untangled.*-spec")
 
-(defn on-load []
-  (spec-report))
+(def on-load spec-report)
 
 (spec-report)
-

@@ -1,17 +1,9 @@
 (ns untangled-spec.timeline-spec
-  #?(:clj
-     (:require [untangled-spec.core :as c :refer [with-timeline provided async tick specification behavior]]
-               [clojure.test :as t :refer (are is deftest with-test run-tests testing)]
-               ))
-  #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-                            [untangled-spec.core :refer [with-timeline provided async tick specification behavior]]
-             ))
-  #?(:cljs (:require [cljs.test :refer [do-report]]
-             )
-     )
-  #?(:clj
-     (:import clojure.lang.ExceptionInfo))
-  )
+  (:require [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
+             [specification behavior provided
+              with-timeline async tick assertions]]
+            #?(:clj [clojure.test :refer [is]])
+            #?(:cljs [cljs.test :refer-macros [is]])))
 
 
 #?(:cljs

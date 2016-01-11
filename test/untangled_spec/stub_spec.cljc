@@ -1,18 +1,13 @@
 (ns untangled-spec.stub-spec
+  (:require [untangled-spec.stub :as s
+             #?@(:cljs [:include-macros true])]
+            [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
+             [specification behavior provided
+              with-timeline async tick assertions]]
+            #?(:clj [clojure.test :refer [is]])
+            #?(:cljs [cljs.test :refer-macros [is]]))
   #?(:clj
-      (:require [untangled-spec.stub :as s]
-                [clojure.test :as t :refer (are is deftest with-test run-tests testing do-report assert-expr)]
-                [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]
-                ))
-  #?(:clj
-      (:import clojure.lang.ExceptionInfo))
-  #?(:cljs (:require-macros [cljs.test :refer (are is deftest run-tests testing)]
-                            [untangled-spec.core :refer [specification behavior provided with-timeline async tick assertions]]))
-  #?(:cljs (:require
-             [cljs.test :as t :refer (do-report)]
-             [untangled-spec.stub :as s :include-macros true]
-             ))
-  )
+      (:import clojure.lang.ExceptionInfo)))
 
 (defn make-simple-script []
   (s/make-script "something"
@@ -25,10 +20,7 @@
 
                            (s/increment-script-call-count script 0)
 
-                           (is (= 1 (get-in @script [:steps 0 :times])))
-                           )
-                         )
-               )
+                           (is (= 1 (get-in @script [:steps 0 :times]))))))
 
 (specification "step-complete"
                (let [script (make-simple-script)]

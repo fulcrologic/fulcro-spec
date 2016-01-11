@@ -1,29 +1,13 @@
 (ns untangled-spec.provided-spec
+  (:require #?(:clj [untangled-spec.provided :as p])
+            [untangled-spec.stub]
+            [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
+             [specification behavior provided
+              with-timeline async tick assertions when-mocking]]
+            #?(:clj [clojure.test :refer [is]])
+            #?(:cljs [cljs.test :refer-macros [is]]))
   #?(:clj
-      (:require [untangled-spec.core :as c
-                 :refer [specification behavior provided
-                         with-timeline async tick assertions
-                         when-mocking]]
-                [clojure.test :as t
-                 :refer [are is deftest with-test
-                         run-tests testing do-report]]
-                [untangled-spec.provided :as p]
-                [untangled-spec.stub]
-                ))
-  #?(:cljs (:require-macros
-             [cljs.test :refer (are is deftest run-tests testing)]
-             [untangled-spec.provided :as p]
-             [untangled-spec.core
-              :refer [specification behavior provided
-                      with-timeline async tick assertions
-                      when-mocking]]
-             ))
-  #?(:cljs (:require [cljs.test :refer [do-report]]
-                     [untangled-spec.assertions])
-           )
-  #?(:clj
-      (:import clojure.lang.ExceptionInfo))
-  )
+      (:import clojure.lang.ExceptionInfo)))
 
 #?(:clj
     (specification "parse-arrow-count"
@@ -131,7 +115,7 @@
 #?(:clj
     (specification "provided-macro"
                    (behavior "Outputs a syntax-quoted block"
-                             (let [expanded (p/provided-fn "some string" '(f n) '=> '(+ n 1) '(f n) '=2x=> '(* 3 n) '(is (= 1 2)))
+                             (let [expanded (p/provided-fn false "some string" '(f n) '=> '(+ n 1) '(f n) '=2x=> '(* 3 n) '(is (= 1 2)))
                                    let-defs (second expanded)
                                    make-script (second let-defs)
                                    script-steps (nth make-script 2)
@@ -160,15 +144,15 @@
                                          )
                                (behavior "sends do-report when given a string"
                                          (assertions
-                                           (first (last redef-block)) => 'do-report
-                                           (first (nth redef-block 2)) => 'do-report
+                                           (first (last redef-block)) => 'clojure.test/do-report
+                                           (first (nth redef-block 2)) => 'clojure.test/do-report
                                            )
                                          )
                                )
                              )
 
                    (behavior "Can do mocking without output"
-                               (let [expanded (p/provided-fn :skip-output '(f n) '=> '(+ n 1) '(f n) '=2x=> '(* 3 n) '(is (= 1 2)))
+                               (let [expanded (p/provided-fn false :skip-output '(f n) '=> '(+ n 1) '(f n) '=2x=> '(* 3 n) '(is (= 1 2)))
                                      redef-block (last expanded)
                                      ]
                                  (assertions
@@ -183,6 +167,8 @@
     )
 
 (defn my-square [x] (* x x))
+
+(defn my-varargs-sum [n & nums] (apply + n nums))
 
 (specification "provided and when-mocking macros"
                (behavior "cause stubbing to work"
@@ -200,8 +186,7 @@
                                      (my-square n) =1x=> (+ n 5)
                                      (my-square n) =1x=> (+ n 7)
 
-                                     (is (thrown? #?(:clj ExceptionInfo
-                                                     :cljs js/Object)
+                                     (is (thrown? #?(:clj ExceptionInfo :cljs js/Object)
                                                   (+ (my-square 1)
                                                      (my-square 1)
                                                      (my-square 1))))
@@ -220,6 +205,14 @@
                                                ))
                                    )
                          )
+
+               (provided "we can mock a var args function"
+                 (my-varargs-sum x y) =1x=> [x y]
+                 (my-varargs-sum x y z) => [x y z]
+                 (assertions
+                   (my-varargs-sum 1 2) => [1 2]
+                   (my-varargs-sum 1 2 3) => [1 2 3]
+                   ))
 
                (provided "allow stubs to throw exceptions"
                          (my-square n) => (throw (ex-info "throw!" {}))
