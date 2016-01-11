@@ -118,7 +118,7 @@
                              :onClick (set-filter! this-filter)}
                         (str this-filter)))))
 
-(def ui-filter-selector (om/factory FilterSelector))
+(def ui-filter-selector (om/factory FilterSelector {:keyfn :this-filter}))
 
 (defui Filters
        Object
@@ -132,7 +132,7 @@
                                                       :this-filter %})
                                 [:all :manual :failed])))))
 
-(def ui-filters (om/factory Filters))
+(def ui-filters (om/factory Filters ))
 
 (defn debounce [f interval]
   (let [timeout (atom nil)]
