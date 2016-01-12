@@ -1,14 +1,11 @@
 (ns untangled-spec.reporters.terminal
-  ( :require [clojure.test :as t]
+  (:require [clojure.test :as t]
             [clojure.stacktrace :as stack]
             [untangled-spec.reporters.impl.terminal :as impl]
             [colorize.core :as c]
             [clojure.string :as s]
             [io.aviso.exception :refer [format-exception *traditional*]]
-            clojure.java.shell
-            [clojure.pprint :refer [pprint]] )
-  (:import clojure.lang.ExceptionInfo
-           apple.applescript.AppleScriptEngineFactory))
+            [clojure.pprint :refer [pprint]]))
 
 (def env (let [COLOR     (System/getenv "US_DIFF_HL")
                DIFF-MODE (System/getenv "US_DIFF_MODE")
@@ -124,7 +121,7 @@
     (print-throwable actual))
   (some-> throwable print-throwable)
   (some-> message (print-message print-fn))
-  (when (or (not (env :diff?))
+  (when (or (not diff) (not (env :diff?))
             (and (not (env :diff-hl?)) (not (env :diff-list?))))
     (print-fn "   Actual:" (pretty-str actual (+ 5 print-level)))
     (print-fn " Expected:" (pretty-str expected (+ 5 print-level))))
