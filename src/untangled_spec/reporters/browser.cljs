@@ -166,7 +166,9 @@
                               (ui-filters {:report/filter current-filter
                                            :set-filter! set-filter!})
                               (dom/ul #js {:className "test-list"}
-                                      (mapv (comp ui-test-namespace
-                                                  #(assoc % :report/filter current-filter))
-                                            (:namespaces test-report-data)))
+                                      (->> (:namespaces test-report-data)
+                                           (remove #(when (= :failed current-filter)
+                                                      (not (#{:failed :error} (:status %)))))
+                                           (mapv (comp ui-test-namespace
+                                                       #(assoc % :report/filter current-filter)))))
                               (ui-test-count test-report-data)))))
