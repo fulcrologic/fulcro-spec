@@ -8,12 +8,6 @@
 
 (specification "untangled-spec.reporters.terminal-spec"
   (component "print-test-result"
-    (provided "prints machine readable expected and actual"
-      (rt/pretty-str "exp" 5) =1x=> "exp"
-      (rt/pretty-str "act" 5) =1x=> "act"
-      (assertions
-        (rt/print-test-result {:actual "act" :expected "exp"} (constantly nil) 0)
-        =throws=> (clojure.lang.ExceptionInfo #"" stop?)))
     (provided "if (isa? actual Throwable) & (= status :error), it should print-throwable"
       (rt/print-throwable _) => _
       (let [e (ex-info "howdy" {})]
