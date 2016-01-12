@@ -151,15 +151,6 @@
     (->> (:test-items make-tests-by-namespace)
          (mapv #(print-test-item % 1)))))
 
-(defn notify
-  "for more info: https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man1/osascript.1.html
-  & http://apple.stackexchange.com/questions/57412/how-can-i-trigger-a-notification-center-notification-from-an-applescript-or-shel?answertab=votes#tab-top"
-  [text & {:keys [title]}]
-  (when (= "Mac OS X" (System/getProperty "os.name"))
-    (clojure.java.shell/sh "osascript" "-e"
-                           (str "display notification \"" text "\" "
-                                "with title \"" title "\""))))
-
 (defn print-report-data
   "Prints the current report data from the report data state and applies colors based on test results"
   []
@@ -173,10 +164,7 @@
       (println "\nRan" tested "tests containing"
                (+ passed failed error) "assertions.")
       (println failed "failures,"
-               error "errors.")
-      (when (or (pos? failed) (pos? error))
-        (notify (str (+ failed error) " tests failed out of " tested)
-                :title (str "clj tests failed"))))))
+               error "errors."))))
 
 (defmulti ^:dynamic untangled-report :type)
 

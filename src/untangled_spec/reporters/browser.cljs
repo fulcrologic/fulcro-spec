@@ -134,46 +134,13 @@
 
 (def ui-filters (om/factory Filters ))
 
-(defn debounce [f interval]
-  (let [timeout (atom nil)]
-    (fn [& args]
-      (when-not (nil? @timeout)
-        (.disposeInternal @timeout))
-      (reset! timeout (Delay. #(apply f args)))
-      (.start @timeout interval))))
-
-(def notification (atom nil))
-(defn *notify-failure!
-  "for more info: https://developer.mozilla.org/en-US/docs/Web/API/Notification/Notification"
-  [[passed failed errors total]]
-  (let [notify-str (str (+ failed errors)
-                        " tests failed out of " total)]
-    (cond
-      (= js/Notification.permission "granted")
-      (do (when @notification (.close @notification))
-          (reset! notification
-                  (new js/Notification "cljscript tests failed"
-                       #js {:body notify-str})))
-
-      (not= js/Notification.permission "denied")
-      (js/Notification.requestPermission
-        (fn [perm]
-          (when (= perm "granted")
-            (new js/Notification
-                 "cljscript tests failed" #js {:body notify-str}))))
-
-      :else (println :NO-NOTIFY-PERMISSION))))
-
-(def notify-failure! (debounce *notify-failure! 1000))
-
 (defui TestCount
        Object
        (render [this]
                (let [{:keys [passed failed error namespaces]} (om/props this)
                      total (+ passed failed error)]
                  (if (< 0 (+ failed error))
-                   (do (impl/change-favicon-to-color "#d00")
-                       (notify-failure! [passed failed error total]))
+                   (impl/change-favicon-to-color "#d00")
                    (impl/change-favicon-to-color "#0d0"))
                  (dom/div #js {:className "test-count"}
                           (dom/h2 nil
