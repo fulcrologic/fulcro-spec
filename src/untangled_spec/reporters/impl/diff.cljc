@@ -6,7 +6,7 @@
    (println tag x)))
 
 (declare diff)
-(def nf "ø")
+(def nf "*nil*")
 
 (defn- map-diff [ks exp act]
   (loop [[k & ks] ks, exp exp, act act, path [], paths []]

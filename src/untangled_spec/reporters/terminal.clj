@@ -48,16 +48,12 @@
     (clojure.string/split s #"\n")
     (apply str (interpose (str "\n" (pad " " (inc (* 2 n)))) s))))
 
-;TODO: should reference diff/nf
-(defn ?ø [x] (if (= "ø" x) '*nil* x))
-
 (defn print-highligted-diff [diff actual]
   (as-> diff d
     (reduce (fn [out d]
               (let [path (drop-last d)
                     [_ exp _ got] (last d)]
                 (->> [got exp]
-                     (mapv ?ø)
                      (color-str :diff/impl)
                      (assoc-in out path))))
             actual d)
@@ -81,8 +77,8 @@
                 [_ exp _ got] (last d)]
             (when (seq path)
               (println (str "-  at: " path)))
-            (println "  got:" (pretty-str (?ø got) 3))
-            (println "  exp:" (pretty-str (?ø exp) 6))
+            (println "  got:" (pretty-str got 3))
+            (println "  exp:" (pretty-str exp 6))
             (println))))
       (when (< 4 (count diff))
         (println "&" (- (count diff) 3) "more...")))))
@@ -91,7 +87,6 @@
   (binding [*print-level* 4
             *print-length* 2]
     (apply str (drop-last (with-out-str (pprint s))))))
-
 
 (defn print-message [m print-fn]
   (print-fn (color-str :normal "ASSERTION:")

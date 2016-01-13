@@ -62,10 +62,10 @@
                                                  (dom/td nil (str path))))
                                        (dom/tr #js {:className "actual"}
                                                (dom/td nil "got: ")
-                                               (dom/td nil (html-edn (impl/?ø got))))
+                                               (dom/td nil (html-edn got)))
                                        (dom/tr #js {:className "expected"}
                                                (dom/td nil "exp: ")
-                                               (dom/td nil (html-edn (impl/?ø exp)))))))))
+                                               (dom/td nil (html-edn exp))))))))
 (def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn (let [c (atom 0)]
                                                               #(swap! c inc))}))
 
