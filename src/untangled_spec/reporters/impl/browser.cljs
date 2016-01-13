@@ -26,3 +26,5 @@
     "hidden"))
 
 (defn stack->trace [st] (parse-stacktrace {} st {} {}))
+
+(defn ?ø [x] (if (= x "ø") '*nil* x))
