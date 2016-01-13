@@ -6,7 +6,10 @@
    (println tag x)))
 
 (declare diff)
-(def nf "*nil*")
+(def nf '...nothing...)
+
+(defn extract [[_ exp _ got]]
+  {:exp exp :got got})
 
 (defn- map-diff [ks exp act]
   (loop [[k & ks] ks, exp exp, act act, path [], paths []]

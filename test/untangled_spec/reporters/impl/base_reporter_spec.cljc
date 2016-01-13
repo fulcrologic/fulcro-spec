@@ -51,7 +51,11 @@
                    {0 {1 {[2 3] :q}}})
         => [[0 1 [2 3] [:+ 3 :- :q]]
             [0 1 {4 4} [:+ 4 :- nf]]]))
-    (behavior "sequences"
+    (behavior "lists"
+      (assertions
+        (base/diff [:foo] '(:foo :baz))
+        => [[0 [:+ ]]]))
+    (behavior "vectors"
       (assertions
         "both empty"
         (base/diff [] []) => []

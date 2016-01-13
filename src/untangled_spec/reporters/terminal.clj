@@ -2,6 +2,7 @@
   (:require [clojure.test :as t]
             [clojure.stacktrace :as stack]
             [untangled-spec.reporters.impl.terminal :as impl]
+            [untangled-spec.reporters.impl.diff :as diff]
             [colorize.core :as c]
             [clojure.string :as s]
             [io.aviso.exception :refer [format-exception *traditional*]]
@@ -52,7 +53,7 @@
   (as-> diff d
     (reduce (fn [out d]
               (let [path (drop-last d)
-                    [_ exp _ got] (last d)]
+                    {:keys [exp got]} (diff/extract (last d))]
                 (->> [got exp]
                      (color-str :diff/impl)
                      (assoc-in out path))))
@@ -73,12 +74,11 @@
       (doseq [d (take 3 (sort diff))]
         (binding [*print-length* 3]
           (let [path (vec (drop-last d))
-                ;;TODO: refactor to `extract-diff`?
-                [_ exp _ got] (last d)]
+                {:keys [exp got]} (diff/extract (last d))]
             (when (seq path)
               (println (str "-  at: " path)))
-            (println "  got:" (pretty-str got 3))
             (println "  exp:" (pretty-str exp 6))
+            (println "  got:" (pretty-str got 3))
             (println))))
       (when (< 4 (count diff))
         (println "&" (- (count diff) 3) "more...")))))
@@ -92,7 +92,7 @@
   (print-fn (color-str :normal "ASSERTION:")
             (let [?fix #(case %
                           "" "\"\""
-                          nil "*nil*"
+                          nil "..nil.."
                           %)
                   arrow (re-find #" =.*?> " m)
                   [act exp] (s/split m #" =(.*?)> ")]

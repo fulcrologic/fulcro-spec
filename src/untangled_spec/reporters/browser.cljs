@@ -8,7 +8,8 @@
     [cljs-uuid-utils.core :as uuid]
 
     [untangled-spec.dom.edn-renderer :refer [html-edn]]
-    [untangled-spec.reporters.impl.browser :as impl]))
+    [untangled-spec.reporters.impl.browser :as impl]
+    [untangled-spec.reporters.impl.diff :as diff]))
 
 (defui Foldable
        Object
@@ -53,19 +54,19 @@
        (render [this]
                (let [d (om/props this)
                      path (vec (drop-last d))
-                     [_ got _ exp] (last d)]
+                     {:keys [exp got]} (diff/extract (last d))]
                  (dom/table #js {:className "human-diff-lines"}
                             (dom/tbody nil
                                        (when (seq path)
                                          (dom/tr #js {:className "path"}
                                                  (dom/td nil "at: ")
                                                  (dom/td nil (str path))))
-                                       (dom/tr #js {:className "actual"}
-                                               (dom/td nil "got: ")
-                                               (dom/td nil (html-edn got)))
                                        (dom/tr #js {:className "expected"}
                                                (dom/td nil "exp: ")
-                                               (dom/td nil (html-edn exp))))))))
+                                               (dom/td nil (html-edn exp)))
+                                       (dom/tr #js {:className "actual"}
+                                               (dom/td nil "got: ")
+                                               (dom/td nil (html-edn got))))))))
 (def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn (let [c (atom 0)]
                                                               #(swap! c inc))}))
 
