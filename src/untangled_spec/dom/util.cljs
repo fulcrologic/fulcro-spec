@@ -75,7 +75,7 @@
       (re-find #"-text$" keyword-str)
       (let [tagname (str/lower-case (re-find #"^\w+" keyword-str))]
         (gd/findNode element (fn [e] (and (node-contains-text? value e) (= tagname (tag-name e))))))
-      (= keyword :key) (.querySelector element (let [selector (str/join ["[data-reactid$='$" value "'"])]
+      (= keyword :key) (.querySelector element (let [selector (str/join ["[data-reactid$='$" value "']"])]
                                                  (println :SELECTOR selector)
                                                  selector))
       (= keyword :class) (.querySelector element (str "." value))
