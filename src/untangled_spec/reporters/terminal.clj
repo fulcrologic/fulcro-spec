@@ -10,11 +10,13 @@
 
 (def env (let [COLOR     (System/getenv "US_DIFF_HL")
                DIFF-MODE (System/getenv "US_DIFF_MODE")
-               DIFF      (System/getenv "US_DIFF")]
+               DIFF      (System/getenv "US_DIFF")
+               NUM-DIFFS (System/getenv "US_NUM_DIFFS")]
            {:color?          (#{"1" "true"}  COLOR)
             :diff-hl?        (#{"hl" "all"}  DIFF-MODE)
             :diff-list? (not (#{"hl"}        DIFF-MODE))
-            :diff?      (not (#{"0" "false"} DIFF))}))
+            :diff?      (not (#{"0" "false"} DIFF))
+            :num-diffs  (or (read-string NUM-DIFFS) 1)}))
 
 (defn color-str [status & strings]
   (let [color? (:color? env)
@@ -67,16 +69,19 @@
       (print-highligted-diff diff actual)
       (println))
     (when (env :diff-list?)
-      (println (color-str :diff "diffs:"))
-      (doseq [d (take 3 (sort diff))]
-        (let [{:keys [exp got path]} (diff/extract d)]
-          (when (seq path)
-            (println (str "-  at: " path)))
-          (println "  exp:" (pretty-str exp 6))
-          (println "  got:" (pretty-str got 3))
-          (println)))
-      (when (< 4 (count diff))
-        (println "&" (- (count diff) 3) "more...")))))
+      (let [num-diffs (env :num-diffs)
+            num-diffs (if (number? num-diffs)
+                        num-diffs (count diff))]
+        (println (color-str :diff "diffs:"))
+        (doseq [d (->> (sort diff) (take num-diffs))]
+          (let [{:keys [exp got path]} (diff/extract d)]
+            (when (seq path)
+              (println (str "-  at: " path)))
+            (println "  exp:" (pretty-str exp 6))
+            (println "  got:" (pretty-str got 3))
+            (println)))
+        (when (< num-diffs (count diff))
+          (println "&" (- (count diff) 3) "more..."))))))
 
 (defn ?ellipses [s]
   (binding [*print-level* 3
