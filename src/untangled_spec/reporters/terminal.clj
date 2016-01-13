@@ -113,8 +113,7 @@
                      :failed "Failed"}]
     (->> (str (status->str s) " in " w)
          (color-str :where)
-         print-fn)
-    (print-fn (color-str :where ))))
+         print-fn)))
 
 (defn print-test-result [{:keys [message where status actual
                                  expected extra throwable diff]}
@@ -124,7 +123,9 @@
   (when (and (= status :error)
              (instance? Throwable actual))
     (print-throwable actual))
-  (some-> throwable print-throwable)
+  (when (and throwable
+             (not (instance? Throwable actual)))
+    (print-throwable throwable))
   (some-> message (print-message print-fn))
   (when (or (not diff) (not (env :diff?))
             (and (not (env :diff-hl?)) (not (env :diff-list?))))
