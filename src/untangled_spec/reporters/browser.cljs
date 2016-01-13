@@ -73,14 +73,15 @@
        Object
        (render [this]
                (let [{:keys [diff actual]} (om/props this)
-                     [fst rst] (split-at 2 diff)]
+                     [fst rst] (split-at 2 (sort diff))]
                  (->> (dom/div nil
                                (mapv ui-human-diff-lines fst)
-                               (ui-foldable {:render
-                                             (fn [folded?]
-                                               {:title "& more"
-                                                :value (mapv ui-human-diff-lines rst)
-                                                :classes ""})}))
+                               (if (seq rst)
+                                 (ui-foldable {:render
+                                               (fn [folded?]
+                                                 {:title "& more"
+                                                  :value (mapv ui-human-diff-lines rst)
+                                                  :classes ""})})))
                       (dom/td nil)
                       (dom/tr #js {:className "human-diff"}
                               (dom/td nil "DIFFS:"))))))

@@ -78,27 +78,32 @@
         (binding [*print-length* 3]
           (let [path (vec (drop-last d))
                 ;;TODO: refactor to `extract-diff`?
-                [_ got _ exp] (last d)]
+                [_ exp _ got] (last d)]
             (when (seq path)
               (println (str "-  at: " path)))
             (println "  got:" (pretty-str (?ø got) 3))
             (println "  exp:" (pretty-str (?ø exp) 6))
             (println))))
       (when (< 4 (count diff))
-        (println "& more...")))))
+        (println "&" (- (count diff) 3) "more...")))))
 
 (defn ?ellipses [s]
   (binding [*print-level* 4
             *print-length* 2]
     (apply str (drop-last (with-out-str (pprint s))))))
 
+
 (defn print-message [m print-fn]
   (print-fn (color-str :normal "ASSERTION:")
-            (let [arrow (re-find #" =.*?> " m)
+            (let [?fix #(case %
+                          "" "\"\""
+                          nil "*nil*"
+                          %)
+                  arrow (re-find #" =.*?> " m)
                   [act exp] (s/split m #" =(.*?)> ")]
-              (str (?ellipses (read-string act))
+              (str (-> act ?fix read-string ?ellipses)
                    arrow
-                   (?ellipses (read-string exp))))))
+                   (-> exp ?fix read-string ?ellipses)))))
 
 (defn print-extra [e print-fn]
   (print-fn (color-str :normal "    extra:") e))
