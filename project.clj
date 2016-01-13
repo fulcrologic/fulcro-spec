@@ -34,7 +34,7 @@
 
   ; CI tests: Set up to support karma runner. Recommend running against chrome. See README
   :doo {:build "automated-tests"
-        :paths {:karma "node_modules/.bin/karma"}}
+        :paths {:karma "node_modules/karma/bin/karma"}}
 
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js" "resources/private/js"]
 
