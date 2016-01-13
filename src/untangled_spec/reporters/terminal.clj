@@ -61,9 +61,7 @@
     (println "DIFF:" d)))
 
 (defn print-diff [diff actual print-fn]
-  ;;TODO: refactor to `diff?`
-  (when (and (env :diff?) diff
-             (vector? diff) (every? vector diff))
+  (when (and (env :diff?) (diff/diff-paths? diff))
     (println)
     (when (env :diff-hl?)
       (print-highligted-diff diff actual)
@@ -71,18 +69,17 @@
     (when (env :diff-list?)
       (println (color-str :diff "diffs:"))
       (doseq [d (take 3 (sort diff))]
-        (binding [*print-length* 3]
-          (let [{:keys [exp got path]} (diff/extract d)]
-            (when (seq path)
-              (println (str "-  at: " path)))
-            (println "  exp:" (pretty-str exp 6))
-            (println "  got:" (pretty-str got 3))
-            (println))))
+        (let [{:keys [exp got path]} (diff/extract d)]
+          (when (seq path)
+            (println (str "-  at: " path)))
+          (println "  exp:" (pretty-str exp 6))
+          (println "  got:" (pretty-str got 3))
+          (println)))
       (when (< 4 (count diff))
         (println "&" (- (count diff) 3) "more...")))))
 
 (defn ?ellipses [s]
-  (binding [*print-level* 4
+  (binding [*print-level* 3
             *print-length* 2]
     (apply str (drop-last (with-out-str (pprint s))))))
 

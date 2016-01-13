@@ -13,6 +13,11 @@
         [_ exp _ got] (last d)]
     {:path path :exp exp :got got}))
 
+(defn diff-paths? [?d]
+  (letfn [(diff? [[p _ m _]] (and (= p :+) (= m :-)))]
+    (and ?d (vector? ?d) (every? vector ?d)
+      (every? (comp diff? last) ?d))))
+
 (defn- map-diff [ks exp act]
   (loop [[k & ks] ks, exp exp, act act, path [], paths []]
     (if-not k
