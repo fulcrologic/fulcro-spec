@@ -53,8 +53,7 @@
        Object
        (render [this]
                (let [d (om/props this)
-                     path (vec (drop-last d))
-                     {:keys [exp got]} (diff/extract (last d))]
+                     {:keys [exp got path]} (diff/extract d)]
                  (dom/table #js {:className "human-diff-lines"}
                             (dom/tbody nil
                                        (when (seq path)

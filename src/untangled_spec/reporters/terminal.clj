@@ -52,8 +52,7 @@
 (defn print-highligted-diff [diff actual]
   (as-> diff d
     (reduce (fn [out d]
-              (let [path (drop-last d)
-                    {:keys [exp got]} (diff/extract (last d))]
+              (let [{:keys [exp got path]} (diff/extract d)]
                 (->> [got exp]
                      (color-str :diff/impl)
                      (assoc-in out path))))
@@ -73,8 +72,7 @@
       (println (color-str :diff "diffs:"))
       (doseq [d (take 3 (sort diff))]
         (binding [*print-length* 3]
-          (let [path (vec (drop-last d))
-                {:keys [exp got]} (diff/extract (last d))]
+          (let [{:keys [exp got path]} (diff/extract d)]
             (when (seq path)
               (println (str "-  at: " path)))
             (println "  exp:" (pretty-str exp 6))

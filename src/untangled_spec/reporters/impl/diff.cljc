@@ -8,8 +8,10 @@
 (declare diff)
 (def nf '...nothing...)
 
-(defn extract [[_ exp _ got]]
-  {:exp exp :got got})
+(defn extract [d]
+  (let [path (vec (drop-last d))
+        [_ exp _ got] (last d)]
+    {:path path :exp exp :got got}))
 
 (defn- map-diff [ks exp act]
   (loop [[k & ks] ks, exp exp, act act, path [], paths []]
