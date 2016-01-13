@@ -33,7 +33,7 @@
          {:type :fail :actual e :expected f+
           :extra "checker function failed"}
 
-         :else {:type :passed :actual "act" :expected "exp"})
+         :else {:type :pass :actual "act" :expected "exp"})
        (merge {:message msg
                :throwable e})))
 

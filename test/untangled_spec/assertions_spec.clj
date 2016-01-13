@@ -20,7 +20,7 @@
       (assertions
         (exception-matches? "msg1" (ex-info "foo" {})
                             clojure.lang.ExceptionInfo)
-        =fn=> (*contains? {:type :passed :message "msg1"})
+        =fn=> (*contains? {:type :pass :message "msg1"})
         (exception-matches? "msg2" (ex-info "foo" {})
                             java.lang.Error)
         =fn=> (*contains? {:type :fail :extra "exception did not match type"
@@ -29,7 +29,7 @@
       (assertions
         (exception-matches? "msg3" (ex-info "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn" {})
                             clojure.lang.ExceptionInfo #"(?i)cthulhu")
-        =fn=> (*contains? {:type :passed})
+        =fn=> (*contains? {:type :pass})
         (exception-matches? "msg4" (ex-info "kthxbye" {})
                             clojure.lang.ExceptionInfo #"cthulhu")
         =fn=> (*contains? {:type :fail :extra "exception's message did not match regex"
@@ -40,7 +40,7 @@
           (exception-matches? "msg5" (ex-info "H.P. Lovecraft" {:cthulhu :rises})
                               clojure.lang.ExceptionInfo #"(?i)lovecraft"
                               #(-> % ex-data :cthulhu (= :rises)))
-          =fn=> (*contains? {:type :passed})
+          =fn=> (*contains? {:type :pass})
           (exception-matches? "msg6" cthulhu-bored
                               clojure.lang.ExceptionInfo #"Haskell"
                               #(-> % ex-data :cthulhu (= :rises)))
