@@ -58,7 +58,7 @@
                          (assoc-in out path %))))))
             actual d)
     (pretty-str d 2)
-    (println "DIFF:" d)))
+    (println "EXP != ACT:" d)))
 
 (defn print-diff [diff actual print-fn]
   (when (and (env :diff?) (diff/diff-paths? diff))
