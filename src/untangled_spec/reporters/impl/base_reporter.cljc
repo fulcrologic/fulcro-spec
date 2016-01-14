@@ -30,8 +30,9 @@
 (def diff diff/diff)
 
 (defn merge-in-diff-results
-  [{:keys [actual expected] :as test-result}]
-  (assoc test-result :diff (diff expected actual)))
+  [{:keys [actual expected assert-type] :as test-result}]
+  (cond-> test-result (#{'eq} assert-type)
+    (assoc :diff (diff expected actual))))
 
 (defn make-test-result
   [result result-detail]
