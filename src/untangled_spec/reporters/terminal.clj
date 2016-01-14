@@ -63,9 +63,6 @@
 (defn print-diff [diff actual print-fn]
   (when (and (env :diff?) (diff/diff-paths? diff))
     (println)
-    (when (and (env :diff-hl?) (coll? actual))
-      (print-highligted-diff diff actual)
-      (println))
     (when (env :diff-list?)
       (let [num-diffs (env :num-diffs)
             num-diffs (if (number? num-diffs)
@@ -79,7 +76,9 @@
             (println "  got:" (pretty-str got 3))
             (println)))
         (when (< num-diffs (count diff))
-          (println "&" (- (count diff) num-diffs) "more..."))))))
+          (println "&" (- (count diff) num-diffs) "more..."))))
+    (when (and (env :diff-hl?) (coll? actual))
+      (print-highligted-diff diff actual))))
 
 (defn ?ellipses [s]
   (binding [*print-level* 3
