@@ -26,9 +26,9 @@
                                :diff/impl (fn [[got exp]]
                                             (str ((comp c/green-bg c/black
                                                         c/bold)
-                                                  got)
+                                                  exp)
                                                  ((comp c/red-bg c/bold)
-                                                  exp)))}
+                                                  got)))}
                         color? (merge {:normal (comp c/bold c/yellow)
                                        :diff (comp c/bold c/cyan)
                                        :where (comp c/bold c/white)}))
