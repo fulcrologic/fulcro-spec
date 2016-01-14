@@ -16,7 +16,7 @@
             :diff-hl?        (#{"hl" "all"}  DIFF-MODE)
             :diff-list? (not (#{"hl"}        DIFF-MODE))
             :diff?      (not (#{"0" "false"} DIFF))
-            :num-diffs  (or (read-string NUM-DIFFS) 1)}))
+            :num-diffs  (read-string (or NUM-DIFFS "1"))}))
 
 (defn color-str [status & strings]
   (let [color? (:color? env)
