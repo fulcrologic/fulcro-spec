@@ -24,11 +24,8 @@
                                :failed c/red
                                :error  c/red
                                :diff/impl (fn [[got exp]]
-                                            (str ((comp c/green-bg c/black
-                                                        c/bold)
-                                                  exp)
-                                                 ((comp c/red-bg c/bold)
-                                                  got)))}
+                                            ((comp c/bold c/inverse)
+                                              (str exp " != " got)))}
                         color? (merge {:normal (comp c/bold c/yellow)
                                        :diff (comp c/bold c/cyan)
                                        :where (comp c/bold c/white)}))
@@ -57,7 +54,8 @@
               (let [{:keys [exp got path]} (diff/extract d)]
                 (->> [got exp]
                      (color-str :diff/impl)
-                     (assoc-in out path))))
+                     (#(if (empty? path) %
+                         (assoc-in out path %))))))
             actual d)
     (pretty-str d 2)
     (println "DIFF:" d)))
@@ -65,7 +63,7 @@
 (defn print-diff [diff actual print-fn]
   (when (and (env :diff?) (diff/diff-paths? diff))
     (println)
-    (when (env :diff-hl?)
+    (when (and (env :diff-hl?) (coll? actual))
       (print-highligted-diff diff actual)
       (println))
     (when (env :diff-list?)
