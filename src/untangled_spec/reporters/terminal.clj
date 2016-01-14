@@ -81,7 +81,7 @@
             (println "  got:" (pretty-str got 3))
             (println)))
         (when (< num-diffs (count diff))
-          (println "&" (- (count diff) 3) "more..."))))))
+          (println "&" (- (count diff) num-diffs) "more..."))))))
 
 (defn ?ellipses [s]
   (binding [*print-level* 3
