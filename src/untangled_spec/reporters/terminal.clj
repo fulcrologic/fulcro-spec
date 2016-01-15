@@ -38,7 +38,8 @@
   (pad " " (* 2 level)))
 
 (defn print-throwable [e]
-  (println (format-exception e {:frame-limit 10})))
+  (println (format-exception e {:frame-limit 10}))
+  (some-> (.getCause e) print-throwable))
 
 (defmethod print-method Throwable [e w]
   (print-method (c/red e) w))
