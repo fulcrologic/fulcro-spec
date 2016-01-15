@@ -4,7 +4,7 @@
   `(let [arg# ~arg
          result# (~f arg#)]
      {:type (if result# :pass :fail)
-      :message ~msg
+      :message ~msg :assert-type '~'call
       :actual arg# :expected '~f}))
 
 (defn eq-assert-expr [msg [exp act :as form]]
@@ -12,7 +12,7 @@
          exp# ~exp
          result# (= exp# act#)]
      {:type (if result# :pass :fail)
-      :message ~msg
+      :message ~msg :assert-type '~'eq
       :actual act# :expected exp#}))
 
 (defn exception-matches? [msg e exp-type & [re f f+]]
@@ -33,8 +33,9 @@
          {:type :fail :actual e :expected f+
           :extra "checker function failed"}
 
-         :else {:type :passed :actual "act" :expected "exp"})
+         :else {:type :pass :actual "act" :expected "exp"})
        (merge {:message msg
+               :assert-type 'throws?
                :throwable e})))
 
 (defn throws-assert-expr [msg [cljs? should-throw exp-type & [re f]]]

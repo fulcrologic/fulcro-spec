@@ -1,4 +1,4 @@
-(defproject untangled-spec "0.3.0"
+(defproject untangled-spec "0.3.1"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -34,7 +34,7 @@
 
   ; CI tests: Set up to support karma runner. Recommend running against chrome. See README
   :doo {:build "automated-tests"
-        :paths {:karma "node_modules/.bin/karma"}}
+        :paths {:karma "node_modules/karma/bin/karma"}}
 
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js" "resources/private/js"]
 

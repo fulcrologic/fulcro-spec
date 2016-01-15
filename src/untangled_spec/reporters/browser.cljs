@@ -7,63 +7,116 @@
     [om.next :as om :refer-macros [defui]]
     [cljs-uuid-utils.core :as uuid]
 
-    [untangled-spec.reporters.impl.browser :as impl]))
+    [untangled-spec.dom.edn-renderer :refer [html-edn]]
+    [untangled-spec.reporters.impl.browser :as impl]
+    [untangled-spec.reporters.impl.diff :as diff]))
 
-(defui ResultLine
+(defui Foldable
        Object
        (initLocalState [this] {:folded? true})
        (render [this]
-               (let [{:keys [title value stack] type- :type} (om/props this)
-                     {:keys [folded?]} (om/get-state this)]
+               (let [{:keys [folded?]} (om/get-state this)
+                     {:keys [render]} (om/props this)
+                     {:keys [title value classes]} (render folded?)]
+                 (dom/div nil
+                          (dom/a #js {:href "javascript:void(0);"
+                                      :className classes
+                                      :onClick #(om/update-state! this update :folded? not)}
+                                 (if folded? \u25BA \u25BC)
+                                 (if folded?
+                                   (str (apply str (take 40 title))
+                                        (when (< 40 (count title)) "..."))
+                                   (str title)))
+                          (dom/div #js {:className (when folded? "hidden")}
+                                   value)))))
+(def ui-foldable (om/factory Foldable))
+
+(defui ResultLine
+       Object
+       (render [this]
+               (let [{:keys [title value stack] type- :type} (om/props this)]
                  (dom/tr nil
-                         (dom/td #js {:className (str "test-result-title " (name type-))} title)
+                         (dom/td #js {:className (str "test-result-title "
+                                                      (name type-))}
+                                 title)
                          (dom/td #js {:className "test-result"}
                                  (dom/code nil
-                                           (if stack
-                                             (dom/a #js {:href "#"
-                                                         :className "error"
-                                                         :onClick #(om/update-state! this update :folded? not)}
-                                                    (if folded? \u25BA \u25BC)
-                                                    (str value))
-                                             (str value))
-                                           (when stack
-                                             (dom/div #js {:className (if folded? "hidden" "stack-trace")}
-                                                      stack))))))))
-
+                                           (ui-foldable
+                                             {:render (fn [folded?]
+                                                        {:title (if stack (str value)
+                                                                  (if folded? (str value) title))
+                                                         :value (if stack stack (if-not folded? (html-edn value)))
+                                                         :classes (if stack "stack")})})))))))
 (def ui-result-line (om/factory ResultLine))
+
+(defui HumanDiffLines
+       Object
+       (render [this]
+               (let [d (om/props this)
+                     {:keys [exp got path]} (diff/extract d)]
+                 (dom/table #js {:className "human-diff-lines"}
+                            (dom/tbody nil
+                                       (when (seq path)
+                                         (dom/tr #js {:className "path"}
+                                                 (dom/td nil "at: ")
+                                                 (dom/td nil (str path))))
+                                       (dom/tr #js {:className "expected"}
+                                               (dom/td nil "exp: ")
+                                               (dom/td nil (html-edn exp)))
+                                       (dom/tr #js {:className "actual"}
+                                               (dom/td nil "got: ")
+                                               (dom/td nil (html-edn got))))))))
+(def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn (let [c (atom 0)]
+                                                              #(swap! c inc))}))
+
+(defui HumanDiff
+       Object
+       (render [this]
+               (let [{:keys [diff actual]} (om/props this)
+                     [fst rst] (split-at 2 (sort diff))]
+                 (->> (dom/div nil
+                               (mapv ui-human-diff-lines fst)
+                               (if (seq rst)
+                                 (ui-foldable {:render
+                                               (fn [folded?]
+                                                 {:title "& more"
+                                                  :value (mapv ui-human-diff-lines rst)
+                                                  :classes ""})})))
+                      (dom/td nil)
+                      (dom/tr #js {:className "human-diff"}
+                              (dom/td nil "DIFFS:"))))))
+(def ui-human-diff (om/factory HumanDiff))
 
 (defui TestResult
        Object
        (render [this]
-               (let [{:keys [message extra actual expected stack diff]} (om/props this)]
+               (let [{:keys [where message extra actual expected stack diff]} (om/props this)]
                  (->> (dom/tbody nil
+                                 (dom/tr nil
+                                         (dom/td #js {:className "test-result-title"}
+                                                 "Where: ")
+                                         (dom/td #js {:className "test-result"}
+                                                 (str where)))
                                  (when message
                                    (ui-result-line {:type :normal
                                                     :title "ASSERTION: "
                                                     :value message}))
                                  (ui-result-line {:type :normal
-                                                  :title "Actual"
+                                                  :title "Actual: "
                                                   :value actual
                                                   :stack stack})
                                  (ui-result-line {:type :normal
-                                                  :title "Expected"
+                                                  :title "Expected: "
                                                   :value (or expected "")})
                                  (when extra
                                    (ui-result-line {:type :normal
                                                     :title "Message: "
                                                     :value extra}))
                                  (when diff
-                                   (ui-result-line {:type :diff
-                                                    :title "Updates "
-                                                    :value (:mutations diff)}))
-                                 (when diff
-                                   (ui-result-line {:type :diff
-                                                    :title "Removals "
-                                                    :value (:removals diff)}))
-                        )
+                                   (ui-human-diff {:actual actual
+                                                   :diff diff})))
                       (dom/table nil)
                       (dom/li nil)))))
-
 (def ui-test-result (om/factory TestResult {:keyfn :id}))
 
 (declare ui-test-item)
@@ -83,7 +136,6 @@
                                   (dom/ul #js {:className "test-list"}
                                           (mapv (comp ui-test-item #(assoc % :report/filter filter))
                                                 (:test-items test-item-data))))))))
-
 (def ui-test-item (om/factory TestItem {:keyfn :id}))
 
 (defui TestNamespace
@@ -96,7 +148,7 @@
                {:keys [folded?]} (om/get-state this)]
            (dom/li #js {:className "test-item"}
                    (dom/div #js {:className "test-namespace"}
-                            (dom/a #js {:href "#"
+                            (dom/a #js {:href "javascript:void(0)"
                                         :style #js {:textDecoration "none"} ;; TODO: refactor to css
                                         :onClick   #(om/update-state! this update :folded? not)}
                                    (dom/h2 #js {:className (impl/itemclass (:status tests-by-namespace))}
@@ -105,7 +157,6 @@
                             (dom/ul #js {:className (if folded? "hidden" "test-list")}
                                     (mapv (comp ui-test-item #(assoc % :report/filter filter))
                                           (:test-items tests-by-namespace))))))))
-
 (def ui-test-namespace (om/factory TestNamespace {:keyfn :name}))
 
 (defui FilterSelector
@@ -117,7 +168,6 @@
                                           "selected" "")
                              :onClick (set-filter! this-filter)}
                         (str this-filter)))))
-
 (def ui-filter-selector (om/factory FilterSelector {:keyfn :this-filter}))
 
 (defui Filters
@@ -131,40 +181,7 @@
                                                       :set-filter! set-filter!
                                                       :this-filter %})
                                 [:all :manual :failed])))))
-
 (def ui-filters (om/factory Filters ))
-
-(defn debounce [f interval]
-  (let [timeout (atom nil)]
-    (fn [& args]
-      (when-not (nil? @timeout)
-        (.disposeInternal @timeout))
-      (reset! timeout (Delay. #(apply f args)))
-      (.start @timeout interval))))
-
-(def notification (atom nil))
-(defn *notify-failure!
-  "for more info: https://developer.mozilla.org/en-US/docs/Web/API/Notification/Notification"
-  [[passed failed errors total]]
-  (let [notify-str (str (+ failed errors)
-                        " tests failed out of " total)]
-    (cond
-      (= js/Notification.permission "granted")
-      (do (when @notification (.close @notification))
-          (reset! notification
-                  (new js/Notification "cljscript tests failed"
-                       #js {:body notify-str})))
-
-      (not= js/Notification.permission "denied")
-      (js/Notification.requestPermission
-        (fn [perm]
-          (when (= perm "granted")
-            (new js/Notification
-                 "cljscript tests failed" #js {:body notify-str}))))
-
-      :else (println :NO-NOTIFY-PERMISSION))))
-
-(def notify-failure! (debounce *notify-failure! 1000))
 
 (defui TestCount
        Object
@@ -172,8 +189,7 @@
                (let [{:keys [passed failed error namespaces]} (om/props this)
                      total (+ passed failed error)]
                  (if (< 0 (+ failed error))
-                   (do (impl/change-favicon-to-color "#d00")
-                       (notify-failure! [passed failed error total]))
+                   (impl/change-favicon-to-color "#d00")
                    (impl/change-favicon-to-color "#0d0"))
                  (dom/div #js {:className "test-count"}
                           (dom/h2 nil
@@ -182,7 +198,6 @@
                                        passed " passed "
                                        failed " failed "
                                        error  " errors"))))))
-
 (def ui-test-count (om/factory TestCount))
 
 (defui TestReport
@@ -199,7 +214,9 @@
                               (ui-filters {:report/filter current-filter
                                            :set-filter! set-filter!})
                               (dom/ul #js {:className "test-list"}
-                                      (mapv (comp ui-test-namespace
-                                                  #(assoc % :report/filter current-filter))
-                                            (:namespaces test-report-data)))
+                                      (->> (:namespaces test-report-data)
+                                           (remove #(when (= :failed current-filter)
+                                                      (not (#{:failed :error} (:status %)))))
+                                           (mapv (comp ui-test-namespace
+                                                       #(assoc % :report/filter current-filter)))))
                               (ui-test-count test-report-data)))))

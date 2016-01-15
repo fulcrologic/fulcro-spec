@@ -1,7 +1,8 @@
 (ns untangled-spec.reporters.impl.base-reporter
   (:require #?@(:cljs ([cljs-uuid-utils.core :as uuid]
                         [cljs.stacktrace :refer [parse-stacktrace]]))
-    [differ.core :as differ]))
+    [differ.core :as differ]
+    [untangled-spec.reporters.impl.diff :as diff]))
 
 (defn make-testreport
   ([] (make-testreport []))
@@ -26,11 +27,12 @@
 
 #?(:cljs (defn- stack->trace [st] (parse-stacktrace {} st {} {})))
 
+(def diff diff/diff)
+
 (defn merge-in-diff-results
-  [{:keys [actual expected] :as test-result}]
-  (let [[muts rems] (differ/diff expected actual)]
-    (assoc test-result :diff {:mutations muts
-                              :removals  rems})))
+  [{:keys [actual expected assert-type] :as test-result}]
+  (cond-> test-result (#{'eq} assert-type)
+    (assoc :diff (diff expected actual))))
 
 (defn make-test-result
   [result result-detail]

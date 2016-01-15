@@ -1,10 +1,11 @@
 (ns untangled-spec.core
-  (:require [clojure.string :as s]
+  (:require clojure.test
+            [clojure.string :as s]
+
             [untangled-spec.provided :as p]
             [untangled-spec.async :as async]
             [untangled-spec.assertions :as ae]
-            [untangled-spec.stub]
-            [clojure.test]))
+            [untangled-spec.stub]))
 
 (defn cljs-env?
   "https://github.com/Prismatic/schema/blob/master/src/clj/schema/macros.clj"

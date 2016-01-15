@@ -1,4 +1,4 @@
 (ns untangled-spec.core
-  (:require [untangled-spec.async :as async]
+  (:require [untangled-spec.async]
             [untangled-spec.stub]
             [cljs.test :include-macros true]))
