@@ -1,4 +1,5 @@
-(ns untangled-spec.reporters.impl.diff)
+(ns untangled-spec.reporters.impl.diff
+  (:require [clojure.set :as set]))
 
 (defn dbg
   ([x] (dbg :dbg x))
@@ -6,7 +7,17 @@
    (println tag x)))
 
 (declare diff)
-(def nf "*nil*")
+(def nf '...nothing...)
+
+(defn extract [d]
+  (let [path (vec (drop-last d))
+        [_ exp _ got] (last d)]
+    {:path path :exp exp :got got}))
+
+(defn diff-paths? [?d]
+  (letfn [(diff? [[p _ m _]] (and (= p :+) (= m :-)))]
+    (and ?d (vector? ?d) (every? vector ?d)
+      (every? (comp diff? last) ?d))))
 
 (defn- map-diff [ks exp act]
   (loop [[k & ks] ks, exp exp, act act, path [], paths []]
@@ -42,23 +53,38 @@
 
       :else (recur is es as paths))))
 
-(defn diff [exp act & [opt]]
-  (let [recur? (#{:recur} opt)]
-    (cond
-      (not= (type exp) (type act))
-      (cond-> [:+ exp :- act]
-        (not recur?) ((comp vector vector)))
+(defn set-diff [exp act]
+  (let [missing-from-act (set/difference act exp)
+        missing-from-exp (set/difference exp act)]
+    (if (and (seq missing-from-act) (seq missing-from-exp))
+      [:+ missing-from-exp :- missing-from-act]
+      [])))
 
+(defn diff [exp act & [opt]]
+  (let [recur? (#{:recur} opt)
+        wrap-in-paths #(-> % vector vector)]
+    (cond
       (every? map? [exp act])
       (map-diff (vec (set (mapcat keys [exp act])))
                 exp act)
 
-      (every? coll? [exp act])
-      (seq-diff exp act)
-
       (every? string? [exp act])
       (cond-> [:+ exp :- act]
-        (not recur?) ((comp vector vector)))
+        (not recur?) wrap-in-paths)
+
+      (every? set? [exp act])
+      (cond-> (set-diff exp act)
+        (not recur?) wrap-in-paths)
+
+      (every? sequential? [exp act])
+      (seq-diff exp act)
+
+      (not= (type exp) (type act))
+      (cond-> [:+ exp :- act]
+        (not recur?) wrap-in-paths)
+
+      (every? coll? [exp act])
+      (seq-diff exp act)
 
       ;; RECUR GUARD
       (not recur?) nil

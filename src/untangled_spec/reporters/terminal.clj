@@ -2,6 +2,7 @@
   (:require [clojure.test :as t]
             [clojure.stacktrace :as stack]
             [untangled-spec.reporters.impl.terminal :as impl]
+            [untangled-spec.reporters.impl.diff :as diff]
             [colorize.core :as c]
             [clojure.string :as s]
             [io.aviso.exception :refer [format-exception *traditional*]]
@@ -9,11 +10,13 @@
 
 (def env (let [COLOR     (System/getenv "US_DIFF_HL")
                DIFF-MODE (System/getenv "US_DIFF_MODE")
-               DIFF      (System/getenv "US_DIFF")]
+               DIFF      (System/getenv "US_DIFF")
+               NUM-DIFFS (System/getenv "US_NUM_DIFFS")]
            {:color?          (#{"1" "true"}  COLOR)
             :diff-hl?        (#{"hl" "all"}  DIFF-MODE)
             :diff-list? (not (#{"hl"}        DIFF-MODE))
-            :diff?      (not (#{"0" "false"} DIFF))}))
+            :diff?      (not (#{"0" "false"} DIFF))
+            :num-diffs  (read-string (or NUM-DIFFS "1"))}))
 
 (defn color-str [status & strings]
   (let [color? (:color? env)
@@ -21,11 +24,8 @@
                                :failed c/red
                                :error  c/red
                                :diff/impl (fn [[got exp]]
-                                            (str ((comp c/green-bg c/black
-                                                        c/bold)
-                                                  got)
-                                                 ((comp c/red-bg c/bold)
-                                                  exp)))}
+                                            ((comp c/bold c/inverse)
+                                              (str exp " != " got)))}
                         color? (merge {:normal (comp c/bold c/yellow)
                                        :diff (comp c/bold c/cyan)
                                        :where (comp c/bold c/white)}))
@@ -51,40 +51,37 @@
 (defn print-highligted-diff [diff actual]
   (as-> diff d
     (reduce (fn [out d]
-              (let [path (drop-last d)
-                    [_ exp _ got] (last d)]
+              (let [{:keys [exp got path]} (diff/extract d)]
                 (->> [got exp]
                      (color-str :diff/impl)
-                     (assoc-in out path))))
+                     (#(if (empty? path) %
+                         (assoc-in out path %))))))
             actual d)
     (pretty-str d 2)
-    (println "DIFF:" d)))
+    (println "EXP != ACT:" d)))
 
 (defn print-diff [diff actual print-fn]
-  ;;TODO: refactor to `diff?`
-  (when (and (env :diff?) diff
-             (vector? diff) (every? vector diff))
+  (when (and (env :diff?) (diff/diff-paths? diff))
     (println)
-    (when (env :diff-hl?)
-      (print-highligted-diff diff actual)
-      (println))
     (when (env :diff-list?)
-      (println (color-str :diff "diffs:"))
-      (doseq [d (take 3 (sort diff))]
-        (binding [*print-length* 3]
-          (let [path (vec (drop-last d))
-                ;;TODO: refactor to `extract-diff`?
-                [_ exp _ got] (last d)]
+      (let [num-diffs (env :num-diffs)
+            num-diffs (if (number? num-diffs)
+                        num-diffs (count diff))]
+        (println (color-str :diff "diffs:"))
+        (doseq [d (->> (sort diff) (take num-diffs))]
+          (let [{:keys [exp got path]} (diff/extract d)]
             (when (seq path)
               (println (str "-  at: " path)))
-            (println "  got:" (pretty-str got 3))
             (println "  exp:" (pretty-str exp 6))
-            (println))))
-      (when (< 4 (count diff))
-        (println "&" (- (count diff) 3) "more...")))))
+            (println "  got:" (pretty-str got 3))
+            (println)))
+        (when (< num-diffs (count diff))
+          (println "&" (- (count diff) num-diffs) "more..."))))
+    (when (and (env :diff-hl?) (coll? actual))
+      (print-highligted-diff diff actual))))
 
 (defn ?ellipses [s]
-  (binding [*print-level* 4
+  (binding [*print-level* 3
             *print-length* 2]
     (apply str (drop-last (with-out-str (pprint s))))))
 
@@ -92,7 +89,7 @@
   (print-fn (color-str :normal "ASSERTION:")
             (let [?fix #(case %
                           "" "\"\""
-                          nil "*nil*"
+                          nil "..nil.."
                           %)
                   arrow (re-find #" =.*?> " m)
                   [act exp] (s/split m #" =(.*?)> ")]

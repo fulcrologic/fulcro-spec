@@ -21,9 +21,8 @@
     (behavior "strings"
       (assertions
         "simple diff"
-        (base/diff "asdf" "qwer")
-        => [[[:+ "asdf" :- "qwer"]]]
-        ))
+        (base/diff "asdf" "usef")
+        => [[[:+ "asdf" :- "usef"]]]))
     (behavior "maps"
       (assertions
         "returns a list of paths to the diffs"
@@ -51,7 +50,29 @@
                    {0 {1 {[2 3] :q}}})
         => [[0 1 [2 3] [:+ 3 :- :q]]
             [0 1 {4 4} [:+ 4 :- nf]]]))
-    (behavior "sequences"
+    (behavior "lists"
+      (assertions
+        "both empty"
+        (base/diff '() '()) => []
+
+        "same length"
+        (base/diff '(0) '(0)) => []
+        (base/diff '(0) '(1)) => [[0 [:+ 0 :- 1]]]
+        (base/diff '(1 2 3) '(1 3 2)) => [[1 [:+ 2 :- 3]]
+                                          [2 [:+ 3 :- 2]]]
+
+        "diff lengths"
+        (base/diff '(4 3 1) '(4)) => [[1 [:+ 3 :- nf]]
+                                      [2 [:+ 1 :- nf]]]
+        (base/diff '() '(3 9)) => [[0 [:+ nf :- 3]]
+                                   [1 [:+ nf :- 9]]]))
+    (behavior "lists & vectors"
+      (assertions
+        "works as though they are the same type"
+        (base/diff '(0 1 3 4) [0 1 2 3])
+        => [[2 [:+ 3 :- 2]]
+            [3 [:+ 4 :- 3]]]))
+    (behavior "vectors"
       (assertions
         "both empty"
         (base/diff [] []) => []
@@ -84,5 +105,18 @@
         => [[0 0 [:+ 0 :- 1]]]
         (base/diff [{:questions {:ui/curr 1}}]
                    [{:questions {}}])
-        => [[0 :questions :ui/curr [:+ 1 :- nf]]]
-        ))))
+        => [[0 :questions :ui/curr [:+ 1 :- nf]]]))
+    (behavior "sets"
+      (assertions
+        "both empty"
+        (base/diff #{} #{}) => [[[]]]
+
+        "same length"
+        (base/diff #{1}   #{2})   => [[[:+ #{1}   :- #{2}]]]
+        (base/diff #{1 3} #{2 3}) => [[[:+ #{1}   :- #{2}]]]
+        (base/diff #{1 5} #{2 4}) => [[[:+ #{1 5} :- #{2 4}]]]
+
+        "nested"
+        (base/diff [{:foo [#{1 2}]}]
+                   [{:foo [#{3 2}]}])
+        => [[0 :foo 0 [:+ #{1} :- #{3}]]]))))
