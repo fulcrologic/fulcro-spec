@@ -4,7 +4,7 @@
   `(let [arg# ~arg
          result# (~f arg#)]
      {:type (if result# :pass :fail)
-      :message ~msg :assert-type '~'call
+      :message ~msg :assert-type '~'exec
       :actual arg# :expected '~f}))
 
 (defn eq-assert-expr [msg [exp act :as form]]
@@ -47,11 +47,11 @@
 
 (defn assert-expr [disp-key msg form]
   (case (str disp-key)
-    "call"    (fn-assert-expr     msg (rest form))
+    "exec"    (fn-assert-expr     msg (rest form))
     "eq"      (eq-assert-expr     msg (rest form))
     "throws?" (throws-assert-expr msg (rest form))
     :else {:type :fail :message msg :actual disp-key
-           :expected #{"call" "eq" "throws?"}}))
+           :expected #{"exec" "eq" "throws?"}}))
 
 (defn triple->assertion [cljs? [left arrow expected]]
   (let [prefix (if cljs? "cljs.test" "clojure.test")
@@ -66,7 +66,7 @@
       =fn=>
       (let [checker expected
             arg left]
-        `(~is (~'call ~checker ~arg)
+        `(~is (~'exec ~checker ~arg)
               ~msg))
 
       =throws=>

@@ -2,8 +2,8 @@
   (:require cljs.test
             [untangled-spec.assertions :as ae]))
 
-(defmethod cljs.test/assert-expr 'call [_ msg form]
-  `(cljs.test/do-report ~(ae/assert-expr 'call msg form)))
+(defmethod cljs.test/assert-expr 'exec [_ msg form]
+  `(cljs.test/do-report ~(ae/assert-expr 'exec msg form)))
 
 (defmethod cljs.test/assert-expr 'throws? [_ msg form]
   `(cljs.test/do-report ~(ae/assert-expr 'throws? msg form)))

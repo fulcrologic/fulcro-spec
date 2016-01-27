@@ -8,4 +8,4 @@
   (behavior "adds methods to clojure.test/assert-expr"
     (assertions
       (methods t/assert-expr)
-      =fn=> (*contains? '[= call throws?] :keys))))
+      =fn=> (*contains? '[= exec throws?] :keys))))
