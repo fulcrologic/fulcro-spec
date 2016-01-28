@@ -73,7 +73,7 @@
        Object
        (render [this]
                (let [{:keys [diff actual]} (om/props this)
-                     [fst rst] (split-at 2 (sort diff))]
+                     [fst rst] (split-at 2 diff)]
                  (->> (dom/div nil
                                (mapv ui-human-diff-lines fst)
                                (if (seq rst)
