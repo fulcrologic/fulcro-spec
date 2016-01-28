@@ -69,7 +69,7 @@
             num-diffs (if (number? num-diffs)
                         num-diffs (count diff))]
         (println (color-str :diff "diffs:"))
-        (doseq [d (->> (sort diff) (take num-diffs))]
+        (doseq [d (take num-diffs diff)]
           (let [{:keys [exp got path]} (diff/extract d)]
             (when (seq path)
               (println (str "-  at: " path)))
