@@ -50,3 +50,8 @@
     margin: 0px;
     color: #428bca;
 }
+
+.rendered-edn .highlight {
+    background-color: black;
+    color: white;
+}

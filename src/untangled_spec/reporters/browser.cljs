@@ -75,6 +75,7 @@
                (let [{:keys [diff actual]} (om/props this)
                      [fst rst] (split-at 2 diff)]
                  (->> (dom/div nil
+                               (html-edn actual diff)
                                (mapv ui-human-diff-lines fst)
                                (if (seq rst)
                                  (ui-foldable {:render
