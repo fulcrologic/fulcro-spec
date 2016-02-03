@@ -16,27 +16,28 @@
       :actual act# :expected exp#}))
 
 (defn exception-matches? [msg e exp-type & [re f f+]]
-  (->> (cond
-         (some-> (ex-data e) :type (= ::internal))
-         {:type :error :extra (.getMessage e)
-          :actual e :expected "it to throw"}
+  (let [msg #?(:clj (.getMessage e) :cljs (.-message e))]
+    (->> (cond
+           (some-> (ex-data e) :type (= ::internal))
+           {:type :error :extra msg
+            :actual e :expected "it to throw"}
 
-         (not= exp-type (type e))
-         {:type :fail :actual (type e) :expected exp-type
-          :extra "exception did not match type"}
+           (not= exp-type (type e))
+           {:type :fail :actual (type e) :expected exp-type
+            :extra "exception did not match type"}
 
-         (and re (not (re-find re (.getMessage e))))
-         {:type :fail :actual (.getMessage e) :expected (str re)
-          :extra "exception's message did not match regex"}
+           (and re (not (re-find re msg)))
+           {:type :fail :actual msg :expected (str re)
+            :extra "exception's message did not match regex"}
 
-         (and f (not (f e)))
-         {:type :fail :actual e :expected f+
-          :extra "checker function failed"}
+           (and f (not (f e)))
+           {:type :fail :actual e :expected f+
+            :extra "checker function failed"}
 
-         :else {:type :pass :actual "act" :expected "exp"})
-       (merge {:message msg
-               :assert-type 'throws?
-               :throwable e})))
+           :else {:type :pass :actual "act" :expected "exp"})
+         (merge {:message msg
+                 :assert-type 'throws?
+                 :throwable e}))))
 
 (defn throws-assert-expr [msg [cljs? should-throw exp-type & [re f]]]
   `(try ~should-throw
