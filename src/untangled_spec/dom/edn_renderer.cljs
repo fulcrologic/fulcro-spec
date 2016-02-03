@@ -97,11 +97,12 @@
     :else        (literal "literal" x)))
 
 (defn apply-diff [x diff]
-  (reduce (fn [acc d]
-            (let [{:keys [exp got path]} (diff/extract d)
-                  diff-me (->DiffMe exp got)]
-              (assoc-in acc path diff-me)))
-          x diff))
+  (when (associative? x)
+    (reduce (fn [acc d]
+              (let [{:keys [exp got path]} (diff/extract d)
+                    diff-me (->DiffMe exp got)]
+                (assoc-in acc path diff-me)))
+            x diff)))
 
 (defn html-edn [e & [diff]]
   (binding [*key-counter* (atom 0)]
