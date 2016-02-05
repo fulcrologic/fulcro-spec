@@ -18,14 +18,12 @@
             [lein-doo "0.1.6"] ; for cljs CI tests
             [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]]
 
-  :repositories [["releases" "https://artifacts.buehner-fry.com/artifactory/internal-release"]
-                 ["third-party" "https://artifacts.buehner-fry.com/artifactory/internal-3rdparty"]
-                 ["snapshots" "https://artifacts.buehner-fry.com/artifactory/internal-snapshots"]]
+  :repositories [["releases" "https://artifacts.buehner-fry.com/artifactory/release"]]
 
-  :deploy-repositories [["releases" {:url           "https://artifacts.buehner-fry.com/artifactory/internal-release"
+  :deploy-repositories [["releases" {:url           "https://artifacts.buehner-fry.com/artifactory/navis-maven-release"
                                      :snapshots     false
                                      :sign-releases false}]
-                        ["snapshots" {:url           "https://artifacts.buehner-fry.com/artifactory/internal-snapshots"
+                        ["snapshots" {:url           "https://artifacts.buehner-fry.com/artifactory/navis-maven-snapshot"
                                       :sign-releases false}]]
 
   :source-paths ["src"]
