@@ -16,18 +16,18 @@
       :actual act# :expected exp#}))
 
 (defn exception-matches? [msg e exp-type & [re f f+]]
-  (let [msg #?(:clj (.getMessage e) :cljs (.-message e))]
+  (let [e-msg #?(:clj (.getMessage e) :cljs (.-message e))]
     (->> (cond
            (some-> (ex-data e) :type (= ::internal))
-           {:type :error :extra msg
+           {:type :error :extra e-msg
             :actual e :expected "it to throw"}
 
            (not= exp-type (type e))
            {:type :fail :actual (type e) :expected exp-type
             :extra "exception did not match type"}
 
-           (and re (not (re-find re msg)))
-           {:type :fail :actual msg :expected (str re)
+           (and re (not (re-find re e-msg)))
+           {:type :fail :actual e-msg :expected (str re)
             :extra "exception's message did not match regex"}
 
            (and f (not (f e)))
