@@ -1,4 +1,4 @@
-(defproject untangled-spec "0.3.2"
+(defproject untangled-spec "0.3.3-SNAPSHOT"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
