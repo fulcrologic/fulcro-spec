@@ -1,5 +1,6 @@
 (ns untangled-spec.dom.edn-renderer
   (:require [cljs.pprint :refer [pprint]]
+            [untangled-spec.reporters.impl.diff :as diff]
             [om.dom :as dom])
   (:import [goog.string StringBuffer]))
 
@@ -74,8 +75,17 @@
 (defn html-string [s]
   (open-close "string" "\"" "\"" s))
 
+(defprotocol HtmlIfy
+  (htmlify [this] "turn this into om dom html!"))
+(defrecord DiffMe [exp got]
+  HtmlIfy
+  (htmlify [this] (dom/div #js {:className "highlight diff"}
+                           (str exp " != " got))))
+
 (defn html [x]
   (cond
+    (instance? DiffMe x) (htmlify x)
+
     (number? x)  (literal "number" x)
     (keyword? x) (literal "keyword" x)
     (symbol? x)  (literal "symbol" x)
@@ -86,7 +96,17 @@
     (seq? x)     (html-collection "seq"    "(" ")" x)
     :else        (literal "literal" x)))
 
-(defn html-edn [e]
+(defn apply-diff [x diff]
+  (when (associative? x)
+    (reduce (fn [acc d]
+              (let [{:keys [exp got path]} (diff/extract d)
+                    diff-me (->DiffMe exp got)]
+                (assoc-in acc path diff-me)))
+            x diff)))
+
+(defn html-edn [e & [diff]]
   (binding [*key-counter* (atom 0)]
     (dom/div #js {:className "rendered-edn com-rigsomelight-devcards-typog"}
-             (html e))))
+             (if diff
+               (-> e (apply-diff diff) html)
+               (html e)))))

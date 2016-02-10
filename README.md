@@ -18,16 +18,18 @@ To run tests:
 
 To run the CLJ tests for this library:
 
-    lein test
-    
+    make test-server
+
 To run the CLJS tests for this library:
 
-The CI server must have chrome, node, and npm installed. 
+    make test-client
+
+To run the CLJS tests on the CI server, it must have chrome, node, and npm installed.
 
 At least once (to set up the tools):
 
     npm install
-    
+
 To run the tests:
 
     lein doo chrome automated-tests once

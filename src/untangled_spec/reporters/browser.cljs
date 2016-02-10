@@ -73,8 +73,12 @@
        Object
        (render [this]
                (let [{:keys [diff actual]} (om/props this)
-                     [fst rst] (split-at 2 (sort diff))]
+                     [fst rst] (split-at 2 diff)]
                  (->> (dom/div nil
+                               (when (associative? actual)
+                                 (ui-foldable {:render (fn [folded?]
+                                                         {:title "DIFF"
+                                                          :value (html-edn actual diff)})}))
                                (mapv ui-human-diff-lines fst)
                                (if (seq rst)
                                  (ui-foldable {:render

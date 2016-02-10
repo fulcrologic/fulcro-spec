@@ -55,7 +55,7 @@
     (behavior "verifies actual with the =fn=> function"
       (assertions
         (triple->assertion false '(left =fn=> right))
-        =fn=> (check-assertion '(call right left))))
+        =fn=> (check-assertion '(exec right left))))
     (behavior "verifies that actual threw an exception with the =throws=> arrow"
       (assertions
         (triple->assertion false '(left =throws=> (right)))

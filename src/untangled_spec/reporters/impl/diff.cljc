@@ -56,7 +56,7 @@
 (defn set-diff [exp act]
   (let [missing-from-act (set/difference act exp)
         missing-from-exp (set/difference exp act)]
-    (if (and (seq missing-from-act) (seq missing-from-exp))
+    (if (or (seq missing-from-act) (seq missing-from-exp))
       [:+ missing-from-exp :- missing-from-act]
       [])))
 
