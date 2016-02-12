@@ -16,7 +16,8 @@
 
   :plugins [[lein-cljsbuild "1.1.1"]
             [lein-doo "0.1.6"] ; for cljs CI tests
-            [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]]
+            [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
+            [com.jakemccrary/lein-test-refresh "0.13.0"]]
 
   :repositories [["releases" "https://artifacts.buehner-fry.com/artifactory/release"]]
 
