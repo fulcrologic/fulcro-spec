@@ -5,7 +5,7 @@
              :as ae
              :refer [triple->assertion exception-matches?]]
             [clojure.test :as t :refer [is]]
-            [contains.core :refer [*contains?]])
+            [untangled-spec.contains :refer [*contains?]])
   (:import clojure.lang.ExceptionInfo))
 
 (defn check-assertion [expected]

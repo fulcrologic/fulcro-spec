@@ -1,4 +1,4 @@
-(defproject untangled-spec "0.3.2"
+(defproject untangled-spec "0.3.3"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -10,13 +10,12 @@
                  [cljsjs/react-with-addons "0.14.0-1"]
                  [org.omcljs/om "1.0.0-alpha22" :scope "provided"]
                  [io.aviso/pretty "0.1.19"]
-                 [contains "1.0.0"]
-                 [differ "0.2.1"]
                  [lein-doo "0.1.6" :scope "test"]]
 
   :plugins [[lein-cljsbuild "1.1.1"]
             [lein-doo "0.1.6"] ; for cljs CI tests
-            [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]]
+            [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
+            [com.jakemccrary/lein-test-refresh "0.13.0"]]
 
   :repositories [["releases" "https://artifacts.buehner-fry.com/artifactory/release"]]
 
