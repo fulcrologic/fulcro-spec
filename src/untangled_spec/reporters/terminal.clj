@@ -5,7 +5,7 @@
             [untangled-spec.reporters.impl.diff :as diff]
             [colorize.core :as c]
             [clojure.string :as s]
-            [io.aviso.exception :refer [format-exception *traditional*]]
+            [io.aviso.exception :refer [format-exception]]
             [clojure.pprint :refer [pprint]]))
 
 (def env (let [COLOR     (System/getenv "US_DIFF_HL")

@@ -3,7 +3,7 @@
              :refer [specification behavior provided assertions]]
             [untangled-spec.reporters.suite]
             [cljs.test :as t]
-            [contains.core :refer [*contains?]]))
+            [untangled-spec.contains :refer [*contains?]]))
 
 (specification "untangled-spec.reporters.suite-spec"
   (behavior "adds methods to cljs.test/assert-expr"

@@ -10,8 +10,6 @@
                  [cljsjs/react-with-addons "0.14.0-1"]
                  [org.omcljs/om "1.0.0-alpha22" :scope "provided"]
                  [io.aviso/pretty "0.1.19"]
-                 [contains "1.0.0"]
-                 [differ "0.2.1"]
                  [lein-doo "0.1.6" :scope "test"]]
 
   :plugins [[lein-cljsbuild "1.1.1"]
