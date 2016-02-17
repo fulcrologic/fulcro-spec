@@ -10,6 +10,7 @@
   (component "print-test-result"
     (provided "if (isa? actual Throwable) & (= status :error), it should print-throwable"
       (rt/print-throwable _) => _
+      (rt/env :quick-fail?) => true
       (let [e (ex-info "howdy" {})]
         (assertions
           (rt/print-test-result {:status :error :actual e} (constantly nil) 0)

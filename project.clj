@@ -1,4 +1,4 @@
-(defproject untangled-spec "0.3.3"
+(defproject untangled-spec "0.3.4-SNAPSHOT"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -9,7 +9,7 @@
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cljsjs/react-with-addons "0.14.0-1"]
                  [org.omcljs/om "1.0.0-alpha22" :scope "provided"]
-                 [io.aviso/pretty "0.1.19"]
+                 [io.aviso/pretty "0.1.23"]
                  [lein-doo "0.1.6" :scope "test"]]
 
   :plugins [[lein-cljsbuild "1.1.1"]
