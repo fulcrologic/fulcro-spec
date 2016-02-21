@@ -13,8 +13,10 @@
                DIFF        (System/getenv "US_DIFF")
                NUM_DIFFS   (System/getenv "US_NUM_DIFFS")
                FRAME_LIMIT (System/getenv "US_FRAME_LIMIT")
-               QUICK_FAIL  (System/getenv "US_QUICK_FAIL")]
-           {:color?          (#{"1" "true"}  COLOR)
+               QUICK_FAIL  (System/getenv "US_QUICK_FAIL")
+               FAIL_ONLY   (System/getenv "US_FAIL_ONLY")]
+           {:fail-only?      (#{"1" "true"} FAIL_ONLY)
+            :color?          (#{"1" "true"}  COLOR)
             :diff-hl?        (#{"hl" "all"}  DIFF_MODE)
             :diff-list? (not (#{"hl"}        DIFF_MODE))
             :diff?      (not (#{"0" "false"} DIFF))
@@ -144,6 +146,8 @@
                                           (partial println))
                                    (inc print-level))))
     (->> (:test-items test-item)
+         (remove #(when (env :fail-only?)
+                    (= :passed (:status %))))
          (mapv #(print-test-item % (inc print-level))))))
 
 (defn print-namespace [make-tests-by-namespace]
@@ -152,6 +156,8 @@
     (println (color-str (:status make-tests-by-namespace)
                         "Testing " (:name make-tests-by-namespace)))
     (->> (:test-items make-tests-by-namespace)
+         (remove #(when (env :fail-only?)
+                    (= :passed (:status %))))
          (mapv #(print-test-item % 1)))))
 
 (defn print-report-data
@@ -160,6 +166,8 @@
   (t/with-test-out
     (let [{:keys [namespaces tested passed failed error]} @impl/*test-state*]
       (try (->> namespaces
+                (remove #(when (env :fail-only?)
+                           (= :passed (:status %))))
                 (mapv print-namespace))
            (catch Exception e
              (when-not (->> e ex-data ::stop?)
