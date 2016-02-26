@@ -57,7 +57,8 @@
 
   :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
 
-  :figwheel {:nrepl-port 7888}
+  :figwheel {:nrepl-port 7888
+             :server-port 3457}
   :profiles {:dev {:source-paths ["src" "test" "dev"]
                    :repl-options {:init-ns clj.user
                                   :port    7001}
