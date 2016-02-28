@@ -64,7 +64,7 @@
                      (color-str :diff/impl)
                      (#(if (empty? path) %
                          (assoc-in out path %))))))
-            (walk/prewalk #(cond-> % (list? %) (-> vec (conj ::list))) actual) d)
+            (walk/prewalk #(cond-> % (seq? %) (-> vec (conj ::list))) actual) d)
     (walk/prewalk #(cond-> %
                      (and (vector? %) (= ::list (last %)))
                      drop-last) d)
