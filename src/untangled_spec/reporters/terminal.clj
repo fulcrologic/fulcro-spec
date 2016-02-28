@@ -5,6 +5,7 @@
             [untangled-spec.reporters.impl.diff :as diff]
             [colorize.core :as c]
             [clojure.string :as s]
+            [clojure.walk :as walk]
             [io.aviso.exception :as pretty]
             [clojure.pprint :refer [pprint]]))
 
@@ -63,7 +64,10 @@
                      (color-str :diff/impl)
                      (#(if (empty? path) %
                          (assoc-in out path %))))))
-            actual d)
+            (walk/prewalk #(cond-> % (list? %) (-> vec (conj ::list))) actual) d)
+    (walk/prewalk #(cond-> %
+                     (and (vector? %) (= ::list (last %)))
+                     drop-last) d)
     (pretty-str d 2)
     (println "EXP != ACT:" d)))
 
