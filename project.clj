@@ -17,16 +17,6 @@
             [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
             [com.jakemccrary/lein-test-refresh "0.13.0"]]
 
-  :repositories [["releases" "https://artifacts.buehner-fry.com/artifactory/release"]]
-
-  :deploy-repositories [["releases" {:id            "central"
-                                     :url           "https://artifacts.buehner-fry.com/artifactory/navis-maven-release"
-                                     :snapshots     false
-                                     :sign-releases false}]
-                        ["snapshots" {:id            "snapshots"
-                                      :url           "https://artifacts.buehner-fry.com/artifactory/navis-maven-snapshot"
-                                      :sign-releases false}]]
-
   :source-paths ["src"]
   :test-paths ["test"]
   :resource-paths ["src" "resources"]
