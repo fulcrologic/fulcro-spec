@@ -65,11 +65,3 @@ To run the tests:
              )
              ;; test fails if setTimeout or get were not called
       ))
-
-
-## License
-
-Copyright © 2015 NAVIS
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
