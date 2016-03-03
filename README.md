@@ -27,3 +27,4 @@ Coming soon! See the tests in the test folder.
 
 MIT License
 Copyright © 2015 NAVIS
+
