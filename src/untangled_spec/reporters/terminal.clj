@@ -5,18 +5,25 @@
             [untangled-spec.reporters.impl.diff :as diff]
             [colorize.core :as c]
             [clojure.string :as s]
-            [io.aviso.exception :refer [format-exception]]
+            [clojure.walk :as walk]
+            [io.aviso.exception :as pretty]
             [clojure.pprint :refer [pprint]]))
 
-(def env (let [COLOR     (System/getenv "US_DIFF_HL")
-               DIFF-MODE (System/getenv "US_DIFF_MODE")
-               DIFF      (System/getenv "US_DIFF")
-               NUM-DIFFS (System/getenv "US_NUM_DIFFS")]
-           {:color?          (#{"1" "true"}  COLOR)
-            :diff-hl?        (#{"hl" "all"}  DIFF-MODE)
-            :diff-list? (not (#{"hl"}        DIFF-MODE))
+(def env (let [COLOR       (System/getenv "US_DIFF_HL")
+               DIFF_MODE   (System/getenv "US_DIFF_MODE")
+               DIFF        (System/getenv "US_DIFF")
+               NUM_DIFFS   (System/getenv "US_NUM_DIFFS")
+               FRAME_LIMIT (System/getenv "US_FRAME_LIMIT")
+               QUICK_FAIL  (System/getenv "US_QUICK_FAIL")
+               FAIL_ONLY   (System/getenv "US_FAIL_ONLY")]
+           {:fail-only?      (#{"1" "true"} FAIL_ONLY)
+            :color?          (#{"1" "true"}  COLOR)
+            :diff-hl?        (#{"hl" "all"}  DIFF_MODE)
+            :diff-list? (not (#{"hl"}        DIFF_MODE))
             :diff?      (not (#{"0" "false"} DIFF))
-            :num-diffs  (read-string (or NUM-DIFFS "1"))}))
+            :frame-limit (read-string (or FRAME_LIMIT "10"))
+            :num-diffs  (read-string (or NUM_DIFFS "1"))
+            :quick-fail? (not (#{"0" "false"} QUICK_FAIL))}))
 
 (defn color-str [status & strings]
   (let [color? (:color? env)
@@ -38,7 +45,7 @@
   (pad " " (* 2 level)))
 
 (defn print-throwable [e]
-  (println (format-exception e {:frame-limit 10}))
+  (print (pretty/format-exception e {:frame-limit (:frame-limit env)}))
   (some-> (.getCause e) print-throwable))
 
 (defmethod print-method Throwable [e w]
@@ -57,7 +64,10 @@
                      (color-str :diff/impl)
                      (#(if (empty? path) %
                          (assoc-in out path %))))))
-            actual d)
+            (walk/prewalk #(cond-> % (seq? %) (-> vec (conj ::list))) actual) d)
+    (walk/prewalk #(cond-> %
+                     (and (vector? %) (= ::list (last %)))
+                     drop-last) d)
     (pretty-str d 2)
     (println "EXP != ACT:" d)))
 
@@ -126,7 +136,7 @@
     (print-fn " Expected:" (pretty-str expected (+ 5 print-level))))
   (some-> extra (print-extra print-fn))
   (some-> diff (print-diff actual print-fn))
-  (when true ;TODO: -> env/cfg
+  (when (env :quick-fail?)
     (throw (ex-info "" {::stop? true}))))
 
 (defn print-test-item [test-item print-level]
@@ -140,6 +150,8 @@
                                           (partial println))
                                    (inc print-level))))
     (->> (:test-items test-item)
+         (remove #(when (env :fail-only?)
+                    (= :passed (:status %))))
          (mapv #(print-test-item % (inc print-level))))))
 
 (defn print-namespace [make-tests-by-namespace]
@@ -148,6 +160,8 @@
     (println (color-str (:status make-tests-by-namespace)
                         "Testing " (:name make-tests-by-namespace)))
     (->> (:test-items make-tests-by-namespace)
+         (remove #(when (env :fail-only?)
+                    (= :passed (:status %))))
          (mapv #(print-test-item % 1)))))
 
 (defn print-report-data
@@ -156,6 +170,8 @@
   (t/with-test-out
     (let [{:keys [namespaces tested passed failed error]} @impl/*test-state*]
       (try (->> namespaces
+                (remove #(when (env :fail-only?)
+                           (= :passed (:status %))))
                 (mapv print-namespace))
            (catch Exception e
              (when-not (->> e ex-data ::stop?)

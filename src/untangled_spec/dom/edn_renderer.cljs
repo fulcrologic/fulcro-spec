@@ -96,13 +96,23 @@
     (seq? x)     (html-collection "seq"    "(" ")" x)
     :else        (literal "literal" x)))
 
+
 (defn apply-diff [x diff]
-  (when (associative? x)
-    (reduce (fn [acc d]
-              (let [{:keys [exp got path]} (diff/extract d)
-                    diff-me (->DiffMe exp got)]
-                (assoc-in acc path diff-me)))
-            x diff)))
+  (do
+    (extend-type cljs.core/List
+      cljs.core/IAssociative
+      (-assoc [coll k v]
+              (apply list (assoc (vec coll) k v))))
+    (when (associative? x)
+      (reduce (fn [acc d]
+                (let [{:keys [exp got path]} (diff/extract d)
+                      diff-me (->DiffMe exp got)]
+                  (assoc-in acc path diff-me)))
+              x diff))
+    (extend-type cljs.core/List
+      cljs.core/IAssociative
+      (-assoc [coll k v]
+              (throw (ex-info "cljs.core/List is not cljs.core/IAssociative" {}))))))
 
 (defn html-edn [e & [diff]]
   (binding [*key-counter* (atom 0)]
