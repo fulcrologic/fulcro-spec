@@ -7,6 +7,7 @@
                  [org.clojure/clojurescript "1.7.228" :scope "provided"]
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
+                 [cljsjs/react-with-addons "0.14.0-1" :scope "provided"]
                  [org.omcljs/om "1.0.0-alpha30" :scope "provided"]
                  [io.aviso/pretty "0.1.23"]
                  [lein-doo "0.1.6" :scope "test"]]
