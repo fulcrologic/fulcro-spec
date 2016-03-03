@@ -1,6 +1,7 @@
 tests:
 	npm install
 	lein doo chrome automated-tests once
+	lein test-refresh :run-once
 
 test-server:
 	lein test-refresh
