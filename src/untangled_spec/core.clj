@@ -31,7 +31,7 @@
   (let [var-name-from-string (fn [s] (symbol (s/lower-case (s/replace s #"[()~'\"`!@#$;%^&. ]" "-"))))
         name (var-name-from-string description)
         prefix (if-cljs &env "cljs.test" "clojure.test")]
-    `(~(symbol prefix "deftest") ~name
+    `(~(symbol prefix "deftest") ~(symbol (str name (gensym)))
                (~(symbol prefix "do-report")
                          {:type :begin-specification :string ~description})
                ~@body
