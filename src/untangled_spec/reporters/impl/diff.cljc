@@ -123,3 +123,12 @@
                   (assoc-in x path (f d))))
               x diffs)
       (walk/prewalk #(cond-> % (and (vector? %) (-> % meta ::list true?)) vec) x))))
+
+(defn compress [[x & _ :as coll]]
+  (let [diff* (partial apply diff)]
+    (->> coll
+         (partition 2 1)
+         (map (comp diff* reverse))
+         (cons x))))
+
+(defn decompress [[x & xs]] (reductions patch x xs))

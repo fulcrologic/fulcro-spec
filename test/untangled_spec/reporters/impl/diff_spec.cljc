@@ -1,5 +1,5 @@
 (ns untangled-spec.reporters.impl.diff-spec
-  (:require [untangled-spec.reporters.impl.diff :as diff :refer [nf diff diff-elem]]
+  (:require [untangled-spec.reporters.impl.diff :refer [nf diff diff-elem patch compress decompress]]
             [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
              [specification behavior assertions]]
             ))
@@ -134,10 +134,25 @@
       => {[0 :foo 0] (diff-elem #{1} #{3})})))
 
 (specification "the patch function"
-  (behavior "allows us to apply a diff to an object"
+  (behavior "`patch` an object with a diff"
     (assertions
-      (diff/patch '() {[0] (diff-elem 'app/mut nf)})
+      (patch '() {[0] (diff-elem 'app/mut nf)})
       => '(app/mut)
-      (diff/patch '() {[1] (diff-elem 'app/mut nf)})
+      (patch '() {[1] (diff-elem 'app/mut nf)})
       =throws=> (#?(:cljs js/Error :clj IndexOutOfBoundsException)
                           #"(?i)Index.*Out.*Of.*Bounds"))))
+
+(specification "[de]compression"
+  (assertions "`compress` a sequence of snapshots"
+    (compress [{0 0} {0 1} {0 1 2 3}])
+    => [{0 0}
+        {[0] (diff-elem 1 0)}
+        {[2] (diff-elem 3 nf)}]
+    )
+  (assertions "`decompress` a compressed history"
+    (decompress [{0 0}
+                 {[0] (diff-elem 1 0)}
+                 {[2] (diff-elem 3 nf)}])
+    => [{0 0} {0 1} {0 1 2 3}]
+    )
+  )

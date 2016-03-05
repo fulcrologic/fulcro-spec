@@ -4,7 +4,7 @@ tests:
 	lein test-refresh :run-once
 
 test-server:
-	lein test-refresh
+	rlwrap lein test-refresh
 
 test-client:
 	rlwrap lein figwheel
