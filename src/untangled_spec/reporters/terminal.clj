@@ -57,22 +57,14 @@
     (apply str (interpose (str "\n" (pad " " (inc (* 2 n)))) s))))
 
 (defn print-highligted-diff [diff actual]
-  (as-> diff d
-    (reduce (fn [out d]
-              (let [{:keys [exp got path]} (diff/extract d)]
-                (->> [got exp]
-                     (color-str :diff/impl)
-                     (#(if (empty? path) %
-                         (assoc-in out path %))))))
-            (walk/prewalk #(cond-> % (seq? %) (-> vec (conj ::list))) actual) d)
-    (walk/prewalk #(cond-> %
-                     (and (vector? %) (= ::list (last %)))
-                     drop-last) d)
-    (pretty-str d 2)
-    (println "EXP != ACT:" d)))
+  (let [process-diff-elem (fn [d]
+                            (let [{:keys [got exp]} (diff/extract d)]
+                              (color-str :diff/impl [got exp])))
+        patched-actual (diff/patch actual diff process-diff-elem)]
+    (println "EXP != ACT" (pretty-str patched-actual 2))))
 
 (defn print-diff [diff actual print-fn]
-  (when (and (env :diff?) (diff/diff-paths? diff))
+  (when (and (env :diff?) (diff/diff? diff))
     (println)
     (when (env :diff-list?)
       (let [num-diffs (env :num-diffs)
