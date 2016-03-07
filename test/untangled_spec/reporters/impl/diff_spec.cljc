@@ -1,8 +1,7 @@
 (ns untangled-spec.reporters.impl.diff-spec
   (:require [untangled-spec.reporters.impl.diff :refer [nf diff diff-elem patch compress decompress]]
             [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
-             [specification behavior assertions]]
-            ))
+             [specification behavior assertions]]))
 
 (specification "the diff function"
   (assertions
@@ -49,7 +48,15 @@
                    {4 4} 4}}}
             {0 {1 {[2 3] :q}}})
       => {[0 1 [2 3]] (diff-elem 3 :q)
-          [0 1 {4 4}] (diff-elem 4 nf)}))
+          [0 1 {4 4}] (diff-elem 4 nf)}
+
+      "empty list as key"
+      (diff {[] :foo} {[] :bar})
+      => {[[]] (diff-elem :foo :bar)}
+
+      "false as a key"
+      (diff {[] {}} {[] {false 0}})
+      => {[[] false] (diff-elem nf 0)}))
 
   (behavior "lists"
     (assertions
@@ -143,16 +150,20 @@
                           #"(?i)Index.*Out.*Of.*Bounds"))))
 
 (specification "[de]compression"
-  (assertions "`compress` a sequence of snapshots"
+  (assertions "`compress` a sequence of states"
     (compress [{0 0} {0 1} {0 1 2 3}])
     => [{0 0}
         {[0] (diff-elem 1 0)}
         {[2] (diff-elem 3 nf)}]
-    )
-  (assertions "`decompress` a compressed history"
+
+    (compress [{0 0} {}])
+    => [{0 0} {[0] (diff-elem nf 0)}])
+
+  (assertions "`decompress` a compressed sequence"
     (decompress [{0 0}
                  {[0] (diff-elem 1 0)}
                  {[2] (diff-elem 3 nf)}])
     => [{0 0} {0 1} {0 1 2 3}]
-    )
-  )
+
+    (decompress [{0 0} {[0] (diff-elem nf 0)}])
+    => [{0 0} {}]))
