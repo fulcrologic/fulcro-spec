@@ -107,7 +107,8 @@
 (defn print-where [w s print-fn]
   (let [status->str {:error "Error"
                      :failed "Failed"}]
-    (->> (str (status->str s) " in " w)
+    (->> (s/replace w #"G__\d+" "")
+         (str (status->str s) " in ")
          (color-str :where)
          print-fn)))
 
