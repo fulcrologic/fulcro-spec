@@ -1,95 +1,125 @@
 (ns untangled-spec.reporters.impl.diff
-  (:require [clojure.set :as set]))
+  (:require [clojure.set :as set]
+            [clojure.walk :as walk]
 
-(defn dbg
-  ([x] (dbg :dbg x))
-  ([tag x]
-   (println tag x)))
+            [#?(:clj clojure.test :cljs cljs.test)
+             :refer [do-report]]))
 
 (declare diff)
-(def nf '...nothing...)
+(def nf '..nothing..)
 
-(defn extract [d]
-  (let [path (vec (drop-last d))
-        [_ exp _ got] (last d)]
+(defn diff-elem
+  ([] [])
+  ([exp got]
+   [:+ exp :- got]))
+
+(defn diff-elem? [?de]
+  (and (vector? ?de)
+       (= 4 (count ?de))
+       (let [[p _ m _] ?de]
+         (and (= p :+) (= m :-)))))
+
+(defn diff? [?d]
+  (and ?d (map? ?d)
+       (every? vector (keys ?d))
+       (every? diff-elem? (vals ?d))))
+
+(defn extract [?d]
+  (assert (and (vector? ?d) (= 2 (count ?d))))
+  (assert (vector?    (first ?d)))
+  (assert (diff-elem? (second ?d)))
+  (let [[path [_ exp _ got]] ?d]
     {:path path :exp exp :got got}))
 
-(defn diff-paths? [?d]
-  (letfn [(diff? [[p _ m _]] (and (= p :+) (= m :-)))]
-    (and ?d (vector? ?d) (every? vector ?d)
-      (every? (comp diff? last) ?d))))
+(defn map-keys [f m] (into {} (for [[k v] m] [(f k) v])))
 
 (defn- map-diff [ks exp act]
-  (loop [[k & ks] ks, exp exp, act act, path [], paths []]
-    (if-not k
-      paths
+  (loop [[k & ks] ks, exp exp, act act, path [], diffs {}]
+    (if-not k diffs
       (let [ev (get exp k nf)
             av (get act k nf)]
         (if (and ev av (= ev av))
-          (recur ks exp act path paths)
+          (recur ks exp act path diffs)
           (let [d (diff ev av :recur)
-                d (if (= :+ (first d)) [[d]] d)
-                path' (conj path k)
-                path (mapv #(vec (concat path' %)) d)
-                paths (vec (concat paths path))]
-            (recur ks exp act [] paths)))))))
+                diffs (cond
+                        (diff-elem? d)
+                        (assoc diffs [k] d)
+                        (diff? d) (map-keys #(vec (cons k %)) d)
+                        :else (throw (ex-info "This should not have happened"
+                                              {:d d :exp exp :act act})))]
+            (recur ks exp act [] diffs)))))))
 
 (defn- seq-diff [exp act]
-  (loop [[i & is] (range), [e & es :as exp] exp, [a & as :as act] act, paths []]
+  (loop [[i & is] (range), [e & es :as exp] exp, [a & as :as act] act, diffs {}]
     (cond
       (and (seq exp) (seq act) (not= e a))
       (let [d (diff e a :recur)
-            d (if (= :+ (first d)) [[d]] d)
-            paths (vec (concat paths (mapv #(vec (cons i %)) d)))]
-        (recur is es as paths))
+            diffs (cond
+                    (diff-elem? d)
+                    (assoc diffs [i] d)
+                    (diff? d) (map-keys #(vec (cons i %)) d)
+                    :else (throw (ex-info "This should not have happened"
+                                          {:d d :exp exp :act act})))]
+        (recur is es as diffs))
 
       (and (seq exp) (empty? act))
-      (recur is es as (conj paths [i [:+ e :- nf]]))
+      (recur is es as (assoc diffs [i] (diff-elem e nf)))
 
       (and (empty? exp) (seq act))
-      (recur is es as (conj paths [i [:+ nf :- a]]))
+      (recur is es as (assoc diffs [i] (diff-elem nf a)))
 
-      (every? empty? [exp act]) paths
+      (every? empty? [exp act]) diffs
 
-      :else (recur is es as paths))))
+      :else (recur is es as diffs))))
 
 (defn set-diff [exp act]
   (let [missing-from-act (set/difference act exp)
         missing-from-exp (set/difference exp act)]
     (if (or (seq missing-from-act) (seq missing-from-exp))
-      [:+ missing-from-exp :- missing-from-act]
-      [])))
+      (diff-elem missing-from-exp missing-from-act)
+      (diff-elem))))
 
 (defn diff [exp act & [opt]]
-  (let [recur? (#{:recur} opt)
-        wrap-in-paths #(-> % vector vector)]
-    (cond
-      (every? map? [exp act])
-      (map-diff (vec (set (mapcat keys [exp act])))
-                exp act)
+  (let [recur? (#{:recur} opt)]
+    (cond->
+      (cond
+        (every? map? [exp act])
+        (map-diff (vec (set (mapcat keys [exp act])))
+                  exp act)
 
-      (every? string? [exp act])
-      (cond-> [:+ exp :- act]
-        (not recur?) wrap-in-paths)
+        (every? string? [exp act])
+        (diff-elem exp act)
 
-      (every? set? [exp act])
-      (cond-> (set-diff exp act)
-        (not recur?) wrap-in-paths)
+        (every? set? [exp act])
+        (cond->> (set-diff exp act)
+          (not recur?) (assoc {} []))
 
-      (every? sequential? [exp act])
-      (seq-diff exp act)
+        (every? sequential? [exp act])
+        (seq-diff exp act)
 
-      (not= (type exp) (type act))
-      (cond-> [:+ exp :- act]
-        (not recur?) wrap-in-paths)
+        (not= (type exp) (type act))
+        (diff-elem exp act)
 
-      (every? coll? [exp act])
-      (seq-diff exp act)
+        (every? coll? [exp act])
+        (seq-diff exp act)
 
-      ;; RECUR GUARD
-      (not recur?) nil
+        ;; RECUR GUARD
+        (not recur?) {}
 
-      (not= exp act)
-      [:+ exp :- act]
+        (not= exp act)
+        (diff-elem exp act)
 
-      :else [])))
+        :else [])
+      (not recur?) (#(cond->> %
+                       (diff-elem? %) (assoc {} []))))))
+
+(defn patch [x diffs & [f]]
+  (let [f (or f (comp :exp extract))]
+    ;;we turn lists into vectors and back so that we can assoc-in on them
+    (as-> x x
+      (walk/prewalk #(cond-> % (seq? %) (-> vec (with-meta {::list true}))) x)
+      (reduce (fn [x d]
+                (let [{:keys [path]} (extract d)]
+                  (assoc-in x path (f d))))
+              x diffs)
+      (walk/prewalk #(cond-> % (and (vector? %) (-> % meta ::list true?)) vec) x))))
