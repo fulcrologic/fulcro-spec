@@ -61,7 +61,8 @@
                             (let [{:keys [got exp]} (diff/extract d)]
                               (color-str :diff/impl [got exp])))
         patched-actual (diff/patch actual diff process-diff-elem)]
-    (println "EXP != ACT" (pretty-str patched-actual 2))))
+    (println (str \" (color-str :diff/impl ["EXP" "ACT"]) \"\:)
+             (pretty-str patched-actual 2))))
 
 (defn print-diff [diff actual print-fn]
   (when (and (env :diff?) (diff/diff? diff))

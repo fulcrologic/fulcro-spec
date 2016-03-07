@@ -1,7 +1,8 @@
 (ns untangled-spec.reporters.impl.diff-spec
   (:require [untangled-spec.reporters.impl.diff :as diff :refer [nf diff diff-elem]]
             [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
-             [specification behavior assertions]]))
+             [specification behavior assertions]]
+            ))
 
 (specification "the diff function"
   (assertions
@@ -136,4 +137,7 @@
   (behavior "allows us to apply a diff to an object"
     (assertions
       (diff/patch '() {[0] (diff-elem 'app/mut nf)})
-      => '(app/mut))))
+      => '(app/mut)
+      (diff/patch '() {[1] (diff-elem 'app/mut nf)})
+      =throws=> (#?(:cljs js/Error :clj IndexOutOfBoundsException)
+                          #"(?i)Index.*Out.*Of.*Bounds"))))
