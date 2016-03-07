@@ -166,6 +166,7 @@
       (try (->> namespaces
                 (remove #(when (env :fail-only?)
                            (= :passed (:status %))))
+                (sort-by :name)
                 (mapv print-namespace))
            (catch Exception e
              (when-not (->> e ex-data ::stop?)
