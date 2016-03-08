@@ -9,24 +9,36 @@
             [io.aviso.exception :as pretty]
             [clojure.pprint :refer [pprint]]))
 
-(def env (let [COLOR       (System/getenv "US_DIFF_HL")
-               DIFF_MODE   (System/getenv "US_DIFF_MODE")
-               DIFF        (System/getenv "US_DIFF")
-               NUM_DIFFS   (System/getenv "US_NUM_DIFFS")
-               FRAME_LIMIT (System/getenv "US_FRAME_LIMIT")
-               QUICK_FAIL  (System/getenv "US_QUICK_FAIL")
-               FAIL_ONLY   (System/getenv "US_FAIL_ONLY")]
-           {:fail-only?      (#{"1" "true"} FAIL_ONLY)
-            :color?          (#{"1" "true"}  COLOR)
-            :diff-hl?        (#{"hl" "all"}  DIFF_MODE)
-            :diff-list? (not (#{"hl"}        DIFF_MODE))
-            :diff?      (not (#{"0" "false"} DIFF))
-            :frame-limit (read-string (or FRAME_LIMIT "10"))
-            :num-diffs  (read-string (or NUM_DIFFS "1"))
-            :quick-fail? (not (#{"0" "false"} QUICK_FAIL))}))
+(def cfg
+  (atom
+    (let [COLOR       (System/getenv "US_DIFF_HL")
+          DIFF_MODE   (System/getenv "US_DIFF_MODE")
+          DIFF        (System/getenv "US_DIFF")
+          NUM_DIFFS   (System/getenv "US_NUM_DIFFS")
+          FRAME_LIMIT (System/getenv "US_FRAME_LIMIT")
+          QUICK_FAIL  (System/getenv "US_QUICK_FAIL")
+          FAIL_ONLY   (System/getenv "US_FAIL_ONLY")]
+      {:fail-only?      (#{"1" "true"}  FAIL_ONLY)
+       :color?          (#{"1" "true"}  COLOR)
+       :diff-hl?        (#{"hl" "all"}  DIFF_MODE)
+       :diff-list? (not (#{"hl"}        DIFF_MODE))
+       :diff?      (not (#{"0" "false"} DIFF))
+       :frame-limit (read-string (or FRAME_LIMIT "10"))
+       :num-diffs  (read-string (or NUM_DIFFS "1"))
+       :quick-fail? (not (#{"0" "false"} QUICK_FAIL))})))
+(defn env [k] (get @cfg k))
+(defn merge-cfg!
+  "For use in the test-refresh repl to change configuration on the fly.
+  Single arity will show you the possible keys you can use."
+  ([] (println "Valid cfg keys: " (set (keys @cfg))))
+  ([new-cfg]
+   (doseq [[k v] new-cfg]
+     (assert (contains? @cfg k)
+             (str "Invalid key '" k "', try one of these " (set (keys @cfg)))))
+   (swap! cfg merge new-cfg)))
 
 (defn color-str [status & strings]
-  (let [color? (:color? env)
+  (let [color? (env :color?)
         status->color (cond-> {:passed c/green
                                :failed c/red
                                :error  c/red
@@ -45,7 +57,7 @@
   (pad " " (* 2 level)))
 
 (defn print-throwable [e]
-  (print (pretty/format-exception e {:frame-limit (:frame-limit env)}))
+  (print (pretty/format-exception e {:frame-limit (env :frame-limit)}))
   (some-> (.getCause e) print-throwable))
 
 (defmethod print-method Throwable [e w]
