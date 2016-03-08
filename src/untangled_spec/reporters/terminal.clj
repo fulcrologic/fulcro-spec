@@ -65,7 +65,7 @@
              (pretty-str patched-actual 2))))
 
 (defn print-diff [diff actual print-fn]
-  (when (and (env :diff?) (diff/diff? diff))
+  (when (and (seq diff) (env :diff?) (diff/diff? diff))
     (println)
     (when (env :diff-list?)
       (let [num-diffs (env :num-diffs)
@@ -124,8 +124,10 @@
              (not (instance? Throwable actual)))
     (print-throwable throwable))
   (some-> message (print-message print-fn))
-  (when (or (not diff) (not (env :diff?))
-            (and (not (env :diff-hl?)) (not (env :diff-list?))))
+  (when (or (not diff) (empty? diff)
+            (not (env :diff?))
+            (and (not (env :diff-hl?))
+                 (not (env :diff-list?))))
     (print-fn "   Actual:" (pretty-str actual (+ 5 print-level)))
     (print-fn " Expected:" (pretty-str expected (+ 5 print-level))))
   (some-> extra (print-extra print-fn))
