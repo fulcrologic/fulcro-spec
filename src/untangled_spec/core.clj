@@ -28,7 +28,7 @@
   description. Technically outputs a deftest with additional output reporting.
   When *load-tests* is false, the specification is ignored."
   [description & body]
-  (let [var-name-from-string (fn [s] (symbol (s/lower-case (s/replace s #"[()~'\"`!@#$;%^&. ]" "-"))))
+  (let [var-name-from-string (fn [s] (symbol (s/lower-case (s/replace s #"[^\w\d\-]" "-"))))
         name (var-name-from-string description)
         prefix (if-cljs &env "cljs.test" "clojure.test")]
     `(~(symbol prefix "deftest") ~(symbol (str name (gensym)))
