@@ -158,8 +158,8 @@
                                           (partial println))
                                    (inc print-level))))
     (->> (:test-items test-item)
-         (remove #(when (env :fail-only?)
-                    (= :passed (:status %))))
+         (filter #(when (env :fail-only?)
+                    (= :failed (:status %))))
          (mapv #(print-test-item % (inc print-level))))))
 
 (defn print-namespace [make-tests-by-namespace]
@@ -168,8 +168,8 @@
     (println (color-str (:status make-tests-by-namespace)
                         "Testing " (:name make-tests-by-namespace)))
     (->> (:test-items make-tests-by-namespace)
-         (remove #(when (env :fail-only?)
-                    (= :passed (:status %))))
+         (filter #(when (env :fail-only?)
+                    (= :failed (:status %))))
          (mapv #(print-test-item % 1)))))
 
 (defn print-report-data
@@ -178,8 +178,8 @@
   (t/with-test-out
     (let [{:keys [namespaces tested passed failed error]} @impl/*test-state*]
       (try (->> namespaces
-                (remove #(when (env :fail-only?)
-                           (= :passed (:status %))))
+                (filter #(when (env :fail-only?)
+                           (= :failed (:status %))))
                 (sort-by :name)
                 (mapv print-namespace))
            (catch Exception e
