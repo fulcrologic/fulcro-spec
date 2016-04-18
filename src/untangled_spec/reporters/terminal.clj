@@ -11,13 +11,15 @@
 
 (def cfg
   (atom
-    (let [COLOR       (System/getenv "US_DIFF_HL")
-          DIFF_MODE   (System/getenv "US_DIFF_MODE")
-          DIFF        (System/getenv "US_DIFF")
-          NUM_DIFFS   (System/getenv "US_NUM_DIFFS")
-          FRAME_LIMIT (System/getenv "US_FRAME_LIMIT")
-          QUICK_FAIL  (System/getenv "US_QUICK_FAIL")
-          FAIL_ONLY   (System/getenv "US_FAIL_ONLY")]
+    (let [COLOR        (System/getenv "US_DIFF_HL")
+          DIFF_MODE    (System/getenv "US_DIFF_MODE")
+          DIFF         (System/getenv "US_DIFF")
+          NUM_DIFFS    (System/getenv "US_NUM_DIFFS")
+          FRAME_LIMIT  (System/getenv "US_FRAME_LIMIT")
+          QUICK_FAIL   (System/getenv "US_QUICK_FAIL")
+          FAIL_ONLY    (System/getenv "US_FAIL_ONLY")
+          PRINT_LEVEL  (System/getenv "US_PRINT_LEVEL")
+          PRINT_LENGTH (System/getenv "US_PRINT_LENGTH")]
       {:fail-only?      (#{"1" "true"}  FAIL_ONLY)
        :color?          (#{"1" "true"}  COLOR)
        :diff-hl?        (#{"hl" "all"}  DIFF_MODE)
@@ -25,11 +27,14 @@
        :diff?      (not (#{"0" "false"} DIFF))
        :frame-limit (read-string (or FRAME_LIMIT "10"))
        :num-diffs  (read-string (or NUM_DIFFS "1"))
-       :quick-fail? (not (#{"0" "false"} QUICK_FAIL))})))
+       :quick-fail? (not (#{"0" "false"} QUICK_FAIL))
+       :*print-level* (read-string (or PRINT_LEVEL "3"))
+       :*print-length* (read-string (or PRINT_LENGTH "2"))})))
 (defn env [k] (get @cfg k))
 (defn merge-cfg!
   "For use in the test-refresh repl to change configuration on the fly.
-  Single arity will show you the possible keys you can use."
+  Single arity will show you the possible keys you can use.
+  Passing an empty map will show you the current values."
   ([] (println "Valid cfg keys: " (set (keys @cfg))))
   ([new-cfg]
    (doseq [[k v] new-cfg]
@@ -97,8 +102,8 @@
       (print-highligted-diff diff actual))))
 
 (defn ?ellipses [s]
-  (binding [*print-level* 3
-            *print-length* 2]
+  (binding [*print-level* (env :*print-level*)
+            *print-length* (env :*print-length*)]
     (apply str (drop-last (with-out-str (pprint s))))))
 
 (defn print-message [m print-fn]
