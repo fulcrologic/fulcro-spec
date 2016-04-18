@@ -152,6 +152,10 @@
   (when (env :quick-fail?)
     (throw (ex-info "" {::stop? true}))))
 
+(defn when-fail-only-keep-failed [coll]
+  (remove #(when (env :fail-only?)
+             (not= :failed (:status %))) coll))
+
 (defn print-test-item [test-item print-level]
   (t/with-test-out
     (println (space-level print-level)
@@ -163,8 +167,7 @@
                                           (partial println))
                                    (inc print-level))))
     (->> (:test-items test-item)
-         (filter #(when (env :fail-only?)
-                    (= :failed (:status %))))
+         (when-fail-only-keep-failed)
          (mapv #(print-test-item % (inc print-level))))))
 
 (defn print-namespace [make-tests-by-namespace]
@@ -173,8 +176,7 @@
     (println (color-str (:status make-tests-by-namespace)
                         "Testing " (:name make-tests-by-namespace)))
     (->> (:test-items make-tests-by-namespace)
-         (filter #(when (env :fail-only?)
-                    (= :failed (:status %))))
+         (when-fail-only-keep-failed)
          (mapv #(print-test-item % 1)))))
 
 (defn print-report-data
@@ -183,8 +185,7 @@
   (t/with-test-out
     (let [{:keys [namespaces tested passed failed error]} @impl/*test-state*]
       (try (->> namespaces
-                (filter #(when (env :fail-only?)
-                           (= :failed (:status %))))
+                (when-fail-only-keep-failed)
                 (sort-by :name)
                 (mapv print-namespace))
            (catch Exception e
