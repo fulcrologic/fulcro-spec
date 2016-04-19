@@ -154,7 +154,7 @@
 
 (defn when-fail-only-keep-failed [coll]
   (remove #(when (env :fail-only?)
-             (not= :failed (:status %))) coll))
+             (#{:passed :pending} (:status %))) coll))
 
 (defn print-test-item [test-item print-level]
   (t/with-test-out
