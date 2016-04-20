@@ -44,6 +44,7 @@
                         (diff-elem? d)
                         (assoc diffs [k] d)
                         (diff? d) (map-keys #(vec (cons k %)) d)
+                        (empty? d) {}
                         :else (throw (ex-info "This should not have happened"
                                               {:d d :exp exp :act act})))]
             (recur ks exp act [] diffs)))))))
@@ -59,6 +60,7 @@
                       (diff-elem? d)
                       (assoc diffs [i] d)
                       (diff? d) (map-keys #(vec (cons i %)) d)
+                      (empty? d) {}
                       :else (throw (ex-info "This should not have happened"
                                             {:d d :exp exp :act act})))]
           (recur is es as diffs))
