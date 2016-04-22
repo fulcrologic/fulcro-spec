@@ -1,4 +1,4 @@
-(defproject navis/untangled-spec "0.3.6-SNAPSHOT"
+(defproject navis/untangled-spec "0.3.6"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -8,7 +8,7 @@
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cljsjs/react-with-addons "0.14.0-1" :scope "provided"]
-                 [org.omcljs/om "1.0.0-alpha30" :scope "provided"]
+                 [org.omcljs/om "1.0.0-alpha32" :scope "provided"]
                  [io.aviso/pretty "0.1.23"]
                  [lein-doo "0.1.6" :scope "test"]]
 
