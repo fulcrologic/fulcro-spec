@@ -23,15 +23,17 @@
 (defmethod clojure.test/assert-expr 'throws? [msg form]
   `(clojure.test/do-report ~(ae/assert-expr 'throws? msg form)))
 
+(defn var-name-from-string [s]
+  (symbol (str "__" (s/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))
+
 (defmacro specification
   "Defines a specification which is translated into a what a deftest macro produces with report hooks for the
   description. Technically outputs a deftest with additional output reporting.
   When *load-tests* is false, the specification is ignored."
   [description & body]
-  (let [var-name-from-string (fn [s] (symbol (s/lower-case (s/replace s #"[()~'\"`!@#$;%^&. ]" "-"))))
-        name (var-name-from-string description)
+  (let [var-name (var-name-from-string description)
         prefix (if-cljs &env "cljs.test" "clojure.test")]
-    `(~(symbol prefix "deftest") ~name
+    `(~(symbol prefix "deftest") ~(symbol (str var-name (gensym)))
                (~(symbol prefix "do-report")
                          {:type :begin-specification :string ~description})
                ~@body

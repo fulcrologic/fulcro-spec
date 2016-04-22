@@ -1,4 +1,4 @@
-(defproject navis/untangled-spec "0.3.5"
+(defproject navis/untangled-spec "0.3.6"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -8,14 +8,14 @@
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cljsjs/react-with-addons "0.14.0-1" :scope "provided"]
-                 [org.omcljs/om "1.0.0-alpha30" :scope "provided"]
+                 [org.omcljs/om "1.0.0-alpha32" :scope "provided"]
                  [io.aviso/pretty "0.1.23"]
                  [lein-doo "0.1.6" :scope "test"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-doo "0.1.6"] ; for cljs CI tests
             [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
-            [com.jakemccrary/lein-test-refresh "0.13.0"]]
+            [com.jakemccrary/lein-test-refresh "0.14.0"]]
 
   :source-paths ["src"]
   :test-paths ["test"]
@@ -54,5 +54,7 @@
                                   :port    7001}
                    :env          {:dev true}}}
 
-  :test-refresh {:report untangled-spec.reporters.terminal/untangled-report}
+  :test-refresh {:report untangled-spec.reporters.terminal/untangled-report
+                 :changes-only true
+                 :with-repl true}
   )

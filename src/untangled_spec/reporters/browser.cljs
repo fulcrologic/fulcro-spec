@@ -6,6 +6,7 @@
     [goog.dom :as gdom]
     [om.next :as om :refer-macros [defui]]
     [cljs-uuid-utils.core :as uuid]
+    [clojure.string :as s]
 
     [untangled-spec.dom.edn-renderer :refer [html-edn]]
     [untangled-spec.reporters.impl.browser :as impl]
@@ -100,7 +101,8 @@
                                          (dom/td #js {:className "test-result-title"}
                                                  "Where: ")
                                          (dom/td #js {:className "test-result"}
-                                                 (str where)))
+                                                 (s/replace (str where)
+                                                            #"G__\d+" "")))
                                  (when message
                                    (ui-result-line {:type :normal
                                                     :title "ASSERTION: "
