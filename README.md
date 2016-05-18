@@ -21,6 +21,9 @@ you can simply use the Makefile:
 
 ## Usage
 
+```
+   [navis/untangled-spec "0.3.6"]
+```
 
 The macros in untangled spec wrap clojure/cljs test, so that you may
 use any of the features of the core library. The specification DSL makes it much easier to read the
