@@ -3,8 +3,8 @@
   :url ""
   :license {:name "MIT Public License"
             :url  ""}
-  :dependencies [[org.clojure/clojure "1.7.0" :scope "provided"]
-                 [org.clojure/clojurescript "1.7.228" :scope "provided"]
+  :dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]
+                 [org.clojure/clojurescript "1.8.51" :scope "provided"]
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cljsjs/react-with-addons "0.14.0-1" :scope "provided"]
@@ -14,7 +14,7 @@
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-doo "0.1.6"] ; for cljs CI tests
-            [lein-figwheel "0.5.0-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
+            [lein-figwheel "0.5.3-1" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
             [com.jakemccrary/lein-test-refresh "0.14.0"]]
 
   :source-paths ["src"]
