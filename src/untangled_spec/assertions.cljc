@@ -2,6 +2,7 @@
 
 (defn fn-assert-expr [msg [f arg :as form]]
   `(let [arg# ~arg
+         ;;TODO: catch do-report or prints?
          result# (~f arg#)]
      {:type (if result# :pass :fail)
       :message ~msg :assert-type '~'exec
