@@ -5,8 +5,7 @@
             [cljs.test :as t]
             [untangled-spec.contains :refer [*contains?]]))
 
-(specification "untangled-spec.reporters.suite-spec"
-  (behavior "adds methods to cljs.test/assert-expr"
-    (assertions
-      (methods t/assert-expr)
-      =fn=> (*contains? '[= exec throws?] :keys))))
+(specification "adds methods to cljs.test/assert-expr"
+  (assertions
+    (methods t/assert-expr)
+    =fn=> (*contains? '[= exec throws?] :keys)))

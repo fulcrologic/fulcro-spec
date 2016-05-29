@@ -1,6 +1,7 @@
 (ns untangled-spec.core
   (:require
-    [clojure.string :as s]
+    [clojure.spec :as s]
+    [clojure.string :as str]
     [clojure.test]
     [untangled-spec.assertions :as ae]
     [untangled-spec.async :as async]
@@ -24,7 +25,7 @@
   `(clojure.test/do-report ~(ae/assert-expr 'throws? msg form)))
 
 (defn var-name-from-string [s]
-  (symbol (str "__" (s/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))
+  (symbol (str "__" (str/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))
 
 (defmacro specification
   "Defines a specification which is translated into a what a deftest macro produces with report hooks for the
@@ -98,7 +99,9 @@
   [& forms]
   (apply p/provided-fn (cljs-env? &env) :skip-output forms))
 
+(s/fdef assertions
+        :args ::ae/assertions)
 (defmacro assertions [& forms]
-  (let [blocks (ae/forms->blocks forms)
+  (let [blocks (s/conform ::ae/assertions forms)
         asserts (map (partial ae/block->asserts (cljs-env? &env)) blocks)]
     `(do ~@asserts)))
