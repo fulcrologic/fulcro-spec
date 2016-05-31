@@ -12,7 +12,7 @@
                  [io.aviso/pretty "0.1.23"]
                  [lein-doo "0.1.6" :scope "test"]
                  [bidi "2.0.9" :scope "test"]
-                 [kibu/pushy "0.3.6" :scope "test"]]
+                 [kibu/pushy "0.3.6" :scope "provided"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-doo "0.1.6"] ; for cljs CI tests
