@@ -5,12 +5,12 @@
             [untangled-spec.dom.util :as util]
             [cljs.test :as t]))
 
-(defn text-matches 
-  "A test assertion (like is) that checks that the text on a DOM node matches the given string 
+(defn text-matches
+  "A test assertion (like is) that checks that the text on a DOM node matches the given string
   (which is treated as a regex pattern)."
   [string dom-node]
   (is (not (nil? string)) "STRING IS NIL")
-  (is (not (nil? dom-node)) "DOM NODE IS NIL")
+  (is (not (nil? dom-node)) (str "DOM NODE IS NIL for regex " string))
   (if (and string dom-node)
     (let [regex (js/RegExp. string)
           text (gd/getTextContent dom-node)

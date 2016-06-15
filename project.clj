@@ -8,7 +8,7 @@
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cljsjs/react-with-addons "15.0.1-1" :scope "provided"]
-                 [org.omcljs/om "1.0.0-alpha36" :scope "provided"]
+                 [org.omcljs/om "1.0.0-alpha36" :scope "provided" :exclusions [cljsjs/react]]
                  [io.aviso/pretty "0.1.23"]
                  [lein-doo "0.1.6" :scope "test"]
                  [bidi "2.0.9" :scope "test"]
