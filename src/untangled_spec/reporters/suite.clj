@@ -69,4 +69,3 @@
          (untangled-spec.reporters.impl.suite/render-tests ~state-name))
        (untangled-spec.reporters.impl.suite/render-tests ~state-name)
        ~@(define-test-methods state-name test-report-keyword))))
-

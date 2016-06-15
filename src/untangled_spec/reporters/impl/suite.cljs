@@ -4,7 +4,10 @@
     [goog.dom :as gdom]
     [om.next :as om]
     [untangled-spec.reporters.browser :refer [TestReport]]
-    [untangled-spec.reporters.impl.base-reporter :as impl]))
+    [untangled-spec.reporters.impl.base-reporter :as impl]
+
+    [bidi.bidi :as bidi]
+    [pushy.core :as pushy]))
 
 (enable-console-print!)
 
@@ -144,26 +147,32 @@
 
 (def test-parser (om/parser {:read om-read :mutate om-write}))
 
-(defn new-test-suite
-  "Create a new Untangled application with:
+(def app-routes
+  ["" {"failed" :failed
+       "all"    :all
+       "manual" :manual}])
 
-  - `:target DOM_ID`: Specifies the target DOM element. The default is 'test'\n
+(defn set-page! [reconciler]
+  (fn [new-filter]
+    (om/transact! reconciler
+      `[(~'set-filter ~{:new-filter new-filter})])))
 
-
-    - `target` :
-  - `initial-state` : The state that goes with the top-level renderer
-
-  Additional optional parameters by name:
-
-  - `:history n` : Set the history size. The default is 100.
-  "
-  [target]
+(defn new-test-suite [target]
   (let [state (atom {:top (impl/make-testreport)
                      :report/filter :all
-                     :time (js/Date.)})]
+                     :time (js/Date.)})
+        reconciler (om/reconciler {:state state :parser test-parser})
+        history (with-redefs [pushy/update-history!
+                              #(doto %
+                                 (.setUseFragment true)
+                                 (.setPathPrefix "")
+                                 (.setEnabled true))]
+                  (pushy/pushy (set-page! reconciler)
+                               (partial bidi/match-route app-routes)
+                               :identity-fn :handler))]
+    (pushy/start! history)
     (map->TestSuite {:app-state      state
-                     :reconciler     (om/reconciler {:state state
-                                                     :parser test-parser})
+                     :reconciler     reconciler
                      :renderer       TestReport
                      :dom-target     target
                      :test-item-path (atom [])})))

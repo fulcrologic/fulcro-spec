@@ -1,6 +1,7 @@
 (ns untangled-spec.dom.events
   (:require [untangled-spec.dom.util :as dom]
             [cljs.test :as t :include-macros true]
+            [cljsjs.react]
             [untangled-spec.dom.util :as util]
             [clojure.string :as str]))
 
