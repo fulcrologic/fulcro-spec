@@ -31,7 +31,8 @@
                         (str title)))
                (dom/div #js {:className (when folded? "hidden")}
                         value)))))
-(def ui-foldable (om/factory Foldable))
+(def ui-foldable (om/factory Foldable {:keyfn (let [c (atom 0)]
+                                                #(str "foldable-" (swap! c inc)))}))
 
 (defui ResultLine
   Object
@@ -49,7 +50,8 @@
                                                        (if folded? (str value) title))
                                               :value (if stack stack (if-not folded? (html-edn value)))
                                               :classes (if stack "stack")})})))))))
-(def ui-result-line (om/factory ResultLine))
+(def ui-result-line (om/factory ResultLine {:keyfn (let [c (atom 0)]
+                                                #(str "result-line-" (swap! c inc)))}))
 
 (defui HumanDiffLines
   Object
@@ -91,7 +93,8 @@
         (dom/td nil)
         (dom/tr #js {:className "human-diff"}
                 (dom/td nil "DIFFS:"))))))
-(def ui-human-diff (om/factory HumanDiff))
+(def ui-human-diff (om/factory HumanDiff {:keyfn (let [c (atom 0)]
+                                                   #(str "human-diff-" (swap! c inc)))}))
 
 (defui TestResult
   Object
@@ -186,7 +189,7 @@
                                                  :this-filter %})
                            name)
                      [:all :manual :failed])))))
-(def ui-filters (om/factory Filters))
+(def ui-filters (om/factory Filters {:keyfn :current-filter}))
 
 (defui TestCount
   Object
