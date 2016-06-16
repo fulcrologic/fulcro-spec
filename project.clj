@@ -11,8 +11,8 @@
                  [org.omcljs/om "1.0.0-alpha36" :scope "provided" :exclusions [cljsjs/react]]
                  [io.aviso/pretty "0.1.23"]
                  [lein-doo "0.1.6" :scope "test"]
-                 [bidi "2.0.9" :scope "test"]
-                 [kibu/pushy "0.3.6" :scope "provided"]]
+                 [bidi "2.0.9"]
+                 [kibu/pushy "0.3.6"]]
 
   :plugins [[lein-cljsbuild "1.1.3"]
             [lein-doo "0.1.6"] ; for cljs CI tests
