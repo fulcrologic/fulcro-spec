@@ -1,5 +1,6 @@
 (ns untangled-spec.reporters.impl.diff-spec
-  (:require [untangled-spec.reporters.impl.diff :refer [nf diff diff-elem patch compress decompress]]
+  (:require [untangled-spec.reporters.impl.diff :as src
+             :refer [nf diff diff-elem patch compress decompress]]
             [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
              [specification behavior assertions]]))
 
@@ -138,7 +139,13 @@
       "nested"
       (diff [{:foo [#{1 2}]}]
             [{:foo [#{3 2}]}])
-      => {[0 :foo 0] (diff-elem #{1} #{3})})))
+      => {[0 :foo 0] (diff-elem #{1} #{3})}))
+
+  (behavior "github issue #2"
+    (assertions
+      (diff {:current-tab [:messages :tab] :ui/loading-data false}
+            {:current-tab [:settings :tab] :ui/loading-data false})
+      => {[:current-tab 0] [:+ :messages :- :settings]})))
 
 (specification "the patch function"
   (behavior "`patch` an object with a diff"

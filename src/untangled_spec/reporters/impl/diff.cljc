@@ -41,10 +41,9 @@
           (recur ks exp act path diffs)
           (let [d (diff ev av :recur)
                 diffs (cond
-                        (diff-elem? d)
-                        (assoc diffs [k] d)
+                        (diff-elem? d) (assoc diffs [k] d)
                         (diff? d) (map-keys #(vec (cons k %)) d)
-                        (empty? d) {}
+                        (empty? d) diffs
                         :else (throw (ex-info "This should not have happened"
                                               {:d d :exp exp :act act})))]
             (recur ks exp act [] diffs)))))))
@@ -60,7 +59,7 @@
                       (diff-elem? d)
                       (assoc diffs [i] d)
                       (diff? d) (map-keys #(vec (cons i %)) d)
-                      (empty? d) {}
+                      (empty? d) diffs
                       :else (throw (ex-info "This should not have happened"
                                             {:d d :exp exp :act act})))]
           (recur is es as diffs))
