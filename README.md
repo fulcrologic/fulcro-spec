@@ -22,7 +22,7 @@ you can simply use the Makefile:
 ## Usage
 
 ```
-   [navis/untangled-spec "0.3.6"]
+   [navis/untangled-spec "0.3.8"]
 ```
 
 The macros in untangled spec wrap clojure/cljs test, so that you may

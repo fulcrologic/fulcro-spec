@@ -1,3 +1,7 @@
+0.3.8
+-----
+- Fixed bug with diff algorithm, see github issue #2
+
 0.3.7
 -----
 - Updated to work with React 15 and Om 36
