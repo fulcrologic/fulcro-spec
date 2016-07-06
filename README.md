@@ -7,7 +7,7 @@ DEVELOPMENT NOTES:
 To run cljs tests:
 
      lein figwheel
-     
+
 To run clj tests:
 
      lein test-refresh
@@ -42,9 +42,9 @@ tests, and also includes a number of useful features:
 
 ## Setting up
 
-Please use the Untangled Tutorial or TodoMVC projects as samples for setting up a project. 
+Please use the Untangled Tutorial or TodoMVC projects as samples for setting up a project.
 
-In the [tutorial](https://github.com/untangled-web/untangled-tutorial): If you look in `test/client/app` 
+In the [tutorial](https://github.com/untangled-web/untangled-tutorial): If you look in `test/client/app`
 you'll see a few files. Only one of the four is a specification. The other three
 serve the following purposes:
 
