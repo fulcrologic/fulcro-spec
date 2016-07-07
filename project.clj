@@ -20,14 +20,7 @@
             [com.jakemccrary/lein-test-refresh "0.14.0"]
             [lein-shell "0.5.0"]]
 
-  :release-tasks [["vcs" "assert-committed"]
-                  ["shell" "bin/release" "init"]
-                  ["shell" "bin/release" "test"]
-                  ["shell" "bin/release" "start"]
-                  ["change" "version" "leiningen.release/bump-version" "release"]
-                  ["shell" "bin/release" "release"]
-                  ["change" "version" "leiningen.release/bump-version"]
-                  ["shell" "bin/release" "end"]]
+  :release-tasks [["shell" "bin/release" "all_tasks"]]
 
   :source-paths ["src"]
   :test-paths ["test"]

@@ -3,6 +3,14 @@ set -o errexit
 set -o pipefail
 ([[ "$TRACE" ]] || [[ "$DEBUG" ]]) && set -o xtrace
 
+assert_committed() {
+    if [[ -n "$(git status --porcelain)" ]]; then
+        echo "[release] [WARNING] uncommitted changes detected"
+        git status
+        false
+    fi
+}
+
 get_version() {
     echo "$(head -n 1 project.clj | cut -d' ' -f3 | sed 's/"//g')"
 }
@@ -31,7 +39,9 @@ task_start() {
 task_release() {
     git commit --all -m "Automated release commit for: $(get_version)"
     git flow release finish -p -m "Automated release finish for: $(get_version)" "$(get_version | sed 's/"//g')"
-    lein deploy clojars || true
+    if [[ "$DEPLOY" ]]; then
+        lein deploy "$DEPLOY" || true
+    fi
 }
 
 task_end() {
@@ -58,6 +68,16 @@ main() {
             task_release
             ;;
         "end")
+            task_end
+            ;;
+        "all_tasks")
+            assert_committed
+            task_init
+            task_test
+            task_start
+            lein change version leiningen.release/bump-version release
+            task_release
+            lein change version leiningen.release/bump-version
             task_end
             ;;
         *)
