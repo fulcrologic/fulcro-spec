@@ -51,6 +51,14 @@
       => {[0 1 [2 3]] (diff-elem 3 :q)
           [0 1 {4 4}] (diff-elem 4 nf)}
 
+      "differences accumulate over keys in map (github issue #3)"
+      (diff {:current-tab :bookings
+             :search-results {:global {:es-type "booking"}}}
+            {:current-tab :messages
+             :search-results {:global {:es-type "message"}}})
+      =>  {[:search-results :global :es-type] [:+ "booking" :- "message"]
+           [:current-tab] [:+ :bookings :- :messages]}
+
       "empty list as key"
       (diff {[] :foo} {[] :bar})
       => {[[]] (diff-elem :foo :bar)}

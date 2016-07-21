@@ -42,7 +42,7 @@
           (let [d (diff ev av :recur)
                 diffs (cond
                         (diff-elem? d) (assoc diffs [k] d)
-                        (diff? d) (map-keys #(vec (cons k %)) d)
+                        (diff? d) (merge diffs (map-keys #(vec (cons k %)) d))
                         (empty? d) diffs
                         :else (throw (ex-info "This should not have happened"
                                               {:d d :exp exp :act act})))]
