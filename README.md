@@ -2,6 +2,14 @@
 
 A Specification testing framework.
 
+[![Clojars
+Project](https://img.shields.io/clojars/v/navis/untangled-spec.svg)](https://clojars.org/navis/untangled-spec)
+
+Release: [![Master](https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=master)](https://github.com/untangled-web/untangled-spec/tree/master)
+
+Snapshot: [![SNAPSHOT](https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=develop)](https://github.com/untangled-web/untangled-spec/tree/develop)
+
+
 DEVELOPMENT NOTES:
 
 To run cljs tests:
