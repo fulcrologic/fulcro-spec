@@ -1,3 +1,7 @@
+0.3.9
+-----
+- Fixed bug with diff algorithm, see github issue #3
+
 0.3.8
 -----
 - Fixed bug with diff algorithm, see github issue #2
