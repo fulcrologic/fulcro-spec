@@ -1,8 +1,8 @@
-(defproject navis/untangled-spec "0.3.8"
+(defproject navis/untangled-spec "0.3.9"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
-            :url  ""}
+            :url  "https://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]
                  [org.clojure/clojurescript "1.8.51" :scope "provided"]
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
@@ -17,7 +17,10 @@
   :plugins [[lein-cljsbuild "1.1.3"]
             [lein-doo "0.1.6"] ; for cljs CI tests
             [lein-figwheel "0.5.3-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
-            [com.jakemccrary/lein-test-refresh "0.14.0"]]
+            [com.jakemccrary/lein-test-refresh "0.14.0"]
+            [lein-shell "0.5.0"]]
+
+  :release-tasks [["shell" "bin/release" "all_tasks"]]
 
   :source-paths ["src"]
   :test-paths ["test"]

@@ -3,6 +3,11 @@ tests:
 	lein doo chrome automated-tests once
 	lein test-refresh :run-once
 
+travis-tests:
+	npm install
+	lein doo firefox automated-tests once
+	lein test-refresh :run-once
+
 test-server:
 	rlwrap lein test-refresh
 

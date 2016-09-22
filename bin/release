@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+([[ "$TRACE" ]] || [[ "$DEBUG" ]]) && set -o xtrace
+
+assert_committed() {
+    if [[ -n "$(git status --porcelain)" ]]; then
+        echo "[release] [WARNING] uncommitted changes detected"
+        git status
+        false
+    fi
+}
+
+get_version() {
+    echo "$(head -n 1 project.clj | cut -d' ' -f3 | sed 's/"//g')"
+}
+
+task_init() {
+    get_version | grep -e "SNAPSHOT"
+    (tail +2 project.clj | grep -e "SNAPSHOT") && false
+    git checkout develop
+    git pull
+}
+
+task_test() {
+    if [[ "${SKIP_TESTS}" ]]; then
+        echo "[bin/release] WARNING: SKIPPING TESTS"
+    else
+        (npm install &&
+        lein doo chrome automated-tests once &&
+        lein test-refresh :run-once)
+    fi
+}
+
+task_start() {
+    git flow release start "$(get_version | sed 's/"//g' | sed 's/-SNAPSHOT//')"
+}
+
+task_release() {
+    git commit --all -m "Automated release commit for: $(get_version)"
+    git flow release finish -p -m "Automated release finish for: $(get_version)" "$(get_version | sed 's/"//g')"
+    if [[ "$DEPLOY" ]]; then
+        lein deploy "$DEPLOY" || true
+    fi
+}
+
+task_end() {
+    git commit --all -m "Automated release bump for: $(get_version)"
+    git push
+}
+
+main() {
+    local task="$1"
+    case "$task" in
+        "version")
+            get_version
+            ;;
+        "init")
+            task_init
+            ;;
+        "test")
+            task_test
+            ;;
+        "start")
+            task_start
+            ;;
+        "release")
+            task_release
+            ;;
+        "end")
+            task_end
+            ;;
+        "all_tasks")
+            assert_committed
+            task_init
+            task_test
+            task_start
+            lein change version leiningen.release/bump-version release
+            task_release
+            lein change version leiningen.release/bump-version
+            task_end
+            ;;
+        *)
+            echo "invalid cmd $task"
+            false
+            ;;
+    esac
+}
+
+main "$@"
