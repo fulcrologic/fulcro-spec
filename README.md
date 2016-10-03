@@ -66,28 +66,30 @@ This will cause the test build to start running via figwheel. Then just open the
 
 ## Anatomy of a specification
 
-The main macros are `specification`, `behavoir`, and `assertions`:
+The main macros are `specification`, `behavior`, and `assertions`:
 
 ```
 (specification "A Thing"
    (behavior "does something"
       (assertions
-         "optional sub-clause"
          form => expected-form
          form2 => expected-form2
 
-         "subclause"
-         form => expected-form)))
+         "optional sub behavior clause"
+         form3 => expected-form3)))
 ```
 
-The specification macro just outputs a `deftest`, so you are free to use `is`, `are`, etc. The `behavior` macro
-outputs additional events for the renderer to make an outline.
+The specification macro just outputs a `(clojure|cljs).test/deftest`, so you are free to use `is`, `are`, `do-report`, etc. 
+
+The `behavior` macro outputs additional events for the renderer to make an outline. As a note, `component` is just a macro alias of `behavior` it just can read better if what you are describing is not a behavior but a *component* of some greater thing.
 
 ### Assertions
 
-Special arrows:
-
-- `=fn=>` : The right-hand side should be a boolean-returning lambda: (fn [v] boolean)
+Assertions provides some explict arrows, unlike [Midje](https://github.com/marick/Midje) which uses black magic, for use in making your tests more concise and readable.
+Note: `actual` is what is under test, ie your code, and `expected` is the *expected* behavior/result of that code.
+- `actual => expected`    : Checks that actual is equal to expected, either can be anything.
+- `actual =fn=> expected` : `expected` is a function takes `actual` and returns a truthy value.
+- `actual =throws=> (ExceptionType opt-regex opt-pred)` : Expects that actual will throw an Exception and checks that the type matches ExceptionType, optionally that the message matches the `opt-regex`, and optionally matches that it passes the `opt-pred`.
 
 ### Mocking
 
@@ -98,18 +100,23 @@ Mocking must be done in the context of a specification, and creates a scope for 
 you want to isolate mocking to a specific behavior:
 
 ```
+;; source file
+(defn my-function [x y] (launch-rockets!))
+;; spec file
 (specification "Thing"
   (behavior "Does something"
     (when-mocking
-      (my-function arg1 arg2) => (do (assertions
-                                        arg1 => 3
-                                        arg2 => 5)
-                                     true)
-
-      (my-function 3 5))))
+      (my-function arg1 arg2) 
+      => (do (assertions
+               arg1 => 3
+               arg2 => 5)
+           true)
+      ;;actual test
+      (assertions
+        (my-function 3 5) => true))))
 ```
 
-Basically, you include triples (a form, arrow, form), followed by the code to execute (which will not have arrows).
+Basically, you include triples (a form, arrow, form), followed by the code & tests to execute.
 
 It is important to note that the mocking support does a bunch of verification at the end of your test:
 
@@ -126,16 +133,18 @@ So, the following mock script:
 (when-mocking
    (f a) =1x=> a
    (f a) =2x=> (+ 1 a)
-   (g a b) => 32
+   (g a b) => 17
 
    (assertions
-     (+ (f 2) (f 2) (f 2) (g 1 2) (g 99 4) => 72))
+     (+ (f 2) (f 2) (f 2) 
+        (g 3e6 :foo/bar) (g "otherwise" :invalid) 
+     => 42))
 ```
 
 should pass. The first call to `f` returns the argument. The next two calls return the argument plus one.
-`g` can be called any amount (but at least once) and returns 32 each time.
+`g` can be called any amount (but at least once) and returns 17 each time.
 
-If you were to remove any call to `f` this test would fail.
+If you were to remove any call to `f` or `g` this test would fail.
 
 #### Timeline testing
 
@@ -189,10 +198,6 @@ Note that you can schedule multiple things, and still return a value from the mo
 the above indicates that when `f` is called it will schedule `(g)` to run 200ms from \"now\" and `(h)` to run
 300ms from \"now\". Then `f` will return `true`.
 
-## Clojure/cljs test
-
-You can use regular clojure test macros (is, are, etc). This is all clojure/cljs test underneath. `specification` is basically `deftest`.
-
 ## Other things of interest
 
 Untangled spec also has:
@@ -223,4 +228,3 @@ you can simply use the Makefile:
 
 MIT License
 Copyright © 2015 NAVIS
-
