@@ -203,7 +203,6 @@ Untangled spec also has:
 with this is that your mocking is stating an assumption about some way other parts of the system are behaving for that test.
 
 ## Development
-DEVELOPMENT NOTES:
 
 To run cljs tests:
 
