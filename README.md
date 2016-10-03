@@ -6,36 +6,12 @@ A Specification testing framework.
 Project](https://img.shields.io/clojars/v/navis/untangled-spec.svg)](https://clojars.org/navis/untangled-spec)
 
 Release: [![Master](https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=master)](https://github.com/untangled-web/untangled-spec/tree/master)
-
 Snapshot: [![SNAPSHOT](https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=develop)](https://github.com/untangled-web/untangled-spec/tree/develop)
 
+## Features
 
-DEVELOPMENT NOTES:
-
-To run cljs tests:
-
-     lein figwheel
-
-To run clj tests:
-
-     lein test-refresh
-
-## CI Testing
-
-To run the CLJ and CLJS tests on the CI server, it must have chrome, node, and npm installed. Then
-you can simply use the Makefile:
-
-    make tests
-
-## Usage
-
-```
-   [navis/untangled-spec "0.3.8"]
-```
-
-The macros in untangled spec wrap clojure/cljs test, so that you may
-use any of the features of the core library. The specification DSL makes it much easier to read the
-tests, and also includes a number of useful features:
+The macros in untangled-spec wrap clojure/cljs test, so that you may use any of the features of the core library. 
+The specification DSL makes it much easier to read the tests, and also includes a number of useful features:
 
 - Outline rendering
 - Left-to-right assertions
@@ -52,9 +28,9 @@ tests, and also includes a number of useful features:
 
 Please use the Untangled Tutorial or TodoMVC projects as samples for setting up a project.
 
-In the [tutorial](https://github.com/untangled-web/untangled-tutorial): If you look in `test/client/app`
-you'll see a few files. Only one of the four is a specification. The other three
-serve the following purposes:
+In the [tutorial](https://github.com/untangled-web/untangled-tutorial):
+If you look in `test/client/app` you'll see a few files. 
+Only one of the four is a specification. The other three serve the following purposes:
 
 - `all_tests.cljs` : An entry point for CI testing from the command line.
 - `suite.cljs` : The entry point for browser test rendering.
@@ -76,6 +52,7 @@ spec renderer (see the `:test-refresh` section in the project file).
 
 See `test/server/app/server_spec.clj` for a sample specification (again, on the Tutorial project). To run all specs, just use:
 
+[![Clojars Project](https://img.shields.io/clojars/v/com.jakemccrary/lein-test-refresh.svg)](https://clojars.org/com.jakemccrary/lein-test-refresh)
 ```
 lein test-refresh
 ```
@@ -84,8 +61,8 @@ lein test-refresh
 
 NOTE: This assumes you're playing with the Tutorial project.
 
-Just include `-Dtest` in your JVM argument list. This will cause the test build to start running via figwheel. Then
-just open the [http://localhost:3449/test.html](http://localhost:3449/test.html) file in your browser.
+Just include `-Dtest` in your JVM argument list, or run `(start-figwheel ["test"])` in the server user.clj file.
+This will cause the test build to start running via figwheel. Then just open the [http://localhost:3449/test.html](http://localhost:3449/test.html) file in your browser.
 
 ## Anatomy of a specification
 
@@ -223,6 +200,24 @@ Untangled spec also has:
 - `component`: Identical to behavior, but is useful for making specs more readable (creates a sub-section of outline for a sub-area)
 - `provided`: Similar to `when-mocking`, but requires a string, which is added as a subsection of the outline. The idea
 with this is that your mocking is stating an assumption about some way other parts of the system are behaving for that test.
+
+## Development
+DEVELOPMENT NOTES:
+
+To run cljs tests:
+
+     lein figwheel
+
+To run clj tests:
+
+     lein test-refresh
+
+### CI Testing
+
+To run the CLJ and CLJS tests on the CI server, it must have chrome, node, and npm installed. Then
+you can simply use the Makefile:
+
+    make tests
 
 ## License
 
