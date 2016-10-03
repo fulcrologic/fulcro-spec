@@ -28,45 +28,43 @@ The specification DSL makes it much easier to read the tests, and also includes 
 
 Please use the Untangled Tutorial or TodoMVC projects as samples for setting up a project.
 
-In the [tutorial](https://github.com/untangled-web/untangled-tutorial):
-If you look in `test/client/app` you'll see a few files. 
-Only one of the four is a specification. The other three serve the following purposes:
+As an example, we can look inside untangled-spec for the following files:
 
-- `all_tests.cljs` : An entry point for CI testing from the command line.
-- `suite.cljs` : The entry point for browser test rendering.
-- `tests_to_run.cljs` : A file that does nothing more than require all of the specs. The test runners search for
+- [all_tests.cljs](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/test/untangled_spec/all_tests.cljs) : An entry point for CI testing from the command line.
+- [user.cljs](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/dev/cljs/user.cljs) : The entry point for browser test rendering.
+- [tests_to_run.cljs](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/test/untangled_spec/tests_to_run.cljs) : A file that does nothing more than require all of the specs. The test runners search for
 testing namespaces, so if you don't load them somewhere, they won't be found. Since there are two places tests
 run from (browser and CI) it makes sense to make this DRY.
 
-There is a `package.json` file for installing node packages to run CI tests.
-The `project.clj` includes various things to make all of this work:
+There is a [package.json](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/package.json) file for installing node packages to run CI tests.
 
+The [project.clj](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj) includes various things to make all of this work:
 - The lein doo plugin, for running tests through karma *via* node (in Chrome).
+[![Clojars Project](https://img.shields.io/clojars/v/lein-doo.svg)](https://clojars.org/lein-doo)
 - A `:doo` section to configure the CI runner
-- A cljsbuild for test with figwheel true. This is the browser test build.
-- A cljsbuild for the CI tests output (automated-tests).
-- The lein `test-refresh` plugin, which will re-run server tests on save, and also can be configured with the
+- A cljsbuild for testing with figwheel true. The build with id "test" [here](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L36), is the browser test build.
+- A cljsbuild for testing with lein doo. The build with id "automated-tests" [here](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L47), is the CI tests output.
+- The [lein test-refresh plugin](https://github.com/jakemcc/lein-test-refresh), which will re-run server tests on save, and also can be configured with the
 spec renderer (see the `:test-refresh` section in the project file).
 
-## Running server tests
+### Running server tests
 
-See `test/server/app/server_spec.clj` for a sample specification (again, on the Tutorial project). To run all specs, just use:
+See `test/server/app/server_spec.clj` for a sample specification (again, on the Tutorial project). To run all specs, just use [lein-test-refresh](https://github.com/jakemcc/lein-test-refresh) as a plugin, and run `lein test-refresh`
 
-[![Clojars Project](https://img.shields.io/clojars/v/com.jakemccrary/lein-test-refresh.svg)](https://clojars.org/com.jakemccrary/lein-test-refresh)
-```
-lein test-refresh
-```
-
-## Running client tests (during development)
+### Running client tests (during development)
 
 NOTE: This assumes you're playing with the Tutorial project.
 
 Just include `-Dtest` in your JVM argument list, or run `(start-figwheel ["test"])` in the server user.clj file.
 This will cause the test build to start running via figwheel. Then just open the [http://localhost:3449/test.html](http://localhost:3449/test.html) file in your browser.
 
+### Running CI browser tests
+
+See [lein doo](https://github.com/bensu/doo#usage) for details, but basically run `lein doo {js-env} automated-tests once`.
+
 ## Anatomy of a specification
 
-The main macros are `specification`, `behavior`, and `assertions`:
+The main testing macros are `specification`, `behavior`, and `assertions`:
 
 ```
 (specification "A Thing"
