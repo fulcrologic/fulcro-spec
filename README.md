@@ -39,17 +39,15 @@ run from (browser and CI) it makes sense to make this DRY.
 There is a [package.json](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/package.json) file for installing node packages to run CI tests.
 
 The [project.clj](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj) includes various things to make all of this work:
-- The lein doo plugin, for running tests through karma *via* node (in Chrome).
-[![Clojars Project](https://img.shields.io/clojars/v/lein-doo.svg)](https://clojars.org/lein-doo)
+- The [lein doo plugin](https://github.com/bensu/doo#usage), for running tests through karma *via* node (in Chrome).
 - A `:doo` section to configure the CI runner
 - A cljsbuild for testing with figwheel true. The build with id "test" [here](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L36), is the browser test build.
 - A cljsbuild for testing with lein doo. The build with id "automated-tests" [here](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L47), is the CI tests output.
-- The [lein test-refresh plugin](https://github.com/jakemcc/lein-test-refresh), which will re-run server tests on save, and also can be configured with the
-spec renderer (see the `:test-refresh` section in the project file).
+- The [lein test-refresh plugin](https://github.com/jakemcc/lein-test-refresh), which will re-run server tests on save, and also can be configured with the spec renderer (see the `:test-refresh` section in the project file).
 
 ### Running server tests
 
-See `test/server/app/server_spec.clj` for a sample specification (again, on the Tutorial project). To run all specs, just use [lein-test-refresh](https://github.com/jakemcc/lein-test-refresh) as a plugin, and run `lein test-refresh`
+Use [lein-test-refresh](https://github.com/jakemcc/lein-test-refresh) as a plugin, and run `lein test-refresh`
 
 ### Running client tests (during development)
 
