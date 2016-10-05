@@ -164,20 +164,44 @@ should pass. The first call to `f` returns the argument. The next two calls retu
 
 If you were to remove any call to `f` or `g` this test would fail.
 
-===== Spies
+==== Spies
 
 Sometimes it is desirable to check that a function is called but still use its original definition, this pattern is called a test spy.
 Here's an example of how to do that with untangled spec:
 
 [source]
 ----
-(let [real-fn f] 
+(let [real-fn f]
   (when-mocking f => (do ... (real-fn))
   (assertions
     ...)
 ----
 
-==== Timeline testing
+==== Protocols and Inline functions
+
+When working with protocols and records, or inline functions (eg: https://github.com/clojure/clojure/blob/clojure-1.8.0/src/clj/clojure/core.clj#L965[+]), it is useful to be able to mock them just as a regular function.
+The fix for doing so is quite straightforward:
+[source]
+----
+;; source file
+(defprotocol MockMe
+  (-please [this f x] ...)) ;;<1>
+(defn please [this f x] (-please this f x)) ;;<2>
+
+(defn fn-under-test ...)
+
+;; test file
+(when-mocking
+  (please this f x) => (do ...) ;;<3>
+  (assertions
+    (fn-under-test ...) => ...))) ;;<4>
+----
+<1> define the protocol & method
+<2> define a function that just calls the protocol
+<3> mock the wrapping function from (2)
+<4> keep calm and carry on testing
+
+=== Timeline testing
 
 On occasion you'd like to mock things that use callbacks. Chains of callbacks can be a challenge to test, especially
 when you're trying to simulate timing issues.
