@@ -164,6 +164,19 @@ should pass. The first call to `f` returns the argument. The next two calls retu
 
 If you were to remove any call to `f` or `g` this test would fail.
 
+===== Spies
+
+Sometimes it is desirable to check that a function is called but still use its original definition, this pattern is called a test spy.
+Here's an example of how to do that with untangled spec:
+
+[source]
+----
+(let [real-fn f] 
+  (when-mocking f => (do ... (real-fn))
+  (assertions
+    ...)
+----
+
 ==== Timeline testing
 
 On occasion you'd like to mock things that use callbacks. Chains of callbacks can be a challenge to test, especially
