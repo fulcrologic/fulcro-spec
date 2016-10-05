@@ -1,0 +1,49 @@
+= untangled-spec
+:source-highlighter: coderay
+:source-language: clojure
+:toc:
+:toc-placement: preamble
+:sectlinks:
+:sectanchors:
+:sectnums:
+
+A Specification testing framework.
+
+image::https://img.shields.io/clojars/v/navis/untangled-spec.svg[link="https://clojars.org/navis/untangled-spec"]
+
+Release: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=master[link=https://github.com/untangled-web/untangled-spec/tree/master]
+Develop: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=develop[link=https://github.com/untangled-web/untangled-spec/tree/develop]
+
+ifdef::env-github[]
+== Read our docs
+endif::[]
+include::docs/index.adoc[]
+
+== Development
+
+To run cljs tests:
+
+     lein repl
+     user=> (start-figwheel ["test"])
+
+To run clj tests:
+
+     lein test-refresh
+
+=== CI Testing
+
+To run the CLJ and CLJS tests on the CI server, it must have chrome, node, and npm installed. Then
+you can simply use the Makefile:
+
+    make tests
+
+or run
+
+	npm install
+	lein doo chrome automated-tests once
+	lein test-refresh :run-once
+
+== License
+
+MIT License
+Copyright © 2015 NAVIS
