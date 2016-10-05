@@ -42,21 +42,21 @@ Please use the Untangled Tutorial or TodoMVC projects as samples for setting up 
 
 As an example, we can look inside untangled-spec for the following files:
 
-- https://github.com/untangled-web/untangled-spec/blob/feature/documentation/test/untangled_spec/all_tests.cljs[all_tests.cljs] : An entry point for CI testing from the command line.
-- https://github.com/untangled-web/untangled-spec/blob/feature/documentation/dev/cljs/user.cljs[user.cljs] : The entry point for browser test rendering.
-- https://github.com/untangled-web/untangled-spec/blob/feature/documentation/test/untangled_spec/tests_to_run.cljs[tests_to_run.cljs] : A file that does nothing more than require all of the specs. The test runners search for
+- link:../test/untangled_spec/all_tests.cljs[all_tests.cljs] : An entry point for CI testing from the command line.
+- link:../dev/cljs/user.cljs[user.cljs] : The entry point for browser test rendering.
+- link:../test/untangled_spec/tests_to_run.cljs[tests_to_run.cljs] : A file that does nothing more than require all of the specs. The test runners search for
 testing namespaces, so if you don't load them somewhere, they won't be found. Since there are two places tests
 run from (browser and CI) it makes sense to make this DRY.
 - `*_spec.clj(s)` : Are spec files containing tests/assertions.
 
-There is a top level https://github.com/untangled-web/untangled-spec/blob/feature/documentation/package.json[package.json] file for installing node packages to run CI tests.
+There is a top level link:../package.json[package.json] file for installing node packages to run CI tests.
 
-The https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj[project.clj] includes various things to make all of this work:
+The link:../project.clj[project.clj] includes various things to make all of this work:
 
 - The https://github.com/bensu/doo#usage[lein doo plugin], for running tests through karma *via* node (in Chrome).
 - A `:doo` section to configure the CI runner
-- A cljsbuild for testing with figwheel true. The build with id "test" https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L36[here], is the browser test build.
-- A cljsbuild for testing with lein doo. The build with id "automated-tests" https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L47[here], is the CI tests output.
+- A cljsbuild for testing with figwheel true. The build with id "test" link:../project.clj#L36[here], is the browser test build.
+- A cljsbuild for testing with lein doo. The build with id "automated-tests" link:../project.clj#L47[here], is the CI tests output.
 - The https://github.com/jakemcc/lein-test-refresh[lein test-refresh plugin], which will re-run server tests on save, and also can be configured with the spec renderer (see the `:test-refresh` section in the project file).
 
 == Running server tests
