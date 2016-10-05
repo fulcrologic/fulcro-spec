@@ -1,3 +1,25 @@
+= Untangled Spec Docs
+:source-highlighter: coderay
+:source-language: clojure
+:toc:
+:toc-placement!:
+:toclevels: 3
+:sectlinks:
+:sectanchors:
+:sectnums:
+
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+ifdef::env-github[]
+toc::[]
+endif::[]
+
 == Features
 
 The macros in untangled-spec wrap clojure/cljs test, so that you may use any of the features of the core library.
