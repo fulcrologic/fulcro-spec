@@ -66,8 +66,6 @@ and make sure https://github.com/jakemcc/lein-test-refresh[jakemcc/lein-test-ref
 
 == Running client tests (during development)
 
-NOTE: This assumes you're playing with the Tutorial project.
-
 Just include `-Dtest` in your JVM argument list, or run `(start-figwheel ["test"])` in the server user.clj file.
 This will cause the test build to start running via figwheel. Then just open the http://localhost:3449/test.html file in your browser.
 
