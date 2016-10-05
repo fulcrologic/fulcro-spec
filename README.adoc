@@ -1,16 +1,22 @@
-# untangled-spec
+= untangled-spec
+:source-highlighter: coderay
+:source-language: clojure
+:toc:
+:toc-placement: left
+:sectlinks:
+:sectanchors:
+:sectnums:
 
 A Specification testing framework.
 
-[![Clojars
-Project](https://img.shields.io/clojars/v/navis/untangled-spec.svg)](https://clojars.org/navis/untangled-spec)
+image::https://img.shields.io/clojars/v/navis/untangled-spec.svg[link="https://clojars.org/navis/untangled-spec"]
 
-Release: [![Master](https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=master)](https://github.com/untangled-web/untangled-spec/tree/master)
-Snapshot: [![SNAPSHOT](https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=develop)](https://github.com/untangled-web/untangled-spec/tree/develop)
+Release: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=master[link=https://github.com/untangled-web/untangled-spec/tree/master]
+Develop: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=develop[link=https://github.com/untangled-web/untangled-spec/tree/develop]
 
-## Features
+== Features
 
-The macros in untangled-spec wrap clojure/cljs test, so that you may use any of the features of the core library. 
+The macros in untangled-spec wrap clojure/cljs test, so that you may use any of the features of the core library.
 The specification DSL makes it much easier to read the tests, and also includes a number of useful features:
 
 - Outline rendering
@@ -24,43 +30,46 @@ The specification DSL makes it much easier to read the tests, and also includes 
     - Mocks can simulate timelines for CSP logic
 - Protocol testing support (helps prove network interactions are correct without running the full stack)
 
-## Setting up
+== Setting up
 
 Please use the Untangled Tutorial or TodoMVC projects as samples for setting up a project.
 
 As an example, we can look inside untangled-spec for the following files:
 
-- [all_tests.cljs](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/test/untangled_spec/all_tests.cljs) : An entry point for CI testing from the command line.
-- [user.cljs](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/dev/cljs/user.cljs) : The entry point for browser test rendering.
-- [tests_to_run.cljs](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/test/untangled_spec/tests_to_run.cljs) : A file that does nothing more than require all of the specs. The test runners search for
+- https://github.com/untangled-web/untangled-spec/blob/feature/documentation/test/untangled_spec/all_tests.cljs[all_tests.cljs] : An entry point for CI testing from the command line.
+- https://github.com/untangled-web/untangled-spec/blob/feature/documentation/dev/cljs/user.cljs[user.cljs] : The entry point for browser test rendering.
+- https://github.com/untangled-web/untangled-spec/blob/feature/documentation/test/untangled_spec/tests_to_run.cljs[tests_to_run.cljs] : A file that does nothing more than require all of the specs. The test runners search for
 testing namespaces, so if you don't load them somewhere, they won't be found. Since there are two places tests
 run from (browser and CI) it makes sense to make this DRY.
+- `*_spec.clj(s)` : Are spec files containing tests/assertions.
 
-There is a [package.json](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/package.json) file for installing node packages to run CI tests.
+There is a top level https://github.com/untangled-web/untangled-spec/blob/feature/documentation/package.json[package.json] file for installing node packages to run CI tests.
 
-The [project.clj](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj) includes various things to make all of this work:
-- The [lein doo plugin](https://github.com/bensu/doo#usage), for running tests through karma *via* node (in Chrome).
+The https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj[project.clj] includes various things to make all of this work:
+
+- The https://github.com/bensu/doo#usage[lein doo plugin], for running tests through karma *via* node (in Chrome).
 - A `:doo` section to configure the CI runner
-- A cljsbuild for testing with figwheel true. The build with id "test" [here](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L36), is the browser test build.
-- A cljsbuild for testing with lein doo. The build with id "automated-tests" [here](https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L47), is the CI tests output.
-- The [lein test-refresh plugin](https://github.com/jakemcc/lein-test-refresh), which will re-run server tests on save, and also can be configured with the spec renderer (see the `:test-refresh` section in the project file).
+- A cljsbuild for testing with figwheel true. The build with id "test" https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L36[here], is the browser test build.
+- A cljsbuild for testing with lein doo. The build with id "automated-tests" https://github.com/untangled-web/untangled-spec/blob/feature/documentation/project.clj#L47[here], is the CI tests output.
+- The https://github.com/jakemcc/lein-test-refresh[lein test-refresh plugin], which will re-run server tests on save, and also can be configured with the spec renderer (see the `:test-refresh` section in the project file).
 
-### Running server tests
+== Running server tests
 
-Use [lein-test-refresh](https://github.com/jakemcc/lein-test-refresh) as a plugin, and run `lein test-refresh`
+To run all specs, just use `lein test-refresh` at the command line, +
+and make sure https://github.com/jakemcc/lein-test-refresh[jakemcc/lein-test-refresh] is in your `:plugins`.
 
-### Running client tests (during development)
+== Running client tests (during development)
 
 NOTE: This assumes you're playing with the Tutorial project.
 
 Just include `-Dtest` in your JVM argument list, or run `(start-figwheel ["test"])` in the server user.clj file.
-This will cause the test build to start running via figwheel. Then just open the [http://localhost:3449/test.html](http://localhost:3449/test.html) file in your browser.
+This will cause the test build to start running via figwheel. Then just open the http://localhost:3449/test.html file in your browser.
 
-### Running CI browser tests
+=== Running CI browser tests
 
-See [lein doo](https://github.com/bensu/doo#usage) for details, but basically run `lein doo {js-env} automated-tests once`.
+See https://github.com/bensu/doo#usage[lein doo] for details, but basically run `lein doo {js-env} automated-tests once`.
 
-## Anatomy of a specification
+== Anatomy of a specification
 
 The main testing macros are `specification`, `behavior`, and `assertions`:
 
@@ -75,19 +84,28 @@ The main testing macros are `specification`, `behavior`, and `assertions`:
          form3 => expected-form3)))
 ```
 
-The specification macro just outputs a `(clojure|cljs).test/deftest`, so you are free to use `is`, `are`, `do-report`, etc. 
+The specification macro just outputs a `(clojure|cljs).test/deftest`, so you are free to use `is`, `are`, `do-report`, etc.
 
 The `behavior` macro outputs additional events for the renderer to make an outline. As a note, `component` is just a macro alias of `behavior` it just can read better if what you are describing is not a behavior but a *component* of some greater thing.
 
-### Assertions
+=== Assertions
 
-Assertions provides some explict arrows, unlike [Midje](https://github.com/marick/Midje) which uses black magic, for use in making your tests more concise and readable.
-Note: `actual` is what is under test, ie your code, and `expected` is the *expected* behavior/result of that code.
-- `actual => expected`    : Checks that actual is equal to expected, either can be anything.
-- `actual =fn=> expected` : `expected` is a function takes `actual` and returns a truthy value.
-- `actual =throws=> (ExceptionType opt-regex opt-pred)` : Expects that actual will throw an Exception and checks that the type matches ExceptionType, optionally that the message matches the `opt-regex`, and optionally matches that it passes the `opt-pred`.
+Assertions provides some explict arrows, unlike https://github.com/marick/Midje[Midje] which uses black magic, for use in making your tests more concise and readable.
 
-### Mocking
+[source]
+----
+(assertions
+  actual => expected ;;<1>
+  actual =fn=> expected ;;<2>
+  actual =throws=> (ExceptionType opt-regex opt-pred)) ;;<3><4><5>
+----
+<1> Checks that actual is equal to expected, either can be anything.
+<2> `expected` is a function takes `actual` and returns a truthy value.
+<3> Expects that actual will throw an Exception and checks that the type is `ExceptionType`.
+<4> Optionally that the message matches the `opt-regex`.
+<5> Optionally matches that it passes the `opt-pred`.
+
+=== Mocking
 
 The mocking system does a lot in a very small space. It can be invoked via the `provided` or `when-mocking` macro.
 The former requires a string and adds an outline section. The latter does not change the outline output.
@@ -102,7 +120,7 @@ you want to isolate mocking to a specific behavior:
 (specification "Thing"
   (behavior "Does something"
     (when-mocking
-      (my-function arg1 arg2) 
+      (my-function arg1 arg2)
       => (do (assertions
                arg1 => 3
                arg2 => 5)
@@ -132,8 +150,8 @@ So, the following mock script:
    (g a b) => 17
 
    (assertions
-     (+ (f 2) (f 2) (f 2) 
-        (g 3e6 :foo/bar) (g "otherwise" :invalid) 
+     (+ (f 2) (f 2) (f 2)
+        (g 3e6 :foo/bar) (g "otherwise" :invalid)
      => 42))
 ```
 
@@ -142,7 +160,7 @@ should pass. The first call to `f` returns the argument. The next two calls retu
 
 If you were to remove any call to `f` or `g` this test would fail.
 
-#### Timeline testing
+==== Timeline testing
 
 On occasion you'd like to mock things that use callbacks. Chains of callbacks can be a challenge to test, especially
 when you're trying to simulate timing issues.
@@ -194,7 +212,7 @@ Note that you can schedule multiple things, and still return a value from the mo
 the above indicates that when `f` is called it will schedule `(g)` to run 200ms from \"now\" and `(h)` to run
 300ms from \"now\". Then `f` will return `true`.
 
-## Other things of interest
+== Other things of interest
 
 Untangled spec also has:
 
@@ -202,7 +220,7 @@ Untangled spec also has:
 - `provided`: Similar to `when-mocking`, but requires a string, which is added as a subsection of the outline. The idea
 with this is that your mocking is stating an assumption about some way other parts of the system are behaving for that test.
 
-## Development
+== Development
 
 To run cljs tests:
 
@@ -212,14 +230,14 @@ To run clj tests:
 
      lein test-refresh
 
-### CI Testing
+=== CI Testing
 
 To run the CLJ and CLJS tests on the CI server, it must have chrome, node, and npm installed. Then
 you can simply use the Makefile:
 
     make tests
 
-## License
+== License
 
 MIT License
 Copyright © 2015 NAVIS
