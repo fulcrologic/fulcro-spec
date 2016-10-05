@@ -26,6 +26,10 @@
   :test-paths ["test"]
   :resource-paths ["src" "resources"]
 
+  :test-refresh {:report untangled-spec.reporters.terminal/untangled-report
+                 :changes-only true
+                 :with-repl true}
+
   ; CI tests: Set up to support karma runner. Recommend running against chrome. See README
   :doo {:build "automated-tests"
         :paths {:karma "node_modules/karma/bin/karma"}}
@@ -56,9 +60,8 @@
              :server-port 3457}
   :profiles {:dev {:source-paths ["src" "test" "dev"]
                    :repl-options {:init-ns clj.user
-                                  :port    7001}
-                   :env          {:dev true}}}
-
-  :test-refresh {:report untangled-spec.reporters.terminal/untangled-report
-                 :changes-only true
-                 :with-repl true})
+                                  :port    7001
+                                  :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+                   :dependencies [[figwheel-sidecar "0.5.6"]
+                                  [com.cemerick/piggieback "0.2.1"]
+                                  [org.clojure/tools.nrepl "0.2.12"]]}})
