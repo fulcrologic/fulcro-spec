@@ -188,18 +188,20 @@ The fix for doing so is quite straightforward:
   (-please [this f x] ...)) ;;<1>
 (defn please [this f x] (-please this f x)) ;;<2>
 
-(defn fn-under-test ...)
+(defn fn-under-test [this]
+  ... (please this inc :counter) ...) ;;<3>
 
 ;; test file
 (when-mocking
-  (please this f x) => (do ...) ;;<3>
+  (please this f x) => (do ...) ;;<4>
   (assertions
-    (fn-under-test ...) => ...))) ;;<4>
+    (fn-under-test ...) => ...))) ;;<5>
 ----
 <1> define the protocol & method
 <2> define a function that just calls the protocol
-<3> mock the wrapping function from (2)
-<4> keep calm and carry on testing
+<3> use the wrapper function instead of the protocol
+<4> mock the wrapping function from (2)
+<5> keep calm and carry on testing
 
 === Timeline testing
 
