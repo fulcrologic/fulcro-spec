@@ -77,20 +77,39 @@ See https://github.com/bensu/doo#usage[lein doo] for details, but basically run 
 
 The main testing macros are `specification`, `behavior`, and `assertions`:
 
-```
+[source]
+----
+(:require
+  [untangled-spec.core :refer [specification behavior assertions])
+
 (specification "A Thing"
-   (behavior "does something"
-      (assertions
-         form => expected-form
-         form2 => expected-form2
+  (behavior "does something"
+    (assertions
+      form => expected-form
+      form2 => expected-form2
 
-         "optional sub behavior clause"
-         form3 => expected-form3)))
-```
+      "optional sub behavior clause"
+      form3 => expected-form3)))
+----
 
-The specification macro just outputs a `(clojure|cljs).test/deftest`, so you are free to use `is`, `are`, `do-report`, etc.
+[TIP]
+====
+`specification` =outputs=> `(clojure|cljs).test/deftest`, +
+`behavior` =outputs=> `(clojure|cljs).test/testing`.
 
-The `behavior` macro outputs additional events for the renderer to make an outline. As a note, `component` is just a macro alias of `behavior` it just can read better if what you are describing is not a behavior but a *component* of some greater thing.
+You are therefore free to use any functions from https://clojure.github.io/clojure/clojure.test-api.html[clojure.test] or https://github.com/clojure/clojurescript/wiki/Testing[cljs.test].
+====
+
+The `behavior` macro outputs additional events for the browser and terminal renderer to make an outline with.
+
+[NOTE]
+====
+`component` is an alias of `behavior`. +
+It can read better if you are describing a *component* footnote:[
+    *Noun*: a part or element of a larger whole.
+    *Adjective*: constituting part of a larger whole; constituent.
+    ] and not a behavior footnote:[*Noun*: the way in which a natural phenomenon or a machine works or functions.].
+====
 
 === Assertions
 
@@ -98,6 +117,9 @@ Assertions provides some explict arrows, unlike https://github.com/marick/Midje[
 
 [source]
 ----
+(:require
+  [untangled-spec.core :refer [assertions])
+
 (assertions
   actual => expected ;;<1>
   actual =fn=> expected ;;<2>
@@ -117,7 +139,11 @@ The former requires a string and adds an outline section. The latter does not ch
 Mocking must be done in the context of a specification, and creates a scope for all sub-outlines. Generally
 you want to isolate mocking to a specific behavior:
 
-```
+[source]
+----
+(:require
+  [untangled-spec.core :refer [specification behavior when-mocking assertions])
+
 ;; source file
 (defn my-function [x y] (launch-rockets!))
 ;; spec file
@@ -132,7 +158,7 @@ you want to isolate mocking to a specific behavior:
       ;;actual test
       (assertions
         (my-function 3 5) => true))))
-```
+----
 
 Basically, you include triples (a form, arrow, form), followed by the code & tests to execute.
 
@@ -147,7 +173,11 @@ are available for use in the RHS of the mock expression.
 
 So, the following mock script:
 
-```
+[source]
+----
+(:require
+  [untangled-spec.core :refer [when-mocking assertions])
+
 (when-mocking
    (f a) =1x=> a
    (f a) =2x=> (+ 1 a)
@@ -157,7 +187,7 @@ So, the following mock script:
      (+ (f 2) (f 2) (f 2)
         (g 3e6 :foo/bar) (g "otherwise" :invalid)
      => 42))
-```
+----
 
 should pass. The first call to `f` returns the argument. The next two calls return the argument plus one.
 `g` can be called any amount (but at least once) and returns 17 each time.
@@ -171,6 +201,9 @@ Here's an example of how to do that with untangled spec:
 
 [source]
 ----
+(:require
+  [untangled-spec.core :refer [when-mocking assertions])
+
 (let [real-fn f]
   (when-mocking f => (do ... (real-fn))
   (assertions
@@ -192,6 +225,9 @@ The fix for doing so is quite straightforward:
   ... (please this inc :counter) ...) ;;<3>
 
 ;; test file
+(:require
+  [untangled-spec.core :refer [when-mocking assertions])
+
 (when-mocking
   (please this f x) => (do ...) ;;<4>
   (assertions
@@ -208,7 +244,13 @@ The fix for doing so is quite straightforward:
 On occasion you'd like to mock things that use callbacks. Chains of callbacks can be a challenge to test, especially
 when you're trying to simulate timing issues.
 
-```
+[source]
+----
+(:require
+  [cljs.test :refer [is]]
+  [untangled-spec.core :refer [specification provided with-timeline
+                               tick async]])
+
 (def a (atom 0))
 
 (specification "Some Thing"
@@ -230,7 +272,7 @@ when you're trying to simulate timing issues.
 
               (tick 100)
               (is (= 2 @a))))
-```
+----
 
 In the above scripted test the `provided` (when-mocking with a label) is used to mock out `js/setTimeout`. By
 wrapping that provided in a `with-timeline` we gain the ability to use the `async` and `tick` macros (which must be
@@ -246,11 +288,15 @@ simulated clock. So, you can see we can watch the atom change over \"time\"!
 
 Note that you can schedule multiple things, and still return a value from the mock!
 
-```
+[source]
+----
+(:require
+  [untangled-spec.core :refer [provided with-timeline async]])
+
 (with-timeline
   (when-mocking
      (f a) => (do (async 200 (g)) (async 300 (h)) true)))
-```
+----
 
 the above indicates that when `f` is called it will schedule `(g)` to run 200ms from \"now\" and `(h)` to run
 300ms from \"now\". Then `f` will return `true`.
