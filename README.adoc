@@ -16,7 +16,7 @@ Develop: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch
 
 == Learn more
 - link:docs/index.adoc#untangled-spec-docs[Untangled Spec Docs]
-- link:http://untangled-web.github.io/untangled/index.html[about Untangled]
+- link:http://untangled-web.github.io/untangled/index.html[Untangled]
 - link:http://untangled-web.github.io/untangled/index.html[Untangled Docs]
 - link:http://untangled-web.github.io/untangled/tutorial.html[Untangled Tutorial]
 
