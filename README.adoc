@@ -15,9 +15,10 @@ Release: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch
 Develop: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=develop[link=https://github.com/untangled-web/untangled-spec/tree/develop]
 
 == Learn more
-- about link:docs/index.adoc#untangled-spec-docs[Untangled Spec]
-- about link:http://untangled-web.github.io/untangled/index.html[Untangled] & checkout the link:http://untangled-web.github.io/untangled/index.html[Documentation Reference]
-- interactively with the link:http://untangled-web.github.io/untangled/tutorial.html[Untangled Tutorial]
+* about link:docs/index.adoc#untangled-spec-docs[Untangled Spec]
+* about link:http://untangled-web.github.io/untangled/index.html[Untangled] & checkout the link:http://untangled-web.github.io/untangled/index.html[Documentation Reference]
+* interactively with the link:http://untangled-web.github.io/untangled/tutorial.html[Untangled Tutorial]
+** http://untangled-web.github.io/untangled/tutorial.html#!/untangled_tutorial.K_Testing[untangled_tutorial.K_Testing]
 
 == Development
 
