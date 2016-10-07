@@ -14,10 +14,11 @@ image::https://img.shields.io/clojars/v/navis/untangled-spec.svg[link="https://c
 Release: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=master[link=https://github.com/untangled-web/untangled-spec/tree/master]
 Develop: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=develop[link=https://github.com/untangled-web/untangled-spec/tree/develop]
 
-ifdef::env-github[]
-== Read our docs
-endif::[]
-include::docs/index.adoc[]
+== Learn more
+- link:docs/index.adoc#untangled-spec-docs[Untangled Spec]
+- about link:http://untangled-web.github.io/untangled/index.html[Untangled]
+- link:http://untangled-web.github.io/untangled/index.html[Untangled Docs]
+- link:http://untangled-web.github.io/untangled/tutorial.html[Untangled Tutorial]
 
 == Development
 
