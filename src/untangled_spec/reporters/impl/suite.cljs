@@ -1,13 +1,13 @@
 (ns ^:figwheel-always untangled-spec.reporters.impl.suite
   (:require
-    goog.object
-    [goog.dom :as gdom]
-    [om.next :as om]
-    [untangled-spec.reporters.browser :as browser]
-    [untangled-spec.reporters.impl.base-reporter :as impl]
-
     [bidi.bidi :as bidi]
-    [pushy.core :as pushy]))
+    [figwheel.client.heads-up :as fig]
+    [goog.dom :as gdom]
+    [goog.object]
+    [om.next :as om]
+    [pushy.core :as pushy]
+    [untangled-spec.reporters.browser :as browser]
+    [untangled-spec.reporters.impl.base-reporter :as impl]))
 
 (enable-console-print!)
 
@@ -75,10 +75,22 @@
             context-data (get-in data resolved-path)]
         (recur context-data (drop path-ele-length path) (concat result resolved-path))))))
 
+(defn get-element-or-else [id else]
+  (or (gdom/getElement id)
+      (else id)))
+
 (defrecord TestSuite [app-state dom-target reconciler renderer test-item-path]
   ITest
   (render-tests [this]
-    (om/add-root! reconciler renderer (gdom/getElement dom-target)))
+    (let [error-dom-id (str (namespace ::_) "_failed-to-find-dom-target")]
+      (om/add-root! reconciler renderer
+        (get-element-or-else
+          dom-target
+          #(do
+             (fig/display-system-warning
+               "TestSuite rendering failed!"
+               (str "Failed to find element with id: '" % "'"))
+             (js/console.error (str "TestSuite rendering failed to find element with id: '" % "'")))))))
 
   (set-test-result [this status]
     (impl/set-test-result app-state
