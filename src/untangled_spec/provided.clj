@@ -1,13 +1,12 @@
 (ns untangled-spec.provided
-  (:require [clojure.string :as str]
-            [untangled-spec.stub :as stub]
-            )
-  )
+  (:require
+    [clojure.string :as str]
+    [untangled-spec.stub :as stub]))
 
 (defn parse-arrow-count
   "parses how many times the mock/stub should be called with.
    * => implies 1+,
-   * =yx=> implies exactly y times.
+   * =Ax=> implies exactly A times.
    Provided arrow counts cannot be zero because mocking should
       not be a negative assertion, but a positive one.
    IE: verify that what you want to be called is called instead,
@@ -21,13 +20,10 @@
     (cond
       (= "=>" nm) :many
       (= "0" number) (assert false not-zero-msg)
-      number (Integer/parseInt number)
-      )
-    )
-  )
+      number (Integer/parseInt number))))
 
 (defn symbol->any [s]
-  (if (symbol? s) ::any s))
+  (if (symbol? s) ::stub/any s))
 
 (defn literal->gensym [l]
   (if (symbol? l) l (gensym "arg")))
@@ -39,63 +35,53 @@
     {:ntimes         (parse-arrow-count arrow)
      :stub-function  `(fn [~@arglist] ~thing-to-do)
      :symbol-to-mock (first thing-to-mock)
-     :literals (mapv symbol->any params)
-     }))
+     :literals       (mapv symbol->any params)}))
 
 (defn convert-groups-to-symbolic-triples [grouped-mocks]
   (letfn [(steps-to-script [acc [sym detailed-steps]]
             (let [steps (mapv (fn [detail]
                                 `(stub/make-step ~(:stub-function detail)
-                                                 ~(:ntimes detail)
-                                                 ~(:literals detail)))
-                              detailed-steps)]
-              (conj acc [sym (gensym "script") `(stub/make-script ~(name sym) ~steps)])
-              )
-            )]
-    (reduce steps-to-script [] grouped-mocks)
-    ))
+                                   ~(:ntimes detail)
+                                   ~(:literals detail)))
+                          detailed-steps)]
+              (conj acc [sym (gensym "script") `(stub/make-script ~(name sym) ~steps)])))]
+    (reduce steps-to-script [] grouped-mocks)))
 
 (defn is-arrow? [sym]
   (and (symbol? sym)
-       (re-find #"^=" (name sym))
-       )
-  )
+    (re-find #"^=" (name sym))))
 
 (defn provided-fn
   [cljs? string & forms]
   (let [groups (partition-all 3 forms)
         triples (->> groups (take-while #(and (= 3 (count %))
-                                              (is-arrow? (second %)))))
+                                           (is-arrow? (second %)))))
         behaviors (drop (* 3 (count triples)) forms)
         parsed-mocks (reduce (fn [acc t] (conj acc (parse-mock-triple t))) [] triples)
         grouped-mocks (group-by :symbol-to-mock parsed-mocks)
         script-triples (convert-groups-to-symbolic-triples grouped-mocks)
         script-let-pairs (reduce (fn [acc ele]
                                    (concat acc [(second ele) (last ele)]))
-                                 [] script-triples)
+                           [] script-triples)
         redef-pairs (reduce (fn [acc ele]
                               (concat acc [(first ele)
                                            `(stub/scripted-stub ~(second ele))]))
-                            [] script-triples)
+                      [] script-triples)
         script-symbols (reduce (fn [acc ele]
                                  (concat acc [(second ele)]))
-                               [] script-triples)
-        ]
+                         [] script-triples)]
     (if (= :skip-output string)
       `(let [~@script-let-pairs]
          (with-redefs [~@redef-pairs]
            ~@behaviors
-           (stub/validate-target-function-counts [~@script-symbols])
-           ))
+           (stub/validate-target-function-counts [~@script-symbols])))
       `(let [~@script-let-pairs]
          (with-redefs [~@redef-pairs]
            (~(symbol (if cljs? "cljs.test" "clojure.test")
-                     "do-report")
-                     {:type :begin-provided :string ~string})
+               "do-report")
+             {:type :begin-provided :string ~string})
            ~@behaviors
            (stub/validate-target-function-counts [~@script-symbols])
            (~(symbol (if cljs? "cljs.test" "clojure.test")
-                     "do-report")
-                     {:type :end-provided :string ~string})
-           ))
-      )))
+               "do-report")
+             {:type :end-provided :string ~string}))))))

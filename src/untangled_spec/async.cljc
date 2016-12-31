@@ -1,8 +1,6 @@
 (ns untangled-spec.async
-  #?(:cljs (:require [cljs.pprint :refer [pprint]])
-     :clj
-           (:require [clojure.pprint :refer [pprint]]))
-  )
+  (:require
+    [#?(:cljs cljs.pprint :clj clojure.pprint) :refer [pprint]]))
 
 (defprotocol IAsyncQueue
   (current-time [this] "Returns the current time on the simulated clock, in ms")
@@ -10,8 +8,7 @@
   (advance-clock [this ms]
     "Move the clock forward by the specified number of ms, triggering events (even those added by interstitial triggers) in the correct order up to (and including) events that coincide with the final time.")
   (schedule-event [this ms-from-now fn-to-call]
-    "Schedule an event which should occur at some time in the future (offset from now).")
-  )
+    "Schedule an event which should occur at some time in the future (offset from now)."))
 
 (defrecord Event [abs-time fn-to-call])
 
@@ -21,8 +18,7 @@
   (if-let [evt (peek-event queue)]
     (do
       ((:fn-to-call evt))
-      (swap! (:schedule queue) #(dissoc % (:abs-time evt)))
-      )))
+      (swap! (:schedule queue) #(dissoc % (:abs-time evt))))))
 
 (defrecord AsyncQueue [schedule now]
   IAsyncQueue
@@ -37,28 +33,17 @@
             (do
               (reset! (:now this) now)
               (process-first-event! this)
-              (recur (peek-event this)))
-            ))
-        )
-      (reset! (:now this) stop-time)
-      )
-    )
+              (recur (peek-event this))))))
+      (reset! (:now this) stop-time)))
   (schedule-event
     [this ms-from-now fn-to-call]
     (let [tm (+ ms-from-now @(:now this))
           event (Event. tm fn-to-call)]
       (if (contains? @(:schedule this) tm)
         (throw (ex-info (str "Schedule already contains an event " ms-from-now "ms from 'now' which would generate an indeterminant ordering for your events. Please offset your submission time a bit") {}))
-        (swap! (:schedule this) #(assoc % (:abs-time event) event)))
-      )
-    )
-  )
+        (swap! (:schedule this) #(assoc % (:abs-time event) event))))))
 
 (defn make-async-queue
   "Build an asynchronous event simulation queue."
   []
   (AsyncQueue. (atom (sorted-map)) (atom 0)))
-
-
-
-
