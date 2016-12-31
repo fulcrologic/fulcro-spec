@@ -31,24 +31,21 @@
 
 (defn make-call-script [to-call & {:keys [literals N]
                                    :or {N 1, literals []}}]
-  (s/make-script "something"
-    [(s/make-step to-call N literals)]))
-
-(defn throws! [n] (inc n))
+  (s/scripted-stub
+    (s/make-script "something"
+      [(s/make-step to-call N literals)])))
 
 (specification "scripted-stub"
   (behavior "calls the stub function"
     (let [detector (atom false)
-          script (make-call-script (fn [] (reset! detector true)))
-          sstub (s/scripted-stub script)]
+          sstub (make-call-script (fn [] (reset! detector true)))]
       (sstub), (is (= true @detector))))
 
   (behavior "verifies the stub fn is called with the correct literals"
-    (let [script (make-call-script
+    (let [sstub (make-call-script
                    (fn [n x] [(inc n) x])
                    :literals [41 ::s/any]
-                   :N :many)
-          sstub (s/scripted-stub script)]
+                   :N :many)]
       (assertions
         (sstub 41 :foo) => [42 :foo]
         (sstub 2 :whatever) =throws=> (ExceptionInfo #"called with wrong arguments")
@@ -58,19 +55,20 @@
             :expected-literals [41 ::s/any]})))
 
   (behavior "returns whatever the stub function returns"
-    (let [script (make-call-script (fn [] 42))
-          sstub (s/scripted-stub script)]
-      (is (= 42 (sstub)))))
+    (let [sstub (make-call-script (fn [] 42))]
+      (assertions (sstub) => 42)))
 
   (behavior "throws an exception if the function is invoked more than programmed with verify-error set to true"
-    (let [script (make-call-script (fn [] 42))
-          sstub (s/scripted-stub script)]
+    (let [sstub (make-call-script (fn [] 42))]
       (sstub) ; first call
-      (try (sstub) (catch ExceptionInfo e (is (= true (-> (ex-data e) :untangled-spec.stub/verify-error)))))))
+      (assertions
+        (try (sstub 1 2 3) (catch ExceptionInfo e (ex-data e)))
+        => {:untangled-spec.stub/verify-error true
+            :max-calls 1
+            :args '(1 2 3)})))
 
   (behavior "throws whatever exception the function throws"
-    (let [script (make-call-script (fn [] (throw (ex-info "BUMMER" {}))))
-          sstub (s/scripted-stub script)]
+    (let [sstub (make-call-script (fn [] (throw (ex-info "BUMMER" {}))))]
       (assertions
         (sstub) =throws=> (ExceptionInfo))))
 
@@ -88,7 +86,9 @@
 (specification "validate-target-function-counts"
   (behavior "returns nil if a target function has been called enough times"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 5 :times 5}]})]]
-      (is (nil? (s/validate-target-function-counts script-atoms)))))
+      (assertions
+        (s/validate-target-function-counts script-atoms)
+        =fn=> some?)))
   (behavior "throws an exception when a target function has not been called enough times"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times 5}]})]]
       (assertions
@@ -97,7 +97,9 @@
 
   (behavior "returns nil if a target function has been called enough times with :many specified"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times :many}]})]]
-      (is (nil? (s/validate-target-function-counts script-atoms)))))
+      (assertions
+        (s/validate-target-function-counts script-atoms)
+        =fn=> some?)))
 
   (behavior "throws an exception if a function has not been called at all with :many was specified"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times :many}]})]]
@@ -108,7 +110,9 @@
   (behavior "returns nil all the function have been called the specified number of times"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
                         (atom {:function "fun2" :steps [{:ncalled 1 :times 1}]})]]
-      (is (nil? (s/validate-target-function-counts script-atoms)))))
+      (assertions
+        (s/validate-target-function-counts script-atoms)
+        =fn=> some?)))
 
   (behavior "throws an exception if the second function has not been called at all with :many was specified"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
