@@ -162,7 +162,10 @@
       => '(app/mut)
       (patch '() {[1] (diff-elem 'app/mut nf)})
       =throws=> (#?(:cljs js/Error :clj IndexOutOfBoundsException)
-                          #"(?i)Index.*Out.*Of.*Bounds"))))
+                          #"(?i)Index.*Out.*Of.*Bounds")))
+  (behavior "gh-17, can patch a diff between a vector & a scalar"
+    (assertions
+      (patch [1 2] (diff 3 [1 2])) => {[] 3})))
 
 (specification "[de]compression"
   (assertions "`compress` a sequence of states"
