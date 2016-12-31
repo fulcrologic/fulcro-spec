@@ -18,12 +18,23 @@
         (get-in @script-atom [:steps step])]
     (= ncalled times)))
 
+(defn zip-pad [pad & colls]
+  (let [ncolls (count colls)]
+    (->> colls
+      (map #(concat % ((if (fn? pad) repeatedly repeat) pad)))
+      (apply interleave)
+      (take (* ncolls (apply max (map count colls))))
+      (partition ncolls))))
+
 (defn valid-args? [literals args]
-  (every? (fn [[lit arg]]
-            (case lit
-              ::any true
-              (= lit arg)))
-          (map vector literals args)))
+  (let [reduced-if (fn [p x] (cond-> x p reduced))]
+    (reduce (fn [_ [lit arg]]
+              (reduced-if false?
+                (case lit
+                  ::&_ (reduced true)
+                  ::any true
+                  (= lit arg))))
+      true (zip-pad gensym literals args))))
 
 (defn scripted-stub [script-atom]
   (let [step (atom 0)]
@@ -37,9 +48,7 @@
                     :max-calls max-calls
                     :args args}))
           (let [{:keys [stub literals]} (nth steps curr-step)]
-            (when-not (and (= (count literals)
-                              (count args))
-                        (valid-args? literals args))
+            (when-not (valid-args? literals args)
               (throw (ex-info (str function " was called with wrong arguments")
                        {:args args :expected-literals literals})))
             (try (apply stub args)

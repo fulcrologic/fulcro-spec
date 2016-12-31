@@ -165,6 +165,10 @@
     (assertions
       (my-varargs-sum 1 2) => [1 2]
       (my-varargs-sum 1 2 3) => [1 2 3]))
+  (provided "we can capture arguments variadically"
+    (my-varargs-sum & y) => y
+    (assertions
+      (my-varargs-sum 1 2 3) => [1 2 3]))
 
   (provided "allow stubs to throw exceptions"
     (my-square n) => (throw (ex-info "throw!" {}))

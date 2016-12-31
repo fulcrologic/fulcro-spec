@@ -23,7 +23,10 @@
       number (Integer/parseInt number))))
 
 (defn symbol->any [s]
-  (if (symbol? s) ::stub/any s))
+  (cond
+    (= '& s) ::stub/&_
+    (symbol? s) ::stub/any
+    :else s))
 
 (defn literal->gensym [l]
   (if (symbol? l) l (gensym "arg")))
