@@ -5,7 +5,8 @@
 
 (defn make-step [stub times literals]
   {:stub stub :times times
-   :ncalled 0 :literals literals})
+   :ncalled 0 :literals literals
+   :history []})
 (defn make-script [function steps]
   (atom {:function function
          :steps steps}))
@@ -51,6 +52,7 @@
             (when-not (valid-args? literals args)
               (throw (ex-info (str function " was called with wrong arguments")
                        {:args args :expected-literals literals})))
+            (swap! script-atom update :history conj args)
             (try (apply stub args)
               (catch #?(:clj Exception :cljs js/Object) e (throw e))
               (finally
@@ -62,20 +64,20 @@
   "argument step contains keys:
    - :ncalled, actual number of times called
    - :times, expected number of times called"
-  [errors step]
+  [errors {:as step :keys [ncalled times]}]
   (conj errors
-        (if (or (= (:ncalled step) (:times step))
-                (and (= (:times step) :many)
-                  (> (:ncalled step) 0)))
+        (if (or (= ncalled times)
+                (and (= times :many)
+                  (> ncalled 0)))
           :ok :error)))
 
 (defn validate-target-function-counts [script-atoms]
   (mapv (fn [step]
-          (let [{:keys [function steps]} @step
+          (let [{:keys [function steps history]} @step
                 count-results (reduce validate-step-counts [] steps)
                 errors? (some #(= :error %) count-results)]
             (when errors?
               (throw (ex-info (str function " was not called as many times as specified")
-                       ;;TODO: show steps history!
-                       {::verify-error true})))))
+                       {::verify-error true
+                        :history history})))))
     script-atoms))
