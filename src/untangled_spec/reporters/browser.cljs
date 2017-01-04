@@ -13,6 +13,10 @@
     [untangled-spec.reporters.impl.diff :as diff]
     [pushy.core :as pushy]))
 
+(defn unique-key-fn [ns-str]
+  (let [c (atom 0)]
+    #(str ns-str "_" (swap! c inc))))
+
 (defui ^:once Foldable
   Object
   (initLocalState [this] {:folded? true})
@@ -31,8 +35,7 @@
             (str title)))
         (dom/div #js {:className (when folded? "hidden")}
           value)))))
-(def ui-foldable (om/factory Foldable {:keyfn (let [c (atom 0)]
-                                                #(str "foldable-" (swap! c inc)))}))
+(def ui-foldable (om/factory Foldable {:keyfn (unique-key-fn "foldable")}))
 
 (defui ^:once ResultLine
   Object
@@ -50,8 +53,7 @@
                                    (if folded? (str value) title))
                           :value (if stack stack (if-not folded? (html-edn value)))
                           :classes (if stack "stack")})})))))))
-(def ui-result-line (om/factory ResultLine {:keyfn (let [c (atom 0)]
-                                                     #(str "result-line-" (swap! c inc)))}))
+(def ui-result-line (om/factory ResultLine {:keyfn (unique-key-fn "result-line")}))
 
 (defui ^:once HumanDiffLines
   Object
@@ -70,8 +72,7 @@
           (dom/tr #js {:className "actual"}
             (dom/td nil "got: ")
             (dom/td nil (html-edn got))))))))
-(def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn (let [c (atom 0)]
-                                                              #(swap! c inc))}))
+(def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn (unique-key-fn "human-diff-lines")}))
 
 (defui ^:once HumanDiff
   Object
@@ -93,8 +94,7 @@
         (dom/td nil)
         (dom/tr #js {:className "human-diff"}
           (dom/td nil "DIFFS:"))))))
-(def ui-human-diff (om/factory HumanDiff {:keyfn (let [c (atom 0)]
-                                                   #(str "human-diff-" (swap! c inc)))}))
+(def ui-human-diff (om/factory HumanDiff {:keyfn (unique-key-fn "human-diff")}))
 
 (defui ^:once TestResult
   Object
