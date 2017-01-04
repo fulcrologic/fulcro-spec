@@ -3,7 +3,7 @@
     goog.object
     [goog.dom :as gdom]
     [om.next :as om]
-    [untangled-spec.reporters.browser :refer [TestReport]]
+    [untangled-spec.reporters.browser :as browser]
     [untangled-spec.reporters.impl.base-reporter :as impl]
 
     [bidi.bidi :as bidi]
@@ -140,7 +140,9 @@
   (summary [this stats]
     (impl/summary stats [:top] app-state)))
 
-(defn om-read [{:keys [state]} key _] {:value (get @state key)})
+(defn om-read [{:keys [state ast query]} k _]
+  {:value (case (:type ast) :prop (get @state k)
+            (om/db->tree query (get @state k) @state))})
 (defmulti om-write om/dispatch)
 (defmethod om-write 'set-filter [{:keys [state]} _ {:keys [new-filter]}]
   (swap! state assoc :report/filter new-filter))
@@ -148,9 +150,9 @@
 (def test-parser (om/parser {:read om-read :mutate om-write}))
 
 (def app-routes
-  ["" {"failed" :failed
-       "all"    :all
-       "manual" :manual}])
+  ["" (into {}
+        (map (juxt name identity)
+          (keys browser/filters)))])
 
 (defn set-page! [reconciler]
   (fn [new-filter]
@@ -173,6 +175,6 @@
     (pushy/start! history)
     (map->TestSuite {:app-state      state
                      :reconciler     reconciler
-                     :renderer       TestReport
+                     :renderer       browser/TestReport
                      :dom-target     target
                      :test-item-path (atom [])})))

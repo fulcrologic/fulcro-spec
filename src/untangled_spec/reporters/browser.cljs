@@ -13,7 +13,7 @@
     [untangled-spec.reporters.impl.diff :as diff]
     [pushy.core :as pushy]))
 
-(defui Foldable
+(defui ^:once Foldable
   Object
   (initLocalState [this] {:folded? true})
   (render [this]
@@ -34,13 +34,13 @@
 (def ui-foldable (om/factory Foldable {:keyfn (let [c (atom 0)]
                                                 #(str "foldable-" (swap! c inc)))}))
 
-(defui ResultLine
+(defui ^:once ResultLine
   Object
   (render [this]
-    (let [{:keys [title value stack] type- :type} (om/props this)]
+    (let [{:keys [title value stack type]} (om/props this)]
       (dom/tr nil
         (dom/td #js {:className (str "test-result-title "
-                                  (name type-))}
+                                  (name type))}
           title)
         (dom/td #js {:className "test-result"}
           (dom/code nil
@@ -53,7 +53,7 @@
 (def ui-result-line (om/factory ResultLine {:keyfn (let [c (atom 0)]
                                                      #(str "result-line-" (swap! c inc)))}))
 
-(defui HumanDiffLines
+(defui ^:once HumanDiffLines
   Object
   (render [this]
     (let [d (om/props this)
@@ -73,7 +73,7 @@
 (def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn (let [c (atom 0)]
                                                               #(swap! c inc))}))
 
-(defui HumanDiff
+(defui ^:once HumanDiff
   Object
   (render [this]
     (let [{:keys [diff actual]} (om/props this)
@@ -96,7 +96,7 @@
 (def ui-human-diff (om/factory HumanDiff {:keyfn (let [c (atom 0)]
                                                    #(str "human-diff-" (swap! c inc)))}))
 
-(defui TestResult
+(defui ^:once TestResult
   Object
   (render [this]
     (let [{:keys [where message extra actual expected stack diff]} (om/props this)]
@@ -131,11 +131,13 @@
 
 (declare ui-test-item)
 
-(defui TestItem
+(defui ^:once TestItem
+  static om/IQuery
+  (query [this] [[:report/filter '_]])
   Object
   (render [this]
     (let [test-item-data (om/props this)
-          filter (:report/filter test-item-data) ]
+          filter (:report/filter test-item-data)]
       (dom/li #js {:className "test-item "}
         (dom/div #js {:className (impl/filter-class test-item-data)}
           (dom/span #js {:className (impl/itemclass (:status test-item-data))}
@@ -144,59 +146,67 @@
             (mapv ui-test-result
               (:test-results test-item-data)))
           (dom/ul #js {:className "test-list"}
-            (mapv (comp ui-test-item #(assoc % :report/filter filter))
+            (mapv ui-test-item
               (:test-items test-item-data))))))))
 (def ui-test-item (om/factory TestItem {:keyfn :id}))
 
-(defui TestNamespace
+(defui ^:once TestNamespace
   Object
   (initLocalState [this] {:folded? false})
   (render
     [this]
     (let [tests-by-namespace (om/props this)
-          filter (:report/filter tests-by-namespace)
           {:keys [folded?]} (om/get-state this)]
       (dom/li #js {:className "test-item"}
         (dom/div #js {:className "test-namespace"}
           (dom/a #js {:href "javascript:void(0)"
                       :style #js {:textDecoration "none"} ;; TODO: refactor to css
-                      :onClick   #(om/update-state! this update :folded? not)}
+                      :onClick #(om/update-state! this update :folded? not)}
             (dom/h2 #js {:className (impl/itemclass (:status tests-by-namespace))}
               (if folded? \u25BA \u25BC)
               " Testing " (:name tests-by-namespace)))
           (dom/ul #js {:className (if folded? "hidden" "test-list")}
-            (mapv (comp ui-test-item #(assoc % :report/filter filter))
+            (mapv ui-test-item
               (:test-items tests-by-namespace))))))))
 (def ui-test-namespace (om/factory TestNamespace {:keyfn :name}))
 
-(defui FilterSelector
+(defui ^:once FilterSelector
   Object
   (render [this]
     (let [{:keys [current-filter this-filter]} (om/props this)]
-      (dom/a #js {:href (str "#" this-filter)
-                  :className (if (= (name current-filter) this-filter)
+      (dom/a #js {:href (str "#" (name this-filter))
+                  :className (if (= current-filter this-filter)
                                "selected" "")}
-        (str this-filter)))))
+        (name this-filter)))))
 (def ui-filter-selector (om/factory FilterSelector {:keyfn :this-filter}))
 
-(defui Filters
+(def filters
+  {:all (map identity)
+   :passing (filter (comp #{:passed} :status))
+   :manual (filter (comp #{:manual} :status))
+   :failed (remove (comp not #{:failed :error} :status))
+   :pending (filter (comp #{:pending} :status))})
+
+(defui ^:once Filters
+  static om/IQuery
+  (query [this] [[:report/filter '_]])
   Object
   (render [this]
-    (let [{:current-filter :report/filter} (om/props this)]
+    (let [{current-filter :report/filter} (om/props this)]
       (dom/div #js {:name "filters" :className "filter-controls"}
-        (dom/label #js {:htmlFor "filters"} "Filter: ")
-        (mapv (comp #(ui-filter-selector {:current-filter current-filter
-                                          :this-filter %})
-                name)
-          [:all :manual :failed])))))
-(def ui-filters (om/factory Filters {:keyfn :current-filter}))
+        (dom/label #js {:htmlFor "filters"} (str "Filter: "))
+        (mapv #(ui-filter-selector
+                 {:current-filter current-filter
+                  :this-filter %})
+          (keys filters))))))
+(def ui-filters (om/factory Filters {}))
 
-(defui TestCount
+(defui ^:once TestCount
   Object
   (render [this]
     (let [{:keys [passed failed error namespaces]} (om/props this)
           total (+ passed failed error)]
-      (if (< 0 (+ failed error))
+      (if (pos? (+ failed error))
         (impl/change-favicon-to-color "#d00")
         (impl/change-favicon-to-color "#0d0"))
       (dom/div #js {:className "test-count"}
@@ -208,20 +218,20 @@
             error  " errors"))))))
 (def ui-test-count (om/factory TestCount))
 
-(defui TestReport
+(defui ^:once TestReport
   static om/IQuery
-  (query [this] [:top :report/filter])
+  (query [this] [:top :report/filter {:filters (om/get-query Filters)}])
   Object
   (render [this]
-    (let [props (om/props this)
-          test-report-data (-> props :top)
-          current-filter (-> props :report/filter)]
+    (let [{filters-data :filters
+           test-report-data :top
+           current-filter :report/filter} (om/props this)]
       (dom/section #js {:className "test-report"}
-        (ui-filters {:report/filter current-filter})
+        (ui-filters filters-data)
         (dom/ul #js {:className "test-list"}
-          (->> (:namespaces test-report-data)
-            (remove #(when (= :failed current-filter)
-                       (not (#{:failed :error} (:status %)))))
-            (mapv (comp ui-test-namespace
-                    #(assoc % :report/filter current-filter)))))
+          (sequence
+            (comp
+              (filters current-filter)
+              (map ui-test-namespace))
+            (:namespaces test-report-data)))
         (ui-test-count test-report-data)))))
