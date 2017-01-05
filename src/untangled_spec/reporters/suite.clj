@@ -12,40 +12,40 @@
   `(cljs.test/do-report ~(ae/assert-expr 'eq msg form)))
 
 (defn define-test-methods [name test-report-keyword]
-  `((cljs.core/defmethod cljs.test/report ~(keyword name) [~'m])
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :pass] [~'m]
+  `((cljs.core/defmethod cljs.test/report ~(keyword name) [m#])
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :pass] [m#]
       (cljs.test/inc-report-counter! :pass)
       (untangled-spec.reporters.impl.suite/pass ~name))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :error] [~'m]
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :error] [m#]
       (cljs.test/inc-report-counter! :error)
-      (let [~'detail (merge ~'m {:where (cljs.test/testing-vars-str ~'m)})]
+      (let [~'detail (merge m# {:where (cljs.test/testing-vars-str m#)})]
         (untangled-spec.reporters.impl.suite/fail ~name ~'detail)))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :fail] [~'m]
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :fail] [m#]
       (cljs.test/inc-report-counter! :fail)
-      (let [~'detail (merge ~'m {:where (cljs.test/testing-vars-str ~'m)})]
+      (let [~'detail (merge m# {:where (cljs.test/testing-vars-str m#)})]
         (untangled-spec.reporters.impl.suite/fail ~name ~'detail)))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-test-ns] [~'m]
-      (untangled-spec.reporters.impl.suite/begin-namespace ~name (cljs.core/name (:ns ~'m))))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-test-ns] [~'m]
-      (untangled-spec.reporters.impl.suite/end-namespace ~name (cljs.core/name (:ns ~'m))))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-specification] [~'m]
-      (untangled-spec.reporters.impl.suite/begin-specification ~name (:string ~'m)))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-specification] [~'m]
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-test-ns] [m#]
+      (untangled-spec.reporters.impl.suite/begin-namespace ~name (cljs.core/name (:ns m#))))
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-test-ns] [m#]
+      (untangled-spec.reporters.impl.suite/end-namespace ~name (cljs.core/name (:ns m#))))
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-specification] [m#]
+      (untangled-spec.reporters.impl.suite/begin-specification ~name (:string m#)))
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-specification] [m#]
       (untangled-spec.reporters.impl.suite/end-specification ~name))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-manual] [~'m]
-      (untangled-spec.reporters.impl.suite/begin-manual ~name (:string ~'m)))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-manual] [~'m]
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-manual] [m#]
+      (untangled-spec.reporters.impl.suite/begin-manual ~name (:string m#)))
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-manual] [m#]
       (untangled-spec.reporters.impl.suite/end-manual ~name))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-behavior] [~'m]
-      (untangled-spec.reporters.impl.suite/begin-behavior ~name (:string ~'m)))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-behavior] [~'m]
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-behavior] [m#]
+      (untangled-spec.reporters.impl.suite/begin-behavior ~name (:string m#)))
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-behavior] [m#]
       (untangled-spec.reporters.impl.suite/end-behavior ~name))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-provided] [~'m]
-      (untangled-spec.reporters.impl.suite/begin-provided ~name (:string ~'m)))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-provided] [~'m]
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-provided] [m#]
+      (untangled-spec.reporters.impl.suite/begin-provided ~name (:string m#)))
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-provided] [m#]
       (untangled-spec.reporters.impl.suite/end-provided ~name))
-    (cljs.core/defmethod cljs.test/report [~test-report-keyword :summary] [~'m]
-      (let [~'stats {:passed (:pass ~'m) :failed (:fail ~'m) :error (:error ~'m)}]
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :summary] [m#]
+      (let [~'stats {:passed (:pass m#) :failed (:fail m#) :error (:error m#)}]
         (untangled-spec.reporters.impl.suite/summary ~name ~'stats)))))
 
 (defmacro deftest-suite [name & test-namespaces]
