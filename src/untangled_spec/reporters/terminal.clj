@@ -1,13 +1,15 @@
 (ns untangled-spec.reporters.terminal
-  (:require [clojure.test :as t]
-            [clojure.stacktrace :as stack]
-            [untangled-spec.reporters.impl.terminal :as impl]
-            [untangled-spec.reporters.impl.diff :as diff]
-            [colorize.core :as c]
-            [clojure.string :as s]
-            [clojure.walk :as walk]
-            [io.aviso.exception :as pretty]
-            [clojure.pprint :refer [pprint]]))
+  (:require
+    [clojure.edn :as edn]
+    [clojure.pprint :refer [pprint]]
+    [clojure.stacktrace :as stack]
+    [clojure.string :as s]
+    [clojure.test :as t]
+    [clojure.walk :as walk]
+    [colorize.core :as c]
+    [io.aviso.exception :as pretty]
+    [untangled-spec.reporters.impl.diff :as diff]
+    [untangled-spec.reporters.impl.terminal :as impl]))
 
 (def cfg
   (atom
@@ -25,11 +27,11 @@
        :diff-hl?        (#{"hl" "all"}  DIFF_MODE)
        :diff-list? (not (#{"hl"}        DIFF_MODE))
        :diff?      (not (#{"0" "false"} DIFF))
-       :frame-limit (read-string (or FRAME_LIMIT "10"))
-       :num-diffs  (read-string (or NUM_DIFFS "1"))
+       :frame-limit (edn/read-string (or FRAME_LIMIT "10"))
+       :num-diffs  (edn/read-string (or NUM_DIFFS "1"))
        :quick-fail? (not (#{"0" "false"} QUICK_FAIL))
-       :*print-level* (read-string (or PRINT_LEVEL "3"))
-       :*print-length* (read-string (or PRINT_LENGTH "2"))})))
+       :*print-level* (edn/read-string (or PRINT_LEVEL "3"))
+       :*print-length* (edn/read-string (or PRINT_LENGTH "2"))})))
 (defn env [k] (get @cfg k))
 (defn merge-cfg!
   "For use in the test-refresh repl to change configuration on the fly.
@@ -104,19 +106,29 @@
 (defn ?ellipses [s]
   (binding [*print-level* (env :*print-level*)
             *print-length* (env :*print-length*)]
-    (apply str (drop-last (with-out-str (pprint s))))))
+    (try (apply str (drop-last (with-out-str (pprint (edn/read-string s)))))
+      (catch Error _ s))))
+
+(defmacro try-> [& forms]
+  )
+
+(defn parse-message [m]
+  (let [?fix #(case %
+                "" "\"\""
+                nil "..nil.."
+                %)]
+    (try (->> (edn/read-string (str "[" m "]"))
+           (sequence (comp (map str) (map ?fix)))
+           (zipmap [:actual :arrow :expected]))
+      (catch Error _ {:message m}))))
 
 (defn print-message [m print-fn]
   (print-fn (color-str :normal "ASSERTION:")
-            (let [?fix #(case %
-                          "" "\"\""
-                          nil "..nil.."
-                          %)
-                  arrow (re-find #" =.*?> " m)
-                  [act exp] (s/split m #" =(.*?)> ")]
-              (str (-> act ?fix read-string ?ellipses)
-                   arrow
-                   (-> exp ?fix read-string ?ellipses)))))
+    (let [{:keys [arrow actual expected message]} (parse-message m)]
+      (or message
+          (str (-> actual ?ellipses)
+            " " arrow
+            " " (-> expected ?ellipses))))))
 
 (defn print-extra [e print-fn]
   (print-fn (color-str :normal "    extra:") e))

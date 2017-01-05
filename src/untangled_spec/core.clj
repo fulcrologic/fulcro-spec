@@ -101,4 +101,4 @@
 (defmacro assertions [& forms]
   (let [blocks (ae/forms->blocks forms)
         asserts (map (partial ae/block->asserts (cljs-env? &env)) blocks)]
-    `(do ~@asserts)))
+    `(do ~@asserts true)))
