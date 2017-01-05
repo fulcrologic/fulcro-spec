@@ -165,7 +165,11 @@
                           #"(?i)Index.*Out.*Of.*Bounds")))
   (behavior "gh-17, can patch a diff between a vector & a scalar"
     (assertions
-      (patch [1 2] (diff 3 [1 2])) => {[] 3})))
+      (patch [1 2] (diff 3 [1 2])) => {[] 3}))
+  (behavior "gh-6, can patch a diff between 2 Cons or 2 IndexedSeq"
+    (assertions
+      (patch `[(1 2)] (diff `[(3 4)] `[(1 2)])) => `[(3 4)]
+      (patch [1 2] (diff ((fn [& args] args) 3 4) [1 2])) => [3 4])))
 
 (specification "[de]compression"
   (assertions "`compress` a sequence of states"
