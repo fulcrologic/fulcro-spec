@@ -46,16 +46,20 @@
 
 (defn color-str [status & strings]
   (let [color? (env :color?)
-        status->color (cond-> {:passed c/green
-                               :failed c/red
-                               :error  c/red
-                               :diff/impl (fn [[got exp]]
-                                            ((comp c/bold c/inverse)
-                                              (str exp " != " got)))}
-                        color? (merge {:normal (comp c/bold c/yellow)
-                                       :diff (comp c/bold c/cyan)
-                                       :where (comp c/bold c/white)}))
-        color-fn (or (status->color status) c/reset)]
+        status->color {:normal (comp c/bold c/yellow)
+                       :diff (comp c/bold c/cyan)
+                       :where (comp c/bold c/white)}
+        color-fn (or (and color? (status->color status))
+                     (case status
+                       :diff/impl (fn [[got exp]]
+                                    ((comp c/bold c/inverse)
+                                     (str exp " != " got)))
+                       nil)
+                     (condp (fn [p x] (pos? (p x 0))) status
+                       :passed c/green
+                       :failed c/red
+                       :error  c/red
+                       c/reset))]
     (apply color-fn strings)))
 
 (defn pad [pad n] (apply str (repeat n pad)))
@@ -164,32 +168,36 @@
   (when (env :quick-fail?)
     (throw (ex-info "" {::stop? true}))))
 
-(defn when-fail-only-keep-failed [coll]
-  (remove #(when (env :fail-only?)
-             (#{:passed :pending} (:status %))) coll))
+(def when-fail-only-keep-failed
+  (filter #(if-not (env :fail-only?) true
+             (or (pos? (:failed (:status %) 0))
+                 (pos? (:error (:status %) 0))))))
 
 (defn print-test-item [test-item print-level]
   (t/with-test-out
     (println (space-level print-level)
-             (color-str (:status test-item)
-                        (:name test-item)))
-    (->> (:test-results test-item)
-         (remove #(= (:status %) :passed))
-         (mapv #(print-test-result % (->> print-level inc space-level
-                                          (partial println))
-                                   (inc print-level))))
-    (->> (:test-items test-item)
-         (when-fail-only-keep-failed)
-         (mapv #(print-test-item % (inc print-level))))))
+      (color-str (:status test-item)
+        (:name test-item)))
+    (into []
+      (comp (filter (comp #{:failed :error} :status))
+        (map #(print-test-result % (->> print-level inc space-level
+                                     (partial println))
+                (inc print-level))))
+      (:test-results test-item))
+    (into []
+      (comp when-fail-only-keep-failed
+        (map #(print-test-item % (inc print-level))))
+      (:test-items test-item))))
 
 (defn print-namespace [make-tests-by-namespace]
   (t/with-test-out
     (println)
     (println (color-str (:status make-tests-by-namespace)
-                        "Testing " (:name make-tests-by-namespace)))
-    (->> (:test-items make-tests-by-namespace)
-         (when-fail-only-keep-failed)
-         (mapv #(print-test-item % 1)))))
+               "Testing " (:name make-tests-by-namespace)))
+    (into []
+      (comp when-fail-only-keep-failed
+        (map #(print-test-item % 1)))
+      (:test-items make-tests-by-namespace))))
 
 (defn print-report-data
   "Prints the current report data from the report data state and applies colors based on test results"
@@ -197,16 +205,16 @@
   (t/with-test-out
     (let [{:keys [namespaces tested passed failed error]} @impl/*test-state*]
       (try (->> namespaces
-                (when-fail-only-keep-failed)
-                (sort-by :name)
-                (mapv print-namespace))
-           (catch Exception e
-             (when-not (->> e ex-data ::stop?)
-               (print-throwable e))))
+             (into [] when-fail-only-keep-failed)
+             (sort-by :name)
+             (mapv print-namespace))
+        (catch Exception e
+          (when-not (->> e ex-data ::stop?)
+            (print-throwable e))))
       (println "\nRan" tested "tests containing"
-               (+ passed failed error) "assertions.")
+        (+ passed failed error) "assertions.")
       (println failed "failures,"
-               error "errors."))))
+        error "errors."))))
 
 (defmulti ^:dynamic untangled-report :type)
 

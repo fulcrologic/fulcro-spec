@@ -18,7 +18,7 @@
   [name]
   {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
    :name         name
-   :status       :pending
+   :status       {}
    :test-items   []
    :test-results []})
 
@@ -46,17 +46,15 @@
   {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
    :name       name
    :test-items []
-   :status     :pending})
+   :status     {}})
 
 (defn set-test-result [test-state path status & [f]]
   (loop [current-test-result-path path]
     (if (> (count current-test-result-path) 1)
-      (let [target (get-in @test-state current-test-result-path)
-            current-status (:status target)]
-        (if-not (#{:manual :error :failed} current-status)
-          (swap! test-state assoc-in
-            (concat current-test-result-path [:status])
-            status))
+      (let [target (get-in @test-state current-test-result-path)]
+        (swap! test-state update-in
+          (concat current-test-result-path [:status status])
+          (fnil inc 0))
         (recur (drop-last 2 current-test-result-path))))))
 
 (defn begin [n test-state path]
@@ -72,7 +70,7 @@
                                                (when (= (:name val) nsname)
                                                  idx))
                                              namespaces))]
-    (if namespace-index namespace-index
+    (or namespace-index
       (count namespaces))))
 
 (defn internal [failure-type]

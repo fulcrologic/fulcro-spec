@@ -15,24 +15,23 @@
   (let [c (atom 0)]
     #(str ns-str "_" (swap! c inc))))
 
+(defn has-status? [p]
+  (fn has-status?* [x]
+    (or (p (:status x))
+        (and
+          (seq (:test-items x))
+          (seq (filter has-status?* (:test-items x)))))))
+
 (def filters
   {:all (map identity)
-   :failing (filter (comp #{:failed :error} :status))
-   :manual  (comp (filter (fn has-status? [x]
-                            (or (-> x :status #{:manual})
-                                (and
-                                  (seq (:test-items x))
-                                  (seq (filter #(has-status? % true) (:test-items x)))))))
+   :failing (filter (comp #(some pos? %) (juxt :failed :error) :status))
+   :manual  (comp (filter (has-status? #(-> % :manual pos?)))
               (map #(dissoc % :test-results))
-              (map #(assoc % :status :manual)))
-   :passing (filter (comp #{:passed} :status))
-   :pending (comp (filter (fn has-status? [x]
-                            (or (-> x :status #{:pending})
-                                (and
-                                  (seq (:test-items x))
-                                  (seq (filter #(has-status? % true) (:test-items x)))))))
+              (map #(update % :status select-keys [:manual])))
+   :passing (filter (comp pos? :passed :status))
+   :pending (comp (filter (has-status? #(->> % vals (apply +) zero?)))
               (map #(dissoc % :test-results))
-              (map #(assoc % :status :pending)))})
+              (map #(update % :status select-keys [:pending])))})
 
 (defui ^:once Foldable
   Object
@@ -153,7 +152,7 @@
   (render [this]
     (let [{:keys [current-filter] :as test-item-data} (om/props this)]
       (dom/li #js {:className "test-item "}
-        (dom/div #js {:className (impl/filter-class current-filter test-item-data)}
+        (dom/div nil
           (dom/span #js {:className (impl/itemclass (:status test-item-data))}
             (:name test-item-data))
           (dom/ul #js {:className "test-list"}
