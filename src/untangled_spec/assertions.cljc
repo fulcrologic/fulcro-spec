@@ -1,4 +1,18 @@
-(ns untangled-spec.assertions)
+(ns untangled-spec.assertions
+  (:require
+    [#?(:clj clojure.spec :cljs cljs.spec) :as s]
+    [untangled-spec.spec :as us]))
+
+(s/def ::arrow (comp #{"=>" "=fn=>" "=throws=>"} str))
+(s/def ::behavior string?)
+(s/def ::triple (s/cat
+                  :actual   ::us/any
+                  :arrow    ::arrow
+                  :expected ::us/any))
+(s/def ::block (s/cat
+                 :behavior (s/? ::behavior)
+                 :triples  (s/+ ::triple)))
+(s/def ::assertions (s/+ ::block))
 
 (defn fn-assert-expr [msg [f arg :as form]]
   `(let [arg# ~arg
@@ -55,24 +69,23 @@
     :else {:type :fail :message msg :actual disp-key
            :expected #{"exec" "eq" "throws?"}}))
 
-(defn triple->assertion [cljs? [left arrow expected]]
+(defn triple->assertion [cljs? {:keys [actual arrow expected]}]
   (let [prefix (if cljs? "cljs.test" "clojure.test")
         is (symbol prefix "is")
-        msg (str left " " arrow " " expected)]
+        msg (str actual " " arrow " " expected)]
     (case arrow
       =>
-      (let [actual left]
-        `(~is (~'= ~expected ~actual)
-              ~msg))
+      `(~is (~'= ~expected ~actual)
+            ~msg)
 
       =fn=>
       (let [checker expected
-            arg left]
+            arg     actual]
         `(~is (~'exec ~checker ~arg)
               ~msg))
 
       =throws=>
-      (let [should-throw left
+      (let [should-throw actual
             criteria expected]
         `(~is (~'throws? ~cljs? ~should-throw ~@criteria)
               ~msg))
@@ -102,13 +115,13 @@
               new-block))))
       blocks)))
 
-(defn block->asserts [cljs? [?str & triples]]
+(defn block->asserts [cljs? {:keys [behavior triples]}]
   (let [prefix (if cljs? "cljs.test" "clojure.test")
         do-report (symbol prefix "do-report")
-        asserts (map (partial triple->assertion cljs?) (if (string? ?str) triples (cons ?str triples)))]
-    (if (string? ?str)
+        asserts (map (partial triple->assertion cljs?) triples)]
+    (if behavior
       `(do
-         (~do-report {:type :begin-behavior :string ~?str})
+         (~do-report {:type :begin-behavior :string ~behavior})
          ~@asserts
-         (~do-report {:type :end-behavior :string ~?str}))
+         (~do-report {:type :end-behavior :string ~behavior}))
       `(do ~@asserts))))

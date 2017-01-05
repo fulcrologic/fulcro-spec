@@ -35,13 +35,14 @@
         (rt/print-test-result {:status :error :actual e} (constantly nil) 0)
         =throws=> (clojure.lang.ExceptionInfo #"" stop?)))))
 
-(let [big-thing (zipmap (range 5)
-                  (repeat (zipmap (range 5) (range))))]
-  (specification "pretty-str"
-    (behavior "put newlines in between lines"
-      (assertions
-        (rt/pretty-str big-thing 1) => (str "{0 {0 0, 1 1, 2 2, 3 3, 4 4},\n    "
-                                         "1 {0 0, 1 1, 2 2, 3 3, 4 4},\n    "
-                                         "2 {0 0, 1 1, 2 2, 3 3, 4 4},\n    "
-                                         "3 {0 0, 1 1, 2 2, 3 3, 4 4},\n    "
-                                         "4 {0 0, 1 1, 2 2, 3 3, 4 4}}")))))
+(def big-thing (zipmap (range 5)
+                 (repeat (zipmap (range 5) (range)))))
+
+(specification "pretty-str"
+  (behavior "put newlines in between lines"
+    (assertions
+      (rt/pretty-str big-thing 1) => (str "{0 {0 0, 1 1, 2 2, 3 3, 4 4},\n"
+                                       "    1 {0 0, 1 1, 2 2, 3 3, 4 4},\n"
+                                       "    2 {0 0, 1 1, 2 2, 3 3, 4 4},\n"
+                                       "    3 {0 0, 1 1, 2 2, 3 3, 4 4},\n"
+                                       "    4 {0 0, 1 1, 2 2, 3 3, 4 4}}"))))
