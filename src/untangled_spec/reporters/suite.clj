@@ -26,6 +26,8 @@
         (untangled-spec.reporters.impl.suite/fail ~name ~'detail)))
     (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-test-ns] [~'m]
       (untangled-spec.reporters.impl.suite/begin-namespace ~name (cljs.core/name (:ns ~'m))))
+    (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-test-ns] [~'m]
+      (untangled-spec.reporters.impl.suite/end-namespace ~name (cljs.core/name (:ns ~'m))))
     (cljs.core/defmethod cljs.test/report [~test-report-keyword :begin-specification] [~'m]
       (untangled-spec.reporters.impl.suite/begin-specification ~name (:string ~'m)))
     (cljs.core/defmethod cljs.test/report [~test-report-keyword :end-specification] [~'m]

@@ -54,15 +54,17 @@
       (let [target (get-in @test-state current-test-result-path)
             current-status (:status target)]
         (if-not (#{:manual :error :failed} current-status)
-          (swap! test-state #(assoc-in % (concat current-test-result-path [:status])
-                                        status)))
+          (swap! test-state assoc-in
+            (concat current-test-result-path [:status])
+            status))
         (recur (drop-last 2 current-test-result-path))))))
 
 (defn begin [n test-state path]
   (let [test-item (make-testitem n)
         test-items-count (count (get-in @test-state (concat path [:test-items])))]
-    (swap! test-state #(assoc-in % (concat path [:test-items test-items-count])
-                                 test-item))
+    (swap! test-state assoc-in
+      (concat path [:test-items test-items-count])
+      test-item)
     [test-item test-items-count]))
 
 (defn get-namespace-location [namespaces nsname]
@@ -79,7 +81,7 @@
           test-result (make-test-result failure-type detail)
           test-result-path (concat path [:test-results (count test-results)])]
       (set-test-result test-state path failure-type)
-      (swap! test-state #(assoc-in % test-result-path test-result))
+      (swap! test-state assoc-in test-result-path test-result)
       test-result)))
 
 (def error (internal :error))

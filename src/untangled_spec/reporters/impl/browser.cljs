@@ -18,7 +18,7 @@
   (let [icon (.getElementById js/document "favicon")]
     (set! (.-href icon) (color-favicon-data-url color))))
 
-(defn filter-class [{:keys [report/filter status]}]
+(defn filter-class [filter {:keys [status]}]
   (when (or (and (#{:failed} filter)
                  (not (#{:error :failed} status)))
             (and (=    :manual filter)

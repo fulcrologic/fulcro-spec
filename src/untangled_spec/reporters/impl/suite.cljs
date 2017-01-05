@@ -27,6 +27,7 @@
   (begin-specification [this spec] "Tests are reporting the start of a specification")
   (end-specification [this] "Tests are reporting the end of a specification")
   (begin-namespace [this name] "Tests are reporting the start of a namespace")
+  (end-namespace [this name] "Tests are reporting the end of a namespace")
   (push-test-item-path [this test-item index] "Push a new test items onto the test item path")
   (pop-test-item-path [this] "Pops the last test item off of the test item path"))
 
@@ -81,8 +82,8 @@
 
   (set-test-result [this status]
     (impl/set-test-result app-state
-                          (translate-item-path app-state @test-item-path)
-                          status))
+      (translate-item-path app-state @test-item-path)
+      status))
 
   (push-test-item-path [this test-item index]
     (swap! test-item-path conj :test-items :id (:id test-item) index))
@@ -96,6 +97,8 @@
       (reset! test-item-path [:namespaces :name name name-space-location])
       (swap! app-state #(assoc-in % [:top :namespaces name-space-location]
                                   (impl/make-tests-by-namespace name)))))
+
+  (end-namespace [this name] this)
 
   (begin-specification [this x]
     (let [path (translate-item-path app-state @test-item-path)

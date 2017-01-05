@@ -1,7 +1,5 @@
 (ns untangled-spec.reporters.browser
-  (:import [goog Delay])
   (:require
-    goog.object
     [om.dom :as dom]
     [goog.dom :as gdom]
     [om.next :as om :refer-macros [defui]]
@@ -16,6 +14,25 @@
 (defn unique-key-fn [ns-str]
   (let [c (atom 0)]
     #(str ns-str "_" (swap! c inc))))
+
+(def filters
+  {:all (map identity)
+   :failing (filter (comp #{:failed :error} :status))
+   :manual  (comp (filter (fn has-status? [x]
+                            (or (-> x :status #{:manual})
+                                (and
+                                  (seq (:test-items x))
+                                  (seq (filter #(has-status? % true) (:test-items x)))))))
+              (map #(dissoc % :test-results))
+              (map #(assoc % :status :manual)))
+   :passing (filter (comp #{:passed} :status))
+   :pending (comp (filter (fn has-status? [x]
+                            (or (-> x :status #{:pending})
+                                (and
+                                  (seq (:test-items x))
+                                  (seq (filter #(has-status? % true) (:test-items x)))))))
+              (map #(dissoc % :test-results))
+              (map #(assoc % :status :pending)))})
 
 (defui ^:once Foldable
   Object
@@ -132,21 +149,21 @@
 (declare ui-test-item)
 
 (defui ^:once TestItem
-  static om/IQuery
-  (query [this] [[:report/filter '_]])
   Object
   (render [this]
-    (let [test-item-data (om/props this)
-          filter (:report/filter test-item-data)]
+    (let [{:keys [current-filter] :as test-item-data} (om/props this)]
       (dom/li #js {:className "test-item "}
-        (dom/div #js {:className (impl/filter-class test-item-data)}
+        (dom/div #js {:className (impl/filter-class current-filter test-item-data)}
           (dom/span #js {:className (impl/itemclass (:status test-item-data))}
             (:name test-item-data))
           (dom/ul #js {:className "test-list"}
             (mapv ui-test-result
               (:test-results test-item-data)))
           (dom/ul #js {:className "test-list"}
-            (mapv ui-test-item
+            (sequence
+              (comp (filters current-filter)
+                (map #(assoc % :current-filter current-filter))
+                (map ui-test-item))
               (:test-items test-item-data))))))))
 (def ui-test-item (om/factory TestItem {:keyfn :id}))
 
@@ -155,7 +172,7 @@
   (initLocalState [this] {:folded? false})
   (render
     [this]
-    (let [tests-by-namespace (om/props this)
+    (let [{:keys [current-filter] :as tests-by-namespace} (om/props this)
           {:keys [folded?]} (om/get-state this)]
       (dom/li #js {:className "test-item"}
         (dom/div #js {:className "test-namespace"}
@@ -166,38 +183,33 @@
               (if folded? \u25BA \u25BC)
               " Testing " (:name tests-by-namespace)))
           (dom/ul #js {:className (if folded? "hidden" "test-list")}
-            (mapv ui-test-item
+            (sequence (comp (filters current-filter)
+                        (map #(assoc % :current-filter current-filter))
+                        (map ui-test-item))
               (:test-items tests-by-namespace))))))))
 (def ui-test-namespace (om/factory TestNamespace {:keyfn :name}))
 
 (defui ^:once FilterSelector
   Object
   (render [this]
-    (let [{:keys [current-filter this-filter]} (om/props this)]
+    (let [{:keys [this-filter current-filter]} (om/props this)]
       (dom/a #js {:href (str "#" (name this-filter))
-                  :className (if (= current-filter this-filter)
+                  :className (if (= this-filter current-filter)
                                "selected" "")}
         (name this-filter)))))
-(def ui-filter-selector (om/factory FilterSelector {:keyfn :this-filter}))
-
-(def filters
-  {:all (map identity)
-   :passing (filter (comp #{:passed} :status))
-   :manual (filter (comp #{:manual} :status))
-   :failed (remove (comp not #{:failed :error} :status))
-   :pending (filter (comp #{:pending} :status))})
+(def ui-filter-selector (om/factory FilterSelector {:keyfn identity}))
 
 (defui ^:once Filters
-  static om/IQuery
-  (query [this] [[:report/filter '_]])
   Object
   (render [this]
-    (let [{current-filter :report/filter} (om/props this)]
+    (let [{:keys [current-filter]} (om/props this)]
       (dom/div #js {:name "filters" :className "filter-controls"}
-        (dom/label #js {:htmlFor "filters"} (str "Filter: "))
-        (mapv #(ui-filter-selector
-                 {:current-filter current-filter
-                  :this-filter %})
+        (dom/label #js {:htmlFor "filters"} "Filter: ")
+        (sequence
+          (comp (map #(hash-map
+                        :this-filter %
+                        :current-filter current-filter))
+            (map ui-filter-selector))
           (keys filters))))))
 (def ui-filters (om/factory Filters {}))
 
@@ -216,22 +228,21 @@
             passed " passed "
             failed " failed "
             error  " errors"))))))
-(def ui-test-count (om/factory TestCount))
+(def ui-test-count (om/factory TestCount {:keyfn identity}))
 
 (defui ^:once TestReport
   static om/IQuery
-  (query [this] [:top :report/filter {:filters (om/get-query Filters)}])
+  (query [this] [:top :report/filter])
   Object
   (render [this]
-    (let [{filters-data :filters
-           test-report-data :top
-           current-filter :report/filter} (om/props this)]
+    (let [{test-report-data :top current-filter :report/filter} (om/props this)]
       (dom/section #js {:className "test-report"}
-        (ui-filters filters-data)
+        (ui-filters {:current-filter current-filter})
         (dom/ul #js {:className "test-list"}
           (sequence
             (comp
               (filters current-filter)
+              (map #(assoc % :current-filter current-filter))
               (map ui-test-namespace))
             (:namespaces test-report-data)))
         (ui-test-count test-report-data)))))
