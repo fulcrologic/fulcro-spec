@@ -3,6 +3,12 @@
                         [cljs.stacktrace :refer [parse-stacktrace]]))
     [untangled-spec.reporters.impl.diff :refer [diff]]))
 
+(defn fix-str [s]
+  (case s
+    "" "\"\""
+    nil "nil"
+    s))
+
 (defn make-testreport
   ([] (make-testreport []))
   ([initial-items]

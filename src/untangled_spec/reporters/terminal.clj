@@ -9,7 +9,8 @@
     [colorize.core :as c]
     [io.aviso.exception :as pretty]
     [untangled-spec.reporters.impl.diff :as diff]
-    [untangled-spec.reporters.impl.terminal :as impl]))
+    [untangled-spec.reporters.impl.terminal :as impl]
+    [untangled-spec.reporters.impl.base-reporter :as base]))
 
 (def cfg
   (atom
@@ -113,18 +114,11 @@
     (try (apply str (drop-last (with-out-str (pprint (edn/read-string s)))))
       (catch Error _ s))))
 
-(defmacro try-> [& forms]
-  )
-
 (defn parse-message [m]
-  (let [?fix #(case %
-                "" "\"\""
-                nil "..nil.."
-                %)]
-    (try (->> (edn/read-string (str "[" m "]"))
-           (sequence (comp (map str) (map ?fix)))
-           (zipmap [:actual :arrow :expected]))
-      (catch Error _ {:message m}))))
+  (try (->> (edn/read-string (str "[" m "]"))
+         (sequence (comp (map str) (map base/fix-str)))
+         (zipmap [:actual :arrow :expected]))
+    (catch Error _ {:message m})))
 
 (defn print-message [m print-fn]
   (print-fn (color-str :normal "ASSERTION:")

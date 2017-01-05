@@ -8,6 +8,7 @@
 
     [untangled-spec.dom.edn-renderer :refer [html-edn]]
     [untangled-spec.reporters.impl.browser :as impl]
+    [untangled-spec.reporters.impl.base-reporter :as base]
     [untangled-spec.reporters.impl.diff :as diff]
     [pushy.core :as pushy]))
 
@@ -129,11 +130,11 @@
                                 :value message}))
              (ui-result-line {:type :normal
                               :title "Actual: "
-                              :value actual
+                              :value (base/fix-str actual)
                               :stack stack})
              (ui-result-line {:type :normal
                               :title "Expected: "
-                              :value (or expected "")})
+                              :value (base/fix-str expected)})
              (when extra
                (ui-result-line {:type :normal
                                 :title "Message: "
