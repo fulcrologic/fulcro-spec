@@ -3,8 +3,8 @@
   :url ""
   :license {:name "MIT Public License"
             :url  "https://opensource.org/licenses/MIT"}
-  :dependencies [[org.clojure/clojure "1.9.0-alpha13" :scope "provided"]
-                 [org.clojure/clojurescript "1.9.229" :scope "provided"]
+  :dependencies [[org.clojure/clojure "1.9.0-alpha14" :scope "provided"]
+                 [org.clojure/clojurescript "1.9.293" :scope "provided"]
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cljsjs/react-with-addons "15.0.1-1" :scope "provided"]
@@ -26,6 +26,10 @@
   :test-paths ["test"]
   :resource-paths ["src" "resources"]
 
+  :test-selectors {:default (complement :integration)
+                   :integration :integration
+                   :all (constantly true)
+                   :focused :focused}
   :test-refresh {:report untangled-spec.reporters.terminal/untangled-report
                  :changes-only true
                  :with-repl true}

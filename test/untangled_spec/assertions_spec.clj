@@ -1,12 +1,13 @@
 (ns untangled-spec.assertions-spec
-  (:require [untangled-spec.core :refer
-             [specification component behavior provided assertions]]
-            [untangled-spec.assertions
-             :as ae
-             :refer [triple->assertion exception-matches?]]
-            [clojure.test :as t :refer [is]]
-            [untangled-spec.contains :refer [*contains?]]
-            [clojure.spec :as s])
+  (:require
+    [clojure.spec :as s]
+    [clojure.test :as t :refer [is]]
+    [untangled-spec.assertions :as ae
+     :refer [triple->assertion exception-matches?]]
+    [untangled-spec.contains :refer [*contains?]]
+    [untangled-spec.core
+     :refer [specification component behavior provided assertions]]
+    [untangled-spec.spec :as us])
   (:import clojure.lang.ExceptionInfo))
 
 (defn check-assertion [expected]
@@ -15,17 +16,11 @@
       (->> actual first (= 'clojure.test/is))
       (->> actual second (= expected)))))
 
-(defn conform-or-explain [spec x]
-  (as-> (s/conform spec x) $
-    (if (= :clojure.spec/invalid $)
-      (throw (ex-info "Invalid data" (s/explain-data spec x)))
-      $)))
-
 (defn test-triple->assertion [form]
-  (triple->assertion false (conform-or-explain ::ae/triple form)))
+  (triple->assertion false (us/conform! ::ae/triple form)))
 
 (defn test-block->asserts [form]
-  (ae/block->asserts true (conform-or-explain ::ae/block form)))
+  (ae/block->asserts true (us/conform! ::ae/block form)))
 
 (specification "exception-matches?"
   (behavior "checks the exception is of the specified type or throws"
@@ -75,13 +70,7 @@
   (behavior "any other arrow, throws an ex-info"
     (assertions
       (test-triple->assertion '(left =bad-arrow=> right))
-      =throws=> (ExceptionInfo #"Invalid data"
-                  #(-> % ex-data ::s/problems
-                     (= {[:arrow]
-                         {:pred '(comp #{"=>" "=fn=>" "=throws=>"} str)
-                          :val '=bad-arrow=>
-                          :via [::ae/arrow]
-                          :in [1]}}))))))
+      =throws=> (ExceptionInfo #"fails spec.*arrow"))))
 
 (specification "throws assertion arrow"
   (provided "fails if nothing threw an Exception"

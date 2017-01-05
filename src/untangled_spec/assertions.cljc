@@ -1,14 +1,17 @@
 (ns untangled-spec.assertions
-  (:require [#?(:clj clojure.spec :cljs cljs.spec) :as s]))
+  (:require
+    [#?(:clj clojure.spec :cljs cljs.spec) :as s]
+    [untangled-spec.spec :as us]))
 
-(s/def ::any (constantly true))
 (s/def ::arrow (comp #{"=>" "=fn=>" "=throws=>"} str))
 (s/def ::behavior string?)
-(s/def ::triple (s/cat :actual   ::any
-                       :arrow    ::arrow
-                       :expected ::any))
-(s/def ::block (s/cat :behavior (s/? ::behavior)
-                      :triples  (s/+ ::triple)))
+(s/def ::triple (s/cat
+                  :actual   ::us/any
+                  :arrow    ::arrow
+                  :expected ::us/any))
+(s/def ::block (s/cat
+                 :behavior (s/? ::behavior)
+                 :triples  (s/+ ::triple)))
 (s/def ::assertions (s/+ ::block))
 
 (defn fn-assert-expr [msg [f arg :as form]]

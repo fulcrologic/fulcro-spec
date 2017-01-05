@@ -6,7 +6,8 @@
     [untangled-spec.assertions :as ae]
     [untangled-spec.async :as async]
     [untangled-spec.provided :as p]
-    [untangled-spec.stub]))
+    [untangled-spec.stub]
+    [untangled-spec.spec :as us]))
 
 (defn cljs-env?
   "https://github.com/Prismatic/schema/blob/master/src/clj/schema/macros.clj"
@@ -27,45 +28,55 @@
 (defn var-name-from-string [s]
   (symbol (str "__" (str/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))
 
+(s/def ::specification
+  (s/cat
+    :name string?
+    :opts (s/* keyword?)
+    :body (s/* ::us/any)))
+
+(s/fdef specification :args ::specification)
 (defmacro specification
   "Defines a specification which is translated into a what a deftest macro produces with report hooks for the
    description. Technically outputs a deftest with additional output reporting.
    When *load-tests* is false, the specification is ignored."
-  [description & body]
-  (let [var-name (var-name-from-string description)
+  [& args]
+  (let [{:keys [name opts body]} (us/conform! ::specification args)
+        var-name (var-name-from-string name)
         prefix (if-cljs &env "cljs.test" "clojure.test")]
-    `(~(symbol prefix "deftest") ~(symbol (str var-name (gensym)))
+    `(~(symbol prefix "deftest")
+       ~(with-meta (symbol (str var-name (gensym)))
+          (zipmap opts (repeat true)))
        (~(symbol prefix "do-report")
-         {:type :begin-specification :string ~description})
+         {:type :begin-specification :string ~name})
        ~@body
        (~(symbol prefix "do-report")
-         {:type :end-specification :string ~description}))))
+         {:type :end-specification :string ~name}))))
 
+(s/def ::behavior ::specification)
+(s/fdef behavior :args ::behavior)
 (defmacro behavior
   "Adds a new string to the list of testing contexts.  May be nested,
    but must occur inside a specification. If the behavior is not machine
-   testable then include the keyword :manual-test just after the string
-   description instead of code.
+   testable then include the keyword ::manual-test just after the behavior name
+   instead of code.
 
-   (behavior \"blows up when the moon is full\" :manual-test)"
-  [string & body]
-  (let [options (into #{} (take-while keyword? body))
-        manual-intervention-required (boolean (options :manual-test))
-        startkw (if manual-intervention-required :begin-manual :begin-behavior)
-        stopkw (if manual-intervention-required :end-manual :end-behavior)
-        body (drop-while keyword? body)
+   (behavior \"blows up when the moon is full\" ::manual-test)"
+  [& args]
+  (let [{:keys [name opts body]} (us/conform! ::behavior args)
+        [startkw stopkw] (if (contains? opts ::manual-test)
+                           [:begin-manual :end-manual]
+                           [:begin-behavior :end-behavior])
         prefix (if-cljs &env "cljs.test" "clojure.test")]
-    `(~(symbol prefix "testing") ~string
+    `(~(symbol prefix "testing") ~name
        (~(symbol prefix "do-report")
-         {:type ~startkw :string ~string})
+         {:type ~startkw :string ~name})
        ~@body
        (~(symbol prefix "do-report")
-         {:type ~stopkw :string ~string}))))
+         {:type ~stopkw :string ~name}))))
 
 (defmacro component
   "An alias for behavior. Makes some specification code easier to read where a given specification is describing subcomponents of a whole."
-  [string & body]
-  `(behavior ~string ~@body))
+  [& args] `(behavior ~@args))
 
 (defmacro with-timeline
   "Adds the infrastructure required for doing timeline testing"
@@ -99,9 +110,8 @@
   [& forms]
   (apply p/provided-fn (cljs-env? &env) :skip-output forms))
 
-(s/fdef assertions
-        :args ::ae/assertions)
+(s/fdef assertions :args ::ae/assertions)
 (defmacro assertions [& forms]
-  (let [blocks (s/conform ::ae/assertions forms)
+  (let [blocks (us/conform! ::ae/assertions forms)
         asserts (map (partial ae/block->asserts (cljs-env? &env)) blocks)]
     `(do ~@asserts)))
