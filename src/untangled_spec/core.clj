@@ -63,7 +63,7 @@
    (behavior \"blows up when the moon is full\" ::manual-test)"
   [& args]
   (let [{:keys [name opts body]} (us/conform! ::behavior args)
-        [startkw stopkw] (if (contains? opts ::manual-test)
+        [startkw stopkw] (if (contains? opts :manual-test)
                            [:begin-manual :end-manual]
                            [:begin-behavior :end-behavior])
         prefix (if-cljs &env "cljs.test" "clojure.test")]
