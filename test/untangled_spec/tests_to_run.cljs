@@ -3,7 +3,6 @@
     untangled-spec.assertions-spec
     untangled-spec.async-spec
     untangled-spec.contains-spec
-    untangled-spec.dom.edn-renderer-spec
     untangled-spec.dom.events-spec
     untangled-spec.dom.util-spec
     untangled-spec.provided-spec
