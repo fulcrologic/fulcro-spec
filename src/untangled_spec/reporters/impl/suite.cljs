@@ -82,15 +82,12 @@
 (defrecord TestSuite [app-state dom-target reconciler renderer test-item-path]
   ITest
   (render-tests [this]
-    (let [error-dom-id (str (namespace ::_) "_failed-to-find-dom-target")]
-      (om/add-root! reconciler renderer
-        (get-element-or-else
-          dom-target
-          #(do
-             (fig/display-system-warning
-               "TestSuite rendering failed!"
-               (str "Failed to find element with id: '" % "'"))
-             (js/console.error (str "TestSuite rendering failed to find element with id: '" % "'")))))))
+    (om/add-root! reconciler renderer
+      (get-element-or-else
+        dom-target
+        #(do
+           (js/console.error (str "TestSuite rendering failed to find element with id: '" % "'"))
+           (js/alert (str "TestSuite rendering failed to find element with id: '" % "'"))))))
 
   (set-test-result [this status]
     (impl/set-test-result app-state
