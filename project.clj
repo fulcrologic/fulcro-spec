@@ -16,7 +16,7 @@
 
   :plugins [[lein-cljsbuild "1.1.3"]
             [lein-doo "0.1.6"] ; for cljs CI tests
-            [lein-figwheel "0.5.3-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
+            [lein-figwheel "0.5.8" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
             [com.jakemccrary/lein-test-refresh "0.17.0"]
             [lein-shell "0.5.0"]]
 
@@ -66,6 +66,6 @@
                    :repl-options {:init-ns clj.user
                                   :port    7001
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
-                   :dependencies [[figwheel-sidecar "0.5.6"]
+                   :dependencies [[figwheel-sidecar "0.5.8"]
                                   [com.cemerick/piggieback "0.2.1"]
                                   [org.clojure/tools.nrepl "0.2.12"]]}})

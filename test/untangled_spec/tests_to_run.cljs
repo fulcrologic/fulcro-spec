@@ -1,15 +1,17 @@
 (ns untangled-spec.tests-to-run
-  (:require untangled-spec.async-spec
-            untangled-spec.stub-spec
-            untangled-spec.provided-spec
-            untangled-spec.timeline-spec
-            untangled-spec.dom.events-spec
-            untangled-spec.dom.util-spec
-            untangled-spec.reporters.impl.base-reporter-spec
-            untangled-spec.reporters.impl.diff-spec
-            untangled-spec.reporters.browser-spec
-            untangled-spec.assertions-spec
-            untangled-spec.contains-spec))
+  (:require
+    untangled-spec.assertions-spec
+    untangled-spec.async-spec
+    untangled-spec.contains-spec
+    untangled-spec.dom.edn-renderer-spec
+    untangled-spec.dom.events-spec
+    untangled-spec.dom.util-spec
+    untangled-spec.provided-spec
+    untangled-spec.reporters.browser-spec
+    untangled-spec.reporters.impl.base-reporter-spec
+    untangled-spec.reporters.impl.diff-spec
+    untangled-spec.stub-spec
+    untangled-spec.timeline-spec))
 
 ;********************************************************************************
 ; IMPORTANT:

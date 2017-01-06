@@ -135,6 +135,7 @@
                    (cond
                      (not path) {[] exp} ;; empty path, top level diff
                      exp (assoc-in x path exp)
+                     (and (nil? exp) (not (map? x))) (assoc-in x path nil)
                      ;; else drop the missing item from up a level
                      :else (if-let [path' (seq (drop-last path))]
                              (update-in x path' dissoc (last path))
