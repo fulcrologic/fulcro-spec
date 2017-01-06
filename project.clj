@@ -8,13 +8,13 @@
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cljsjs/react-with-addons "15.0.1-1" :scope "provided"]
-                 [org.omcljs/om "1.0.0-alpha36" :scope "provided" :exclusions [cljsjs/react]]
+                 [org.omcljs/om "1.0.0-alpha47" :scope "provided" :exclusions [cljsjs/react]]
                  [io.aviso/pretty "0.1.23"]
                  [lein-doo "0.1.6" :scope "test"]
                  [bidi "2.0.9"]
                  [kibu/pushy "0.3.6"]]
 
-  :plugins [[lein-cljsbuild "1.1.3"]
+  :plugins [[lein-cljsbuild "1.1.5"]
             [lein-doo "0.1.6"] ; for cljs CI tests
             [lein-figwheel "0.5.8" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
             [com.jakemccrary/lein-test-refresh "0.17.0"]

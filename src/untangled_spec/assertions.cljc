@@ -97,24 +97,6 @@
     (when (symbol? arrow)
      (re-find #"^=.*>$" (str arrow)))))
 
-(defn forms->blocks [forms]
-  (assert (seq forms) "empty assertions")
-  (loop [forms forms, blocks []]
-    (if (seq forms)
-      (let [?str (first forms)
-            forms- (if (string? ?str) (rest forms) forms)
-            new-block (take-while triple? (partition 3 forms-))
-            remain-forms (drop (* 3 (count new-block)) forms-)]
-        (assert (seq forms-) "behavior string without trailing assertions")
-        (assert (>= (count forms-) 3) "malformed arrow")
-        (assert (seq new-block) "behavior string without trailing assertions")
-        (recur remain-forms
-          (conj blocks
-            (if (string? ?str)
-              (cons ?str new-block)
-              new-block))))
-      blocks)))
-
 (defn block->asserts [cljs? {:keys [behavior triples]}]
   (let [prefix (if cljs? "cljs.test" "clojure.test")
         do-report (symbol prefix "do-report")

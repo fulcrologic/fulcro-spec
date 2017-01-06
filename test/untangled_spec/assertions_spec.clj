@@ -140,47 +140,6 @@
       (is (ae/triple? [:left '=> :exp]))
       (is (ae/triple? [:left '=fn=> :exp]))))
 
-  (component "forms->blocks"
-    (behavior "groups forms into assertion blocks"
-      (is (=
-           '(("string1" (a => b) (c => d))
-             ("string2" (d => e)))
-           (ae/forms->blocks '("string1"
-                                a => b
-                                c => d
-                                "string2"
-                                d => e)))))
-    (behavior "no behavior strings"
-      (is (=
-           '(((a => b) (c => d) (d => e)))
-           (ae/forms->blocks '(a => b
-                                 c => d
-                                 d => e)))))
-    (behavior "leading block lacks string but others have string"
-      (is (=
-           '(((a => b) (c => d))
-             ("string2" (d => e)))
-           (ae/forms->blocks '(a => b
-                                 c => d
-                                 "string2"
-                                 d => e)))))
-    (behavior "fails when there are no blocks after string"
-      (is (thrown-with-msg?
-            AssertionError
-            #"behavior string without trailing assertions"
-            (ae/forms->blocks '("string1")))))
-
-    (behavior "fails when there are two consecutive strings"
-      (is (thrown-with-msg?
-            AssertionError
-            #"behavior string without trailing assertions"
-            (ae/forms->blocks '("string1" "string2" a => b)))))
-    (behavior "foo"
-      (is (thrown-with-msg?
-            AssertionError
-            #"malformed arrow"
-            (ae/forms->blocks '(a => b c =>))))))
-
   (component "block->asserts"
     (behavior "wraps triples in behavior do-reports"
       (let [asserts (rest (test-block->asserts '("string2" d => e)))]
