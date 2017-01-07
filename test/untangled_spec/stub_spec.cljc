@@ -58,13 +58,12 @@
     (let [sstub (make-call-script (fn [] 42))]
       (assertions (sstub) => 42)))
 
-  (behavior "throws an exception if the function is invoked more than programmed with verify-error set to true"
+  (behavior "throws an exception if the function is invoked more than programmed"
     (let [sstub (make-call-script (fn [] 42))]
       (sstub) ; first call
       (assertions
         (try (sstub 1 2 3) (catch ExceptionInfo e (ex-data e)))
-        => {:untangled-spec.stub/verify-error true
-            :max-calls 1
+        => {:max-calls 1
             :args '(1 2 3)})))
 
   (behavior "throws whatever exception the function throws"
@@ -81,7 +80,17 @@
           sstub (s/scripted-stub script)]
       (assertions
         (repeatedly 3 (fn [] (sstub) [@a-count @b-count]))
-        => [[1 0] [2 0] [2 1]]))))
+        => [[1 0] [2 0] [2 1]])))
+
+  (behavior "records the call argument history"
+    (let [script (s/make-script "something"
+                   [(s/make-step (fn [& args] args) 2 nil)
+                    (s/make-step (fn [& args] args) 1 nil)])
+          sstub (s/scripted-stub script)]
+      (sstub 1 2) (sstub 3 4), (sstub :a :b)
+      (assertions
+        (:history @script) => [[1 2] [3 4] [:a :b]]
+        (map :history (:steps @script)) => [[[1 2] [3 4]] [[:a :b]]]))))
 
 (specification "validate-target-function-counts"
   (behavior "returns nil if a target function has been called enough times"
@@ -119,4 +128,14 @@
                         (atom {:function "fun2" :steps [{:ncalled 0 :times 1}]})]]
       (assertions
         (s/validate-target-function-counts script-atoms)
-        =throws=> (ExceptionInfo)))))
+        =throws=> (ExceptionInfo))))
+
+  (behavior "stubs record history, will show the script when it fails to validate"
+    (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
+                        (atom {:function "fun2" :steps [{:ncalled 1 :times 2}]})]]
+      (assertions
+        (s/validate-target-function-counts script-atoms)
+        =throws=> (ExceptionInfo #""
+                    #(assertions
+                       (ex-data %) => {:function "fun2"
+                                       :steps [{:ncalled 1 :times 2}]}))))))

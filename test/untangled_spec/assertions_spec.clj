@@ -73,10 +73,6 @@
       =throws=> (ExceptionInfo #"fails spec.*arrow"))))
 
 (specification "throws assertion arrow"
-  (provided "fails if nothing threw an Exception"
-    (ex-info x y) => (Exception. (str x y))
-    (assertions
-      [:foo :bar] =throws=> (Exception #"Expected an 'Exception'")))
   (behavior "catches AssertionErrors"
     (let [f (fn [x] {:pre [(even? x)]} (inc x))]
       (is (thrown? AssertionError (f 1)))

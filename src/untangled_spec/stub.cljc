@@ -8,8 +8,7 @@
    :ncalled 0 :literals literals
    :history []})
 (defn make-script [function steps]
-  (atom {:function function
-         :steps steps}))
+  (atom {:function function :steps steps :history []}))
 
 (defn increment-script-call-count [script-atom step]
   (swap! script-atom update-in [:steps step :ncalled] inc))
@@ -28,14 +27,15 @@
       (partition ncolls))))
 
 (defn valid-args? [literals args]
-  (let [reduced-if (fn [p x] (cond-> x p reduced))]
-    (reduce (fn [_ [lit arg]]
-              (reduced-if false?
-                (case lit
-                  ::&_ (reduced true)
-                  ::any true
-                  (= lit arg))))
-      true (zip-pad gensym literals args))))
+  (or (not literals)
+      (let [reduced-if (fn [p x] (cond-> x p reduced))]
+        (reduce (fn [_ [lit arg]]
+                  (reduced-if false?
+                    (case lit
+                      ::&_ (reduced true)
+                      ::any true
+                      (= lit arg))))
+          true (zip-pad gensym literals args)))))
 
 (defn scripted-stub [script-atom]
   (let [step (atom 0)]
@@ -45,14 +45,15 @@
             curr-step @step]
         (if (>= curr-step max-calls)
           (throw (ex-info (str function " was called too many times!")
-                   {::verify-error true
-                    :max-calls max-calls
+                   {:max-calls max-calls
                     :args args}))
           (let [{:keys [stub literals]} (nth steps curr-step)]
             (when-not (valid-args? literals args)
               (throw (ex-info (str function " was called with wrong arguments")
                        {:args args :expected-literals literals})))
-            (swap! script-atom update :history conj args)
+            (swap! script-atom
+              #(-> % (update :history conj args)
+                 (update-in [:steps curr-step :history] conj args)))
             (try (apply stub args)
               (catch #?(:clj Exception :cljs js/Object) e (throw e))
               (finally
@@ -72,12 +73,11 @@
           :ok :error)))
 
 (defn validate-target-function-counts [script-atoms]
-  (mapv (fn [step]
-          (let [{:keys [function steps history]} @step
+  (mapv (fn [script]
+          (let [{:keys [function steps history]} @script
                 count-results (reduce validate-step-counts [] steps)
                 errors? (some #(= :error %) count-results)]
             (when errors?
               (throw (ex-info (str function " was not called as many times as specified")
-                       {::verify-error true
-                        :history history})))))
+                       @script)))))
     script-atoms))
