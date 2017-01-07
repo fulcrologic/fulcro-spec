@@ -9,7 +9,6 @@
     [colorize.core :as c]
     [io.aviso.exception :as pretty]
     [untangled-spec.reporters.impl.diff :as diff]
-    [untangled-spec.reporters.impl.terminal :as impl]
     [untangled-spec.reporters.impl.base-reporter :as base]))
 
 (def cfg
@@ -111,11 +110,11 @@
 (defn ?ellipses [s]
   (binding [*print-level* (env :*print-level*)
             *print-length* (env :*print-length*)]
-    (try (apply str (drop-last (with-out-str (pprint (edn/read-string s)))))
+    (try (apply str (drop-last (with-out-str (pprint (read-string s)))))
       (catch Error _ s))))
 
 (defn parse-message [m]
-  (try (->> (edn/read-string (str "[" m "]"))
+  (try (->> (read-string (str "[" m "]"))
          (sequence (comp (map str) (map base/fix-str)))
          (zipmap [:actual :arrow :expected]))
     (catch Error _ {:message m})))
@@ -195,9 +194,10 @@
 
 (defn print-report-data
   "Prints the current report data from the report data state and applies colors based on test results"
-  []
+  [{:keys [state]}]
   (t/with-test-out
-    (let [{:keys [namespaces tested passed failed error]} @impl/*test-state*]
+    (let [{:keys [namespaces tested passed failed error]} @state]
+      (println "Running tests for:" (map :name namespaces))
       (try (->> namespaces
              (into [] when-fail-only-keep-failed)
              (sort-by :name)
@@ -210,61 +210,64 @@
       (println failed "failures,"
         error "errors."))))
 
+(def this
+  {:state (atom (base/make-testreport))
+   :path  (atom [])})
+
 (defmulti ^:dynamic untangled-report :type)
 
-(defmethod untangled-report :default [m])
+(defmethod untangled-report :default [t])
 
-(defmethod untangled-report :pass [m]
+(defmethod untangled-report :pass [t]
   (t/inc-report-counter :pass)
-  (impl/pass))
+  (base/pass this t))
 
-(defmethod untangled-report :error [m]
+(defmethod untangled-report :error [t]
   (t/inc-report-counter :error)
-  (impl/error (-> m (merge {:where (clojure.test/testing-vars-str m)}))))
+  (base/error this t))
 
-(defmethod untangled-report :fail [m]
+(defmethod untangled-report :fail [t]
   (t/inc-report-counter :fail)
-  (impl/fail (-> m (merge {:where (clojure.test/testing-vars-str m)}))))
+  (base/fail this t))
 
-(defmethod untangled-report :begin-test-ns [m]
-  (impl/begin-namespace (ns-name (:ns m))))
+(defmethod untangled-report :begin-test-ns [t]
+  (base/begin-namespace this t))
 
-(defmethod untangled-report :end-test-ns [m]
-  (impl/end-namespace))
+(defmethod untangled-report :end-test-ns [t]
+  (base/end-namespace this t))
 
-(defmethod untangled-report :begin-specification [m]
-  (impl/begin-specification (:string m)))
+(defmethod untangled-report :begin-specification [t]
+  (base/begin-specification this t))
 
-(defmethod untangled-report :end-specification [m]
-  (impl/end-specification))
+(defmethod untangled-report :end-specification [t]
+  (base/end-specification this t))
 
-(defmethod untangled-report :begin-behavior [m]
-  (impl/begin-behavior (:string m)))
+(defmethod untangled-report :begin-behavior [t]
+  (base/begin-behavior this t))
 
-(defmethod untangled-report :end-behavior [m]
-  (impl/end-behavior))
+(defmethod untangled-report :end-behavior [t]
+  (base/end-behavior this t))
 
-(defmethod untangled-report :begin-manual [m]
-  (impl/begin-behavior (str (:string m) "(MANUAL)")))
+(defmethod untangled-report :begin-manual [t]
+  (base/begin-manual this t))
 
-(defmethod untangled-report :end-manual [m]
-  (impl/end-behavior))
+(defmethod untangled-report :end-manual [t]
+  (base/end-manual this t))
 
-(defmethod untangled-report :begin-provided [m]
-  (impl/begin-provided (:string m)))
+(defmethod untangled-report :begin-provided [t]
+  (base/begin-provided this t))
 
-(defmethod untangled-report :end-provided [m]
-  (impl/end-provided))
+(defmethod untangled-report :end-provided [t]
+  (base/end-provided this t))
 
-(defmethod untangled-report :summary [m]
-  (let [stats {:tested (:test m) :passed (:pass m)
-               :failed (:fail m) :error (:error m)}]
-    (impl/summary stats)
-    (print-report-data)))
+(defmethod untangled-report :summary [t]
+  (base/summary this t)
+  (print-report-data this)
+  (reset! (:path this) [])
+  (reset! (:state this) (base/make-testreport)))
 
 (defmacro with-untangled-output
-  "Execute body with modified test reporting functions that produce
-  outline output"
+  "Execute body with modified test reporting functions that produce outline output"
   [& body]
   `(binding [t/report untangled-report]
      ~@body))

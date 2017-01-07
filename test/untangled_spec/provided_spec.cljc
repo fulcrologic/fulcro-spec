@@ -186,10 +186,4 @@
         (my-square 2)
         (my-square 2)
         (reset! detector true))
-      (is (= true @detector))))
-
-  (try (provided "if a stub is not called as many times, the error shows a history of the stub calls"
-         (my-square n) =3x=> (inc n)
-         (assertions (my-square 2) => 3))
-    (catch ExceptionInfo e
-      (assertions (-> e ex-data :history) => [[2]]))))
+      (is (= true @detector)))))
