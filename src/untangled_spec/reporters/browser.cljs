@@ -24,15 +24,18 @@
           (seq (filter has-status?* (:test-items x)))))))
 
 (def filters
-  {:all (map identity)
-   :failing (filter (comp #(some pos? %) (juxt :failed :error) :status))
-   :manual  (comp (filter (has-status? #(-> % :manual pos?)))
-              (map #(dissoc % :test-results))
-              (map #(update % :status select-keys [:manual])))
-   :passing (filter (comp pos? :passed :status))
-   :pending (comp (filter (has-status? #(->> % vals (apply +) zero?)))
-              (map #(dissoc % :test-results))
-              (map #(update % :status select-keys [:pending])))})
+  (let [report-as (fn [status] #(update % :status select-keys [status]))
+        no-test-results #(dissoc % :test-results)]
+    {:all (map identity)
+     :failing (filter (comp #(some pos? %) (juxt :failed :error) :status))
+     :manual  (comp (filter (has-status? #(-> % :manual pos?)))
+                (map no-test-results)
+                (map (report-as :manual)))
+     :passing (comp (filter (comp pos? :passed :status))
+                (map (report-as :passed)))
+     :pending (comp (filter (has-status? #(->> % vals (apply +) zero?)))
+                (map no-test-results)
+                (map (report-as :pending)))}))
 
 (defui ^:once Foldable
   Object
