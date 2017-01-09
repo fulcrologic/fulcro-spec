@@ -1,17 +1,16 @@
 (ns untangled-spec.contains
-  (:require [clojure.set :refer [subset?]]))
+  (:require
+    [clojure.set :refer [subset?]]
+    [untangled-spec.spec :as us]))
 
 (defn todo []
   (throw (ex-info "todo / not-implemented" {})))
 
 (defn ->kw-type [x]
-  (letfn [(regex? [?re]
-            #?(:clj  (->  ?re type (= java.util.regex.Pattern))
-               :cljs (->> ?re type str (re-find #"^function RegExp"))))]
-    (cond
-      (string? x) :string (regex? x)  :regex
-      (map? x)    :map    (set? x)    :set
-      (list? x)   :list   (vector? x) :list)))
+  (cond
+    (string? x) :string (us/regex? x) :regex
+    (map? x)    :map    (set? x)      :set
+    (list? x)   :list   (vector? x)   :list))
 
 (defmulti -contains?
   (fn [& xs] (->> xs drop-last (mapv ->kw-type))))

@@ -4,14 +4,14 @@
     [untangled-spec.assertions :as ae]
     [untangled-spec.reporters.impl.base-reporter :as base]))
 
+(defmethod t/assert-expr '= [_ msg form]
+  `(t/do-report ~(ae/assert-expr msg form)))
+
 (defmethod t/assert-expr 'exec [_ msg form]
-  `(t/do-report ~(ae/assert-expr 'exec msg form)))
+  `(t/do-report ~(ae/assert-expr msg form)))
 
 (defmethod t/assert-expr 'throws? [_ msg form]
-  `(t/do-report ~(ae/assert-expr 'throws? msg form)))
-
-(defmethod t/assert-expr '= [_ msg form]
-  `(t/do-report ~(ae/assert-expr 'eq msg form)))
+  `(t/do-report ~(ae/assert-expr msg form)))
 
 (defn define-test-methods [state-name test-report-keyword]
   `(let [this# ~state-name]

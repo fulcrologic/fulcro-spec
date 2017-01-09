@@ -3,7 +3,7 @@
     [clojure.spec :as s]
     [clojure.test :as t :refer [is]]
     [untangled-spec.assertions :as ae
-     :refer [triple->assertion exception-matches?]]
+     :refer [triple->assertion check-error check-error* parse-criteria]]
     [untangled-spec.contains :refer [*contains?]]
     [untangled-spec.core
      :refer [specification component behavior provided assertions]]
@@ -22,35 +22,60 @@
 (defn test-block->asserts [form]
   (ae/block->asserts true (us/conform! ::ae/block form)))
 
-(specification "exception-matches?"
+(def test-regex #"a-simple-test-regex")
+
+(specification "check-error"
+  (behavior "supports many syntaxes"
+    (assertions
+      (us/conform! ::ae/criteria 'ExceptionInfo)
+      => [:sym 'ExceptionInfo]
+      (us/conform! ::ae/criteria {:ex-type 'ExceptionInfo
+                                  :fn even?, :regex test-regex})
+      => [:map {:ex-type 'ExceptionInfo :fn even? :regex test-regex}]
+      (us/conform! ::ae/criteria ['ExceptionInfo])
+      => [:list {:ex-type 'ExceptionInfo}]
+
+      (parse-criteria [:sym 'irr]) => {:ex-type 'irr}
+      (parse-criteria [:w/e 'dont-care]) => 'dont-care
+
+      (check-error "spec-msg1" (ex-info "foo" {})
+        {:ex-type ExceptionInfo})
+      =fn=> (*contains? {:type :pass})
+      (let [check #(-> % ex-data :ok)]
+        (check-error "spec-msg2" (ex-info "foo" {:ok false})
+          {:fn check} '#(some fn)))
+      =fn=> (*contains? {:type :fail :expected '#(some fn)})
+      (check-error "spec-msg3" (ex-info "foo" {})
+        {:regex #"oo"})
+      =fn=> (*contains? {:type :pass})))
   (behavior "checks the exception is of the specified type or throws"
     (assertions
-      (exception-matches? "msg1" (ex-info "foo" {})
-                          clojure.lang.ExceptionInfo)
+      (check-error* "msg1" (ex-info "foo" {})
+        clojure.lang.ExceptionInfo)
       =fn=> (*contains? {:type :pass :message "msg1"})
-      (exception-matches? "msg2" (ex-info "foo" {})
-                          java.lang.Error)
+      (check-error* "msg2" (ex-info "foo" {})
+        java.lang.Error)
       =fn=> (*contains? {:type :fail :extra "exception did not match type"
                          :actual clojure.lang.ExceptionInfo :expected java.lang.Error})))
   (behavior "checks the exception's message matches a regex or throws"
     (assertions
-      (exception-matches? "msg3" (ex-info "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn" {})
-                          clojure.lang.ExceptionInfo #"(?i)cthulhu")
+      (check-error* "msg3" (ex-info "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn" {})
+        clojure.lang.ExceptionInfo #"(?i)cthulhu")
       =fn=> (*contains? {:type :pass})
-      (exception-matches? "msg4" (ex-info "kthxbye" {})
-                          clojure.lang.ExceptionInfo #"cthulhu")
+      (check-error* "msg4" (ex-info "kthxbye" {})
+        clojure.lang.ExceptionInfo #"cthulhu")
       =fn=> (*contains? {:type :fail :extra "exception's message did not match regex"
                          :actual "kthxbye" :expected "cthulhu"})))
   (behavior "checks the exception with the user's function"
     (let [cthulhu-bored (ex-info "Haskell 101" {:cthulhu :snores})]
       (assertions
-        (exception-matches? "msg5" (ex-info "H.P. Lovecraft" {:cthulhu :rises})
-                            clojure.lang.ExceptionInfo #"(?i)lovecraft"
-                            #(-> % ex-data :cthulhu (= :rises)))
+        (check-error* "msg5" (ex-info "H.P. Lovecraft" {:cthulhu :rises})
+          clojure.lang.ExceptionInfo #"(?i)lovecraft"
+          #(-> % ex-data :cthulhu (= :rises)))
         =fn=> (*contains? {:type :pass})
-        (exception-matches? "msg6" cthulhu-bored
-                            clojure.lang.ExceptionInfo #"Haskell"
-                            #(-> % ex-data :cthulhu (= :rises)))
+        (check-error* "msg6" cthulhu-bored
+          clojure.lang.ExceptionInfo #"Haskell"
+          #(-> % ex-data :cthulhu (= :rises)))
         =fn=> (*contains? {:type :fail :actual cthulhu-bored
                            :extra "checker function failed"})))))
 
@@ -65,7 +90,7 @@
       =fn=> (check-assertion '(exec right left))))
   (behavior "verifies that actual threw an exception with the =throws=> arrow"
     (assertions
-      (test-triple->assertion '(left =throws=> (right)))
+      (test-triple->assertion '(left =throws=> right))
       =fn=> (check-assertion '(throws? false left right))))
   (behavior "any other arrow, throws an ex-info"
     (assertions
@@ -125,16 +150,9 @@
                           :all))))
       (behavior "reports if nothing was thrown"
         (is (= ["it to throw", "(+ 5 2) =throws=> (clojure.lang.ExceptionInfo #\"asdf\")"
-                "Expected an 'clojure.lang.ExceptionInfo' to be thrown!"]
+                "Expected an error to be thrown!"]
                (-> '((+ 5 2) =throws=> (clojure.lang.ExceptionInfo #"asdf"))
                  (test-case :all) rest))))))
-
-  (component "triple?"
-    (behavior "=> must be a symbol"
-      (is (not (ae/triple? [:left "=>" :exp]))))
-    (behavior "arrow arg starts with = and ends with >"
-      (is (ae/triple? [:left '=> :exp]))
-      (is (ae/triple? [:left '=fn=> :exp]))))
 
   (component "block->asserts"
     (behavior "wraps triples in behavior do-reports"

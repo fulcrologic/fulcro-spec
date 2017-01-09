@@ -16,14 +16,14 @@
 (defn if-cljs [env cljs clj]
   (if (cljs-env? env) cljs clj))
 
-(defmethod clojure.test/assert-expr 'exec [msg form]
-  `(clojure.test/do-report ~(ae/assert-expr 'exec msg form)))
-
 (defmethod clojure.test/assert-expr '= [msg form]
-  `(clojure.test/do-report ~(ae/assert-expr 'eq msg form)))
+  `(clojure.test/do-report ~(ae/assert-expr msg form)))
+
+(defmethod clojure.test/assert-expr 'exec [msg form]
+  `(clojure.test/do-report ~(ae/assert-expr msg form)))
 
 (defmethod clojure.test/assert-expr 'throws? [msg form]
-  `(clojure.test/do-report ~(ae/assert-expr 'throws? msg form)))
+  `(clojure.test/do-report ~(ae/assert-expr msg form)))
 
 (defn var-name-from-string [s]
   (symbol (str "__" (str/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))

@@ -30,42 +30,59 @@
       :message ~msg :assert-type '~'eq
       :actual act# :expected exp#}))
 
-(defn exception-matches? [msg e exp-type & [re f f+]]
+(defn parse-criteria [[tag x]]
+  (case tag :sym {:ex-type x} x))
+
+(defn check-error* [msg e & [ex-type regex fn fn-pr]]
   (let [e-msg (or #?(:clj (.getMessage e) :cljs (.-message e)) (str e))]
     (->> (cond
            (some-> (ex-data e) :type (= ::internal))
            {:type :error :extra e-msg
             :actual e :expected "it to throw"}
 
-           (not= exp-type (type e))
-           {:type :fail :actual (type e) :expected exp-type
+           (and ex-type (not= ex-type (type e)))
+           {:type :fail :actual (type e) :expected ex-type
             :extra "exception did not match type"}
 
-           (and re (not (re-find re e-msg)))
-           {:type :fail :actual e-msg :expected (str re)
+           (and regex (not (re-find regex e-msg)))
+           {:type :fail :actual e-msg :expected (str regex)
             :extra "exception's message did not match regex"}
 
-           (and f (not (f e)))
-           {:type :fail :actual e :expected f+
+           (and fn (not (fn e)))
+           {:type :fail :actual e :expected fn-pr
             :extra "checker function failed"}
 
            :else {:type :pass :actual "act" :expected "exp"})
-         (merge {:message msg
-                 :assert-type 'throws?
-                 :throwable e}))))
+      (merge {:message msg
+              :assert-type 'throws?
+              :throwable e}))))
 
-(defn throws-assert-expr [msg [cljs? should-throw exp-type & [re f]]]
-  `(try ~should-throw
-        (throw (ex-info (str "Expected an '" '~exp-type "' to be thrown!")
-                        {:type ::internal}))
-        (catch ~(if (not cljs?) (symbol "Throwable") (symbol "js" "Object"))
-          e# (exception-matches? ~msg e# ~exp-type ~re ~f '~f))))
+(defn check-error [msg e criteria & [fn-pr]]
+  (apply check-error* msg e
+    ((juxt :ex-type :regex :fn :fn-pr)
+     (assoc criteria :fn-pr fn-pr))))
 
-(defn assert-expr [disp-key msg form]
+(s/def ::ex-type symbol?)
+(s/def ::regex ::us/regex)
+(s/def ::fn ::us/any)
+(s/def ::criteria
+  (s/or :sym symbol?
+    :list (s/cat :ex-type ::ex-type :regex (s/? ::regex) :fn (s/? ::fn))
+    :map (s/keys :opt-un [::ex-type ::regex ::fn])))
+
+(defn throws-assert-expr [msg [cljs? should-throw criteria]]
+  (let [criteria (parse-criteria (us/conform! ::criteria criteria))]
+    `(try ~should-throw
+       (throw (ex-info "Expected an error to be thrown!"
+                {:type ::internal :criteria ~criteria}))
+       (catch ~(if (not cljs?) (symbol "Throwable") (symbol "js" "Object"))
+         e# (check-error ~msg e# ~criteria)))))
+
+(defn assert-expr [msg [disp-key & form]]
   (case (str disp-key)
-    "exec"    (fn-assert-expr     msg (rest form))
-    "eq"      (eq-assert-expr     msg (rest form))
-    "throws?" (throws-assert-expr msg (rest form))
+    "="       (eq-assert-expr     msg form)
+    "exec"    (fn-assert-expr     msg form)
+    "throws?" (throws-assert-expr msg form)
     :else {:type :fail :message msg :actual disp-key
            :expected #{"exec" "eq" "throws?"}}))
 
@@ -87,15 +104,10 @@
       =throws=>
       (let [should-throw actual
             criteria expected]
-        `(~is (~'throws? ~cljs? ~should-throw ~@criteria)
+        `(~is (~'throws? ~cljs? ~should-throw ~criteria)
               ~msg))
 
       (throw (ex-info "invalid arrow" {:arrow arrow})))))
-
-(defn triple? [[left arrow expected]]
-  (boolean
-    (when (symbol? arrow)
-     (re-find #"^=.*>$" (str arrow)))))
 
 (defn block->asserts [cljs? {:keys [behavior triples]}]
   (let [prefix (if cljs? "cljs.test" "clojure.test")

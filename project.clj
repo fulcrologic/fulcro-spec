@@ -44,7 +44,7 @@
               :builds        [{:id           "test"
                                :jar          true
                                :source-paths ["src" "dev" "test"]
-                               :figwheel     {:on-jsload "cljs.user/on-load"}
+                               :figwheel     {:on-jsload cljs.user/on-load}
                                :compiler     {:main                 cljs.user
                                               :output-to            "resources/public/js/test/test.js"
                                               :output-dir           "resources/public/js/test/out"

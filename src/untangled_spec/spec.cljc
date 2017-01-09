@@ -10,3 +10,6 @@
     rt))
 
 (s/def ::any (constantly true))
+
+(defn regex? [x] (= (type x) (type #"")))
+(s/def ::regex regex?)
