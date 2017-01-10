@@ -1,7 +1,9 @@
 (ns untangled-spec.provided
   (:require
+    [clojure.spec :as s]
     [clojure.string :as str]
-    [untangled-spec.stub :as stub]))
+    [untangled-spec.stub :as stub]
+    [untangled-spec.spec :as us]))
 
 (defn parse-arrow-count
   "parses how many times the mock/stub should be called with.
@@ -31,60 +33,60 @@
 (defn literal->gensym [l]
   (if (symbol? l) l (gensym "arg")))
 
-(defn parse-mock-triple [[thing-to-mock arrow thing-to-do]]
-  (assert (list? thing-to-mock) "Provided clause must have function calls on the left of triples")
-  (let [params (rest thing-to-mock)
-        arglist (map literal->gensym params)]
-    {:ntimes         (parse-arrow-count arrow)
-     :stub-function  `(fn [~@arglist] ~thing-to-do)
-     :symbol-to-mock (first thing-to-mock)
-     :literals       (mapv symbol->any params)}))
+(defn parse-mock-triple [{:as triple :keys [under-mock arrow result]}]
+  (merge under-mock
+    (let [{:keys [params]} under-mock
+          arglist (map literal->gensym params)]
+      {:ntimes        (parse-arrow-count arrow)
+       :literals      (mapv symbol->any params)
+       :stub-function `(fn [~@arglist] ~result) })))
 
-(defn convert-groups-to-symbolic-triples [grouped-mocks]
-  (letfn [(steps-to-script [acc [sym detailed-steps]]
-            (let [steps (mapv (fn [detail]
-                                `(stub/make-step ~(:stub-function detail)
-                                   ~(:ntimes detail)
-                                   ~(:literals detail)))
-                          detailed-steps)]
-              (conj acc [sym (gensym "script") `(stub/make-script ~(name sym) ~steps)])))]
-    (reduce steps-to-script [] grouped-mocks)))
+(defn parse-mocks [mocks]
+  (let [parse-steps
+        (fn parse-steps [[mock-name steps :as group]]
+          (let [symgen (gensym "script")]
+            {:script `(stub/make-script ~(name mock-name)
+                        ~(mapv (fn make-step [{:keys [stub-function ntimes literals]}]
+                                 `(stub/make-step ~stub-function ~ntimes ~literals))
+                           steps))
+             :sstub `(stub/scripted-stub ~symgen)
+             :mock-name mock-name
+             :symgen symgen}))]
+    (->> mocks
+      (map parse-mock-triple)
+      (group-by :mock-name)
+      (map parse-steps))))
 
-(defn is-arrow? [sym]
+(defn arrow? [sym]
   (and (symbol? sym)
-    (re-find #"^=" (name sym))))
+    (re-find #"^=" (name sym))
+    (re-find #"=>$" (name sym))))
+
+(s/def ::under-mock
+  (s/and list?
+    (s/cat
+      :mock-name symbol?
+      :params (s/* ::us/any))))
+(s/def ::arrow arrow?)
+(s/def ::triple
+  (s/cat
+    :under-mock ::under-mock
+    :arrow ::arrow
+    :result ::us/any))
+(s/def ::mocks
+  (s/cat
+    :mocks (s/+ ::triple)
+    :body (s/+ ::us/any)))
 
 (defn provided-fn
   [cljs? string & forms]
-  (let [groups (partition-all 3 forms)
-        triples (->> groups (take-while #(and (= 3 (count %))
-                                           (is-arrow? (second %)))))
-        behaviors (drop (* 3 (count triples)) forms)
-        parsed-mocks (reduce (fn [acc t] (conj acc (parse-mock-triple t))) [] triples)
-        grouped-mocks (group-by :symbol-to-mock parsed-mocks)
-        script-triples (convert-groups-to-symbolic-triples grouped-mocks)
-        script-let-pairs (reduce (fn [acc ele]
-                                   (concat acc [(second ele) (last ele)]))
-                           [] script-triples)
-        redef-pairs (reduce (fn [acc ele]
-                              (concat acc [(first ele)
-                                           `(stub/scripted-stub ~(second ele))]))
-                      [] script-triples)
-        script-symbols (reduce (fn [acc ele]
-                                 (concat acc [(second ele)]))
-                         [] script-triples)]
-    (if (= :skip-output string)
-      `(let [~@script-let-pairs]
-         (with-redefs [~@redef-pairs]
-           ~@behaviors
-           (stub/validate-target-function-counts [~@script-symbols])))
-      `(let [~@script-let-pairs]
-         (with-redefs [~@redef-pairs]
-           (~(symbol (if cljs? "cljs.test" "clojure.test")
-               "do-report")
-             {:type :begin-provided :string ~string})
-           ~@behaviors
-           (stub/validate-target-function-counts [~@script-symbols])
-           (~(symbol (if cljs? "cljs.test" "clojure.test")
-               "do-report")
-             {:type :end-provided :string ~string}))))))
+  (let [{:keys [mocks body]} (us/conform! ::mocks forms)
+        scripts (parse-mocks mocks)
+        skip-output? (= :skip-output string)
+        do-report (symbol (if cljs? "cljs.test" "clojure.test") "do-report")]
+    `(let [~@(mapcat (juxt :symgen :script) scripts)]
+       (with-redefs [~@(mapcat (juxt :mock-name :sstub) scripts)]
+         ~(when-not skip-output? `(~do-report {:type :begin-provided :string ~string}))
+         ~@body
+         (stub/validate-target-function-counts ~(mapv :symgen scripts))
+         ~(when-not skip-output? `(~do-report {:type :end-provided :string ~string}))))))

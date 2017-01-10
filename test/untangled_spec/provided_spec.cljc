@@ -1,11 +1,11 @@
 (ns untangled-spec.provided-spec
   (:require
-    #?(:clj [clojure.test :refer [is]])
-    #?(:cljs [cljs.test :refer-macros [is]])
+    [clojure.spec :as s]
     [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
      [specification behavior provided assertions when-mocking]]
     #?(:clj [untangled-spec.provided :as p])
-    [untangled-spec.stub :as stub])
+    [untangled-spec.stub :as stub]
+    [untangled-spec.spec :as us])
   #?(:clj
       (:import clojure.lang.ExceptionInfo)))
 
@@ -25,62 +25,31 @@
 
 #?(:clj
    (specification "parse-mock-triple"
-     (let [result (p/parse-mock-triple ['(f a b) '=2x=> '(+ a b)])]
-       (behavior "includes a call count"
-         (assertions
-           (contains? result :ntimes) => true
-           (:ntimes result) => 2))
-       (behavior "includes a stubbing function"
-         (assertions
-           (contains? result :stub-function) => true
-           (:stub-function result) => '(clojure.core/fn [a b] (+ a b))))
-       (behavior "includes the symbol to mock"
-         (assertions
-           (contains? result :symbol-to-mock) => true
-           (:symbol-to-mock result) => 'f)))
-     (let [result (p/parse-mock-triple ['(f 1 :b c) '=2x=> '(+ 1 c)])]
-       (behavior "parses literals into :literals key"
-         (assertions
-           (contains? result :literals) => true
-           (:literals result) => [1 :b ::stub/any]))
-       (behavior "converts literals in the arglist into symbols"
-         (assertions
-           (->> (:stub-function result)
-             second (every? symbol?))
-           => true)))))
-
-#?(:clj
-   (specification "convert-groups-to-symbolic-triples"
-     (let [grouped-data {'a [{:ntimes 2 :symbol-to-mock
-                              'a :stub-function '(fn [] 22)}
-                             {:ntimes 1 :symbol-to-mock
-                              'a :stub-function '(fn [] 32)}]
-                         'b [{:ntimes 1 :symbol-to-mock
-                              'b :stub-function '(fn [] 42)}]}
-           scripts (p/convert-groups-to-symbolic-triples grouped-data)]
-
-       (behavior "creates a vector of triples (each in a vector)"
-         (is (vector? scripts))
-         (is (every? vector? scripts)))
-
-       (behavior "nested vectors each contain the symbol to mock as their first element"
-         (assertions
-           (first (first scripts)) => 'a
-           (first (second scripts)) => 'b))
-
-       (behavior "nested vectors each contain a unique script symbol in their second element"
-         (assertions
-           (count (reduce (fn [acc ele] (conj acc (second ele))) #{} scripts)) => 2))
-
-       (behavior "nested vectors' last member is a syntax-quoted call to make-script"
-         (assertions
-           (last (first scripts)) =>
-           '(untangled-spec.stub/make-script "a"
-              [(untangled-spec.stub/make-step (fn [] 22) 2 nil)
-               (untangled-spec.stub/make-step (fn [] 32) 1 nil)])
-           (last (second scripts)) =>
-           '(untangled-spec.stub/make-script "b"
-              [(untangled-spec.stub/make-step (fn [] 42) 1 nil)]))))))
+     (let [test-parse (comp p/parse-mock-triple
+                        (partial us/conform! :untangled-spec.provided/triple))]
+       (let [result (test-parse '[(f a b) =2x=> (+ a b)])]
+         (behavior "includes a call count"
+           (assertions
+             (contains? result :ntimes) => true
+             (:ntimes result) => 2))
+         (behavior "includes a stubbing function"
+           (assertions
+             (contains? result :stub-function) => true
+             (:stub-function result) => '(clojure.core/fn [a b] (+ a b))))
+         (behavior "includes the symbol to mock"
+           (assertions
+             (contains? result :mock-name) => true
+             (:mock-name result) => 'f)))
+       (let [result (test-parse '[(f 1 :b c) =2x=> (+ 1 c)])]
+         (behavior "parses literals into :literals key"
+           (assertions
+             (contains? result :literals) => true
+             (:literals result) => [1 :b ::stub/any]))
+         (behavior "converts literals in the arglist into symbols"
+           (assertions
+             (->> (:stub-function result)
+               second (every? symbol?))
+             => true))))))
 
 #?(:clj
    (specification "provided-macro"
@@ -122,9 +91,9 @@
          (assertions
            (first redef-block) => 'clojure.core/with-redefs
            (vector? (second redef-block)) => true
-           (nth redef-block 2) => '(is (= 1 2))
+           (nth redef-block 3) => '(is (= 1 2))
            "no do-report pair"
-           (count redef-block) => 4)))))
+           (count (remove nil? redef-block)) => 4)))))
 
 (defn my-square [x] (* x x))
 
@@ -186,4 +155,5 @@
         (my-square 2)
         (my-square 2)
         (reset! detector true))
-      (is (= true @detector)))))
+      (assertions
+        @detector => true))))
