@@ -3,9 +3,11 @@
     [clojure.spec :as s]
     [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
      [specification behavior provided assertions when-mocking]]
+    #?(:clj [untangled-spec.impl.macros :as im])
     #?(:clj [untangled-spec.provided :as p])
     [untangled-spec.stub :as stub]
-    [untangled-spec.spec :as us])
+    [untangled-spec.spec :as us]
+    [untangled-spec.testing-helpers :as th])
   #?(:clj
       (:import clojure.lang.ExceptionInfo)))
 
@@ -54,44 +56,43 @@
 #?(:clj
    (specification "provided-macro"
      (behavior "Outputs a syntax-quoted block"
-       (let [expanded (p/provided-fn false "some string"
-                        '(f n) '=> '(+ n 1)
-                        '(f n) '=2x=> '(* 3 n)
-                        '(is (= 1 2)))
-             let-defs (second expanded)
-             make-script (second let-defs)
-             script-steps (nth make-script 2)
-             redef-block (last expanded)]
+       (let [expanded (apply p/provided-fn false "some string"
+                        '[(f n) => (+ n 1)
+                          (f n) =2x=> (* 3 n)
+                          (under-test)])]
          (behavior "with a let of the scripted stubs"
-           (assertions (first expanded) => 'clojure.core/let
-             (count let-defs) => 2
-             (vector? let-defs) => true))
+           (let [let-defs (second (th/locate `let expanded))]
+             (assertions
+               (count let-defs) => 2)))
          (behavior "containing a script with the number proper steps"
-           (assertions
-             (vector? script-steps) => true
-             (count script-steps) => 2
-             (first (first script-steps)) => 'untangled-spec.stub/make-step
-             (first (second script-steps)) => 'untangled-spec.stub/make-step))
+           (let [script-steps (last (th/locate `stub/make-script expanded))]
+             (assertions
+               (vector? script-steps) => true
+               (count script-steps) => 2
+               (first (first script-steps)) => 'untangled-spec.stub/make-step
+               (first (second script-steps)) => 'untangled-spec.stub/make-step)))
          (behavior "surrounds the assertions with a redef"
-           (assertions
-             (first redef-block) => 'clojure.core/with-redefs
-             (vector? (second redef-block)) => true
-             (nth redef-block 3) => '(is (= 1 2))))
+           (let [redef-block (th/locate `with-redefs expanded)]
+             (assertions
+               (first redef-block) => `with-redefs
+               (vector? (second redef-block)) => true
+               (th/locate 'under-test redef-block) => '(under-test))))
          (behavior "sends do-report when given a string"
            (assertions
-             (first (last redef-block)) => 'clojure.test/do-report
-             (first (nth redef-block 2)) => 'clojure.test/do-report))))
+             (take 2 (th/locate `im/with-reporting expanded))
+             => `(im/with-reporting
+                   {:type :provided :string "some string"})))))
 
      (behavior "Can do mocking without output"
-       (let [expanded (p/provided-fn false :skip-output
-                        '(f n) '=> '(+ n 1)
-                        '(f n) '=2x=> '(* 3 n)
-                        '(is (= 1 2)))
-             redef-block (last expanded)]
+       (let [expanded (apply p/provided-fn false :skip-output
+                        '[(f n) => (+ n 1)
+                          (f n) =2x=> (* 3 n)
+                          (under-test)])
+             redef-block (th/locate `with-redefs expanded)]
          (assertions
-           (first redef-block) => 'clojure.core/with-redefs
+           (first redef-block) => `with-redefs
            (vector? (second redef-block)) => true
-           (nth redef-block 3) => '(is (= 1 2))
+           (th/locate 'under-test expanded) => '(under-test)
            "no do-report pair"
            (count (remove nil? redef-block)) => 4)))))
 
@@ -145,7 +146,7 @@
       (my-square 1) =throws=> (ExceptionInfo)))
 
   (behavior "allows any number of trailing forms"
-    (let [detector (atom false)]
+    (let [detector (volatile! false)]
       (when-mocking
         (my-square n) =1x=> (+ n 5)
         (my-square n) => (+ n 7)
@@ -154,6 +155,6 @@
         (* 3 3) (* 3 3) (* 3 3) (* 3 3)
         (my-square 2)
         (my-square 2)
-        (reset! detector true))
+        (vreset! detector true))
       (assertions
         @detector => true))))

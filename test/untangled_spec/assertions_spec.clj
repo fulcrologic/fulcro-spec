@@ -6,8 +6,10 @@
      :refer [triple->assertion check-error check-error* parse-criteria]]
     [untangled-spec.contains :refer [*contains?]]
     [untangled-spec.core
-     :refer [specification component behavior provided assertions]]
-    [untangled-spec.spec :as us])
+     :refer [specification component behavior assertions]]
+    [untangled-spec.impl.macros :as im]
+    [untangled-spec.spec :as us]
+    [untangled-spec.testing-helpers :as th])
   (:import clojure.lang.ExceptionInfo))
 
 (defn check-assertion [expected]
@@ -20,7 +22,7 @@
   (triple->assertion false (us/conform! ::ae/triple form)))
 
 (defn test-block->asserts [form]
-  (ae/block->asserts true (us/conform! ::ae/block form)))
+  (ae/block->asserts false (us/conform! ::ae/block form)))
 
 (def test-regex #"a-simple-test-regex")
 
@@ -156,21 +158,9 @@
 
   (component "block->asserts"
     (behavior "wraps triples in behavior do-reports"
-      (let [asserts (rest (test-block->asserts '("string2" d => e)))]
-        (is (= '(cljs.test/do-report {:type :begin-behavior :string "string2"})
-               (first asserts)))
-        (is (= '(cljs.test/do-report {:type :end-behavior :string "string2"})
-               (last asserts)))))
-    (behavior "does not wrap in do-report if there is no string"
-      (let [asserts (rest (test-block->asserts '(d => e)))]
-        (is (not= 'cljs.test/do-report
-                  (ffirst asserts)))))
+      (let [reporting (th/locate `im/with-reporting (test-block->asserts '("string2" d => e)))]
+        (is (= `(im/with-reporting {:type :behavior :string "string2"})
+               (take 2 reporting)))))
     (behavior "converts triples to assertions"
-      (let [asserts (drop-last (drop 2 (test-block->asserts '("string2" d => e))))]
-        (is (every?
-              #{'cljs.test/is}
-              (map first asserts))))
-      (let [asserts (drop-last (drop 2 (test-block->asserts '("string2" d => e))))]
-        (is (every?
-              #{'cljs.test/is}
-              (map first asserts)))))))
+      (let [asserts (test-block->asserts '("string2" d => e))]
+        (is (every? #{`t/is} (map first (drop 2 asserts))))))))

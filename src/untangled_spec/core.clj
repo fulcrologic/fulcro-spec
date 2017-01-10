@@ -5,15 +5,16 @@
     [clojure.test]
     [untangled-spec.assertions :as ae]
     [untangled-spec.async :as async]
+    [untangled-spec.impl.macros :as im]
     [untangled-spec.provided :as p]
     [untangled-spec.stub]
     [untangled-spec.spec :as us]))
 
-(defn cljs-env?
+(defn- cljs-env?
   "https://github.com/Prismatic/schema/blob/master/src/clj/schema/macros.clj"
   [env] (boolean (:ns env)))
 
-(defn if-cljs [env cljs clj]
+(defn- if-cljs [env cljs clj]
   (if (cljs-env? env) cljs clj))
 
 (defmethod clojure.test/assert-expr '= [msg form]
@@ -46,11 +47,8 @@
     `(~(symbol prefix "deftest")
        ~(with-meta (symbol (str var-name (gensym)))
           (zipmap opts (repeat true)))
-       (~(symbol prefix "do-report")
-         {:type :begin-specification :string ~name})
-       ~@body
-       (~(symbol prefix "do-report")
-         {:type :end-specification :string ~name}))))
+       (im/with-reporting {:type :specification :string ~name}
+         ~@body))))
 
 (s/def ::behavior ::specification)
 (s/fdef behavior :args ::behavior)
@@ -63,16 +61,12 @@
    (behavior \"blows up when the moon is full\" ::manual-test)"
   [& args]
   (let [{:keys [name opts body]} (us/conform! ::behavior args)
-        [startkw stopkw] (if (contains? opts :manual-test)
-                           [:begin-manual :end-manual]
-                           [:begin-behavior :end-behavior])
+        typekw (if (contains? opts :manual-test)
+                 :manual :behavior)
         prefix (if-cljs &env "cljs.test" "clojure.test")]
     `(~(symbol prefix "testing") ~name
-       (~(symbol prefix "do-report")
-         {:type ~startkw :string ~name})
-       ~@body
-       (~(symbol prefix "do-report")
-         {:type ~stopkw :string ~name}))))
+       (im/with-reporting ~{:type typekw :string name}
+         ~@body))))
 
 (defmacro component
   "An alias for behavior. Makes some specification code easier to read where a given specification is describing subcomponents of a whole."

@@ -1,6 +1,7 @@
 (ns untangled-spec.assertions
   (:require
     [#?(:clj clojure.spec :cljs cljs.spec) :as s]
+    #?(:clj [untangled-spec.impl.macros :as im])
     [untangled-spec.spec :as us]))
 
 (s/def ::arrow (comp #{"=>" "=fn=>" "=throws=>"} str))
@@ -110,12 +111,6 @@
       (throw (ex-info "invalid arrow" {:arrow arrow})))))
 
 (defn block->asserts [cljs? {:keys [behavior triples]}]
-  (let [prefix (if cljs? "cljs.test" "clojure.test")
-        do-report (symbol prefix "do-report")
-        asserts (map (partial triple->assertion cljs?) triples)]
-    (if behavior
-      `(do
-         (~do-report {:type :begin-behavior :string ~behavior})
-         ~@asserts
-         (~do-report {:type :end-behavior :string ~behavior}))
-      `(do ~@asserts))))
+  (let [asserts (map (partial triple->assertion cljs?) triples)]
+    `(im/with-reporting ~(when behavior {:type :behavior :string behavior})
+       ~@asserts)))

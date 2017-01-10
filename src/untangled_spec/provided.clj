@@ -2,6 +2,7 @@
   (:require
     [clojure.spec :as s]
     [clojure.string :as str]
+    [untangled-spec.impl.macros :as im]
     [untangled-spec.stub :as stub]
     [untangled-spec.spec :as us]))
 
@@ -82,11 +83,9 @@
   [cljs? string & forms]
   (let [{:keys [mocks body]} (us/conform! ::mocks forms)
         scripts (parse-mocks mocks)
-        skip-output? (= :skip-output string)
-        do-report (symbol (if cljs? "cljs.test" "clojure.test") "do-report")]
-    `(let [~@(mapcat (juxt :symgen :script) scripts)]
-       (with-redefs [~@(mapcat (juxt :mock-name :sstub) scripts)]
-         ~(when-not skip-output? `(~do-report {:type :begin-provided :string ~string}))
-         ~@body
-         (stub/validate-target-function-counts ~(mapv :symgen scripts))
-         ~(when-not skip-output? `(~do-report {:type :end-provided :string ~string}))))))
+        skip-output? (= :skip-output string)]
+    `(im/with-reporting ~(when-not skip-output? {:type :provided :string string})
+       (let [~@(mapcat (juxt :symgen :script) scripts)]
+         (with-redefs [~@(mapcat (juxt :mock-name :sstub) scripts)]
+           ~@body
+           (stub/validate-target-function-counts ~(mapv :symgen scripts)))))))
