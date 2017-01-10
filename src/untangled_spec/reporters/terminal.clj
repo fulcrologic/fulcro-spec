@@ -56,9 +56,9 @@
                                      (str exp " != " got)))
                        nil)
                      (condp (fn [p x] (pos? (p x 0))) status
-                       :passed c/green
                        :failed c/red
                        :error  c/red
+                       :passed c/green
                        c/reset))]
     (apply color-fn strings)))
 
