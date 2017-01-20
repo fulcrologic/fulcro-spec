@@ -24,7 +24,7 @@
     s))
 
 (defn clearfix-separator* [s]
-  (dom/span {:key (get-key)}
+  (dom/span #js {:key (get-key)}
     (separator* s)
     (dom/span #js {:className "clearfix"})))
 
@@ -94,4 +94,4 @@
     (dom/div #js {:className "rendered-edn com-rigsomelight-devcards-typog"}
       (try
         (html (cond-> e diff (diff/patch diff)))
-        (catch Exception e (html "DIFF CRASHED ON OUTPUT"))))))
+        (catch js/Object e (html "DIFF CRASHED ON OUTPUT"))))))
