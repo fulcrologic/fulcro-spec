@@ -31,7 +31,7 @@
 
 (s/def ::specification
   (s/cat
-    :name (s/or :string string? :symbol symbol?)
+    :name string?
     :opts (s/* keyword?)
     :body (s/* ::us/any)))
 
@@ -50,8 +50,12 @@
        (im/with-reporting {:type :specification :string ~name}
          ~@body))))
 
-(s/def ::behavior ::specification)
+(s/def ::behavior (s/cat
+                    :name (s/or :str string? :sym symbol?)
+                    :opts (s/* keyword?)
+                    :body (s/* ::us/any)))
 (s/fdef behavior :args ::behavior)
+
 (defmacro behavior
   "Adds a new string to the list of testing contexts.  May be nested,
    but must occur inside a specification. If the behavior is not machine
@@ -61,6 +65,7 @@
    (behavior \"blows up when the moon is full\" ::manual-test)"
   [& args]
   (let [{:keys [name opts body]} (us/conform! ::behavior args)
+        name (second name)
         typekw (if (contains? opts :manual-test)
                  :manual :behavior)
         prefix (if-cljs &env "cljs.test" "clojure.test")]
