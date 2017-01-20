@@ -31,7 +31,7 @@
 
 (s/def ::specification
   (s/cat
-    :name string?
+    :name (s/or :string string? :symbol symbol?)
     :opts (s/* keyword?)
     :body (s/* ::us/any)))
 
