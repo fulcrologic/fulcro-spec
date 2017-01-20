@@ -92,4 +92,6 @@
 (defn html-edn [e & [diff]]
   (binding [*key-counter* (atom 0)]
     (dom/div #js {:className "rendered-edn com-rigsomelight-devcards-typog"}
-      (html (cond-> e diff (diff/patch diff))))))
+      (try
+        (html (cond-> e diff (diff/patch diff)))
+        (catch Exception e (html "DIFF CRASHED ON OUTPUT"))))))
