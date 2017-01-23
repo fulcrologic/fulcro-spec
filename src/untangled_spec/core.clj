@@ -51,7 +51,7 @@
          ~@body))))
 
 (s/def ::behavior (s/cat
-                    :name (s/or :str string? :sym symbol?)
+                    :name (constantly true)
                     :opts (s/* keyword?)
                     :body (s/* ::us/any)))
 (s/fdef behavior :args ::behavior)
@@ -65,7 +65,6 @@
    (behavior \"blows up when the moon is full\" ::manual-test)"
   [& args]
   (let [{:keys [name opts body]} (us/conform! ::behavior args)
-        name (second name)
         typekw (if (contains? opts :manual-test)
                  :manual :behavior)
         prefix (if-cljs &env "cljs.test" "clojure.test")]
