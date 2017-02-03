@@ -164,3 +164,11 @@
     (behavior "converts triples to assertions"
       (let [asserts (test-block->asserts '("string2" d => e))]
         (is (every? #{`t/is} (map first (drop 2 asserts))))))))
+
+(specification "fix-conform for issue #31"
+  (assertions
+    (mapv (juxt :behavior (comp count :triples))
+      (ae/fix-conform
+        (us/conform! ::ae/assertions
+          '("foo" 1 => 2 "bar" 3 => 4, 5 => 6 "qux" 7 => 8, 9 => 10))))
+    => '[["foo" 1] ["bar" 2] ["qux" 2]]))

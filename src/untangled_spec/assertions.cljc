@@ -110,6 +110,12 @@
 
       (throw (ex-info "invalid arrow" {:arrow arrow})))))
 
+(defn fix-conform [conformed-assertions]
+  ;;see issue: #31
+  (if (vector? (second conformed-assertions))
+    (vec (cons (first conformed-assertions) (second conformed-assertions)))
+    conformed-assertions))
+
 (defn block->asserts [cljs? {:keys [behavior triples]}]
   (let [asserts (map (partial triple->assertion cljs?) triples)]
     `(im/with-reporting ~(when behavior {:type :behavior :string behavior})

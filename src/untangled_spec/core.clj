@@ -110,6 +110,6 @@
 
 (s/fdef assertions :args ::ae/assertions)
 (defmacro assertions [& forms]
-  (let [blocks (us/conform! ::ae/assertions forms)
+  (let [blocks (ae/fix-conform (us/conform! ::ae/assertions forms))
         asserts (map (partial ae/block->asserts (cljs-env? &env)) blocks)]
     `(do ~@asserts true)))
