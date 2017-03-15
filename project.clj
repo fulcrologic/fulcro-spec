@@ -16,7 +16,7 @@
                  [org.clojure/tools.namespace "0.3.0-alpha3"]
                  [org.omcljs/om "1.0.0-alpha47" :scope "provided" :exclusions [cljsjs/react]]]
 
-  :plugins [[com.jakemccrary/lein-test-refresh "0.18.1" :exclusions [org.clojure/tools.namespace]]
+  :plugins [[com.jakemccrary/lein-test-refresh "0.19.0" :exclusions [org.clojure/tools.namespace]]
             [lein-cljsbuild "1.1.5"]
             [lein-doo "0.1.6"] ;; for cljs CI tests
             [lein-shell "0.5.0"]]
