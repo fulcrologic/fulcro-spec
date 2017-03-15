@@ -7,6 +7,14 @@
 :sectanchors:
 :sectnums:
 
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
 A Specification testing framework.
 
 image::https://img.shields.io/clojars/v/navis/untangled-spec.svg[link="https://clojars.org/navis/untangled-spec"]
@@ -14,7 +22,239 @@ image::https://img.shields.io/clojars/v/navis/untangled-spec.svg[link="https://c
 Release: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=master[link=https://github.com/untangled-web/untangled-spec/tree/master]
 Develop: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=develop[link=https://github.com/untangled-web/untangled-spec/tree/develop]
 
-== Learn more
+== Usage
+
+* Make sure your link:https://clojure.org/community/downloads[clojure](link:https://github.com/clojure/clojurescript/releases[script]) versions are at or above "1.9.x".
+
+* Add `[navis/untangled-spec "x.y.z"]` to your `:dependencies`.
+
+* Make sure you have at least one test file, eg: `test/your-ns/arithmetic_spec.cljc`, that uses `untangled-spec.core`:
+
+[source]
+----
+(ns your-ns.arithmetic-spec
+  (:require
+    [untangled-spec.core :refer [specification behavior component assertions]]))
+
+(specification "arithmetic"
+  (component "addition"
+    (behavior "is commutative"
+      (assertions
+        (+ 13 42) => (+ 42 13)))))
+----
+
+=== Clojure In The Terminal
+
+* Add `[com.jakemccrary/lein-test-refresh "x.y.z"]` to your `:plugins`.
+** Check link:https://github.com/jakemcc/lein-test-refresh#usage[lein test refresh itself] for the latest version.
+* Add the following to your `project.clj` configuration:
+
+    :test-refresh {:report untangled-spec.reporters.terminal/untangled-report}
+
+[NOTE]
+====
+Other configuration options are available, take a look at:
+
+* link:https://github.com/jakemcc/lein-test-refresh/blob/master/sample.project.clj[].
+* link:https://github.com/jakemcc/lein-test-refresh/blob/master/test-refresh/src/leiningen/test_refresh.clj[].
+====
+
+* Run `lein test-refresh` in your command-line, et voila! You should see something like:
+
+----
+Using reporter: untangled-spec.reporters.terminal/untangled-report
+*********************************************
+*************** Running tests ***************
+:reloading (your-ns.arithmetic-spec)
+Running tests for: (your-ns.arithmetic-spec)
+
+Testing your-ns.arithmetic-spec
+   addition
+     is commutative
+
+Ran 1 tests containing 1 assertions.
+0 failures, 0 errors.
+
+Failed 0 of 1 assertions
+Finished at 17:32:43.925 (run time: 0.01s)
+----
+
+TIP: Make sure you make the test fail to check that error reporting is working before moving on to another section.
+
+[WARNING]
+====
+
+    Error refreshing environment: java.io.FileNotFoundException: Could not locate clojure/spec__init.class or clojure/spec.clj on classpath.
+
+Make sure you have link:https://clojure.org/community/downloads[clojure](link:https://github.com/clojure/clojurescript/releases[script]) versions above "1.9.x".
+====
+
+[WARNING]
+====
+
+    Error refreshing environment: java.lang.IllegalAccessError: clj does not exist, compiling:(untangled_spec/watch.clj:1:1)
+
+Add an `:exclusions [org.clojure/tools.namespace]` for tools.namespace on lein-test-refresh +
+(and any other projects that use it, which you can check using `lein deps :tree` or `boot -pd`), +
+as untangled-spec requires "0.3.x" for clojurescript support, but lein-test-refresh doesn't need that itself.
+====
+
+=== Clojure In The Browser
+
+* Create a `dev/clj/user.clj` file that contains:
+
+[source]
+----
+(ns clj.user
+  (:require
+    [untangled-spec.selectors :as sel]
+    [untangled-spec.suite :as suite])
+
+(suite/def-test-suite my-test-suite
+  {:config {:port 8888} ;;<2>
+   :test-paths ["test"]
+   :source-paths ["src"]}
+  {:available #{:focused :unit :integration}
+   :default #{::sel/none :focused :unit}})
+
+(my-test-suite) ;;<1>
+----
+<1> Starts the test suite, note that it will stop any pre-existing test suite first, so it's safe to call this whenever (eg: hot code reload).
+<2> You can now goto link:localhost:8888/untangled-spec-server-tests.html[]
+
+//DIVIDER WHY OH WHY
+* Make sure the `"dev"` folder is in your `:source-paths`, if you are using lein that's probably just a `:profiles {:dev {:source-paths ["dev"]}}`.
+* Add `clj.user` to your `:repl-options {:init-ns clj.user}`, which again if using lein probably goes in your `:profiles {:dev #_...}`
+
+=== CLJS In The Browser
+
+* Add `[figwheel-sidecar "x.y.z"]` to your `dev` time dependencies (link:https://clojars.org/lein-figwheel[latest releases]).
+** Add `[com.cemerick/piggieback "x.y.z"]` to your `dev` time dependencies (link:https://clojars.org/com.cemerick/piggieback[latest version]).
+** Add `:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]` to your `:repl-options`.
+* Add `[org.clojure/clojurescript "x.y.z"]` as a normal dependencies (link:https://github.com/clojure/clojurescript/releases[latest releases]).
+
+* Add to your `/dev/clj/user.clj`:
+
+[source]
+----
+(:require
+  [com.stuartsierra.component :as cp]
+  [figwheel-sidecar.system :as fsys]
+  #_...)
+
+(defn start-figwheel [build-ids]
+  (-> (fsys/fetch-config)
+    (assoc-in [:data :build-ids] build-ids)
+    fsys/figwheel-system cp/start fsys/cljs-repl))
+----
+
+* Create a `/dev/cljs/user.cljs`
+
+[source]
+----
+(ns cljs.user
+  (:require
+    your-ns.arithmetic-spec ;;<1>
+    [untangled-spec.selectors :as sel]
+    [untangled-spec.suite :as suite]))
+
+(suite/def-test-suite on-load {:ns-regex #"your-ns\..*-spec"} ;;<2>
+  {:default #{::sel/none :focused}
+   :available #{:focused :should-fail}})
+----
+<1> Ensures your tests are loaded so the test suite can find them
+<2> Regex for finding just your tests from all the loaded namespaces.
+
+//DIVIDER WHY OH WHY
+* Add `[lein-cljsbuild "x.y.z"]` as a `:plugin` (link:https://github.com/emezeske/lein-cljsbuild#latest-version[latest version]).
+* Add a `:cljsbuild` for your tests (link:https://github.com/emezeske/lein-cljsbuild#basic-configuration[basic configuration]), eg:
+
+[source]
+----
+:cljsbuild {:builds [
+
+{:id "test"
+ :source-paths ["src" "dev" "test"]
+ :figwheel     {:on-jsload cljs.user/on-load}
+ :compiler     {:main          cljs.user
+                :output-to     "resources/public/js/test/test.js"
+                :output-dir    "resources/public/js/test/out"
+                :asset-path    "js/test/out"
+                :optimizations :none}}
+
+]}
+----
+
+    lein repl
+    #_=> (start-figwheel ["test"])
+
+[WARNING]
+====
+    java.lang.RuntimeException: No such var: om/dispatch, compiling:(untangled/client/mutations.cljc:8:1)
+
+Means you have a conflicting org.omcljs/om versions, either resolve them by looking at `lein deps :tree` or `bood -pd`, or pin your version to the link:https://github.com/omcljs/om/releases[latest version] or whatever version untangled-spec is using.
+====
+
+==== For CI
+
+* Add lein-doo as both a test dependency and a plugin
+
+    :dependencies [#_... [lein-doo "0.1.6" :scope "test"] #_...]
+    :plugins [#_... [lein-doo "0.1.6"] #_...]
+
+* Add a `:doo` section to your project.clj
+
+    :doo {:build "automated-tests"
+          :paths {:karma "node_modules/karma/bin/karma"}}
+
+* Add a top level `package.json` containing at least:
+
+    {
+      "devDependencies": {
+        "karma": "^0.13.19",
+        "karma-chrome-launcher": "^0.2.2",
+        "karma-firefox-launcher": "^0.1.7",
+        "karma-cljs-test": "^0.1.0"
+      }
+    }
+
+* Add a `:cljsbuild` for your CI tests, eg:
+
+[source]
+----
+:cljsbuild {:builds [
+
+{:id "automated-tests"
+ :source-paths ["src" "test"]
+ :compiler     {:output-to     "resources/private/js/unit-tests.js"
+                :output-dir    "resources/private/js/unit-tests"
+                :asset-path    "js/unit-tests"
+                :main          untangled-spec.all-tests
+                :optimizations :none}}
+
+]}
+----
+
+* Add a file that runs your tests
+
+[source]
+----
+(ns your-ns.all-tests
+  (:require
+    your-ns.arithmetic-spec ;; ensures tests are loaded so doo can find them
+    [doo.runner :refer-macros [doo-all-tests]]))
+
+(doo-all-tests #"untangled-spec\..*-spec")
+----
+
+* Run `npm install` & then `lein doo chrome automated-tests once`, +
+
+NOTE: If you put the `automated-tests` build in a lein profile (eg: test), +
+you will have to prepend a `with-profile test ...` in your command.
+
+* See link:http://github.com/bensu/doo#doo[doo] itself for further details & as a fallback if this information is somehow out of date.
+
+== Learn More
 * about link:docs/index.adoc#untangled-spec-docs[Untangled Spec]
 * about link:http://untangled-web.github.io/untangled/index.html[Untangled] & checkout the link:http://untangled-web.github.io/untangled/index.html[Documentation Reference]
 * interactively with the link:http://untangled-web.github.io/untangled/tutorial.html[Untangled Tutorial]
@@ -22,27 +262,39 @@ Develop: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch
 
 == Development
 
-To run cljs tests:
+NOTE: This section is for the _development_ of *untangled-spec itself*. +
+If you wanted instructions on how to use untangled-spec in your app/library, see <<Usage>>
 
-     lein repl
-     user=> (start-figwheel ["test"])
+=== CLJS In The Browser
 
-To run clj tests:
+    lein repl
+    #_user=> (start-figwheel ["test"])
 
-     lein test-refresh
+& link:localhost:8888/untangled-spec-server-tests.html[]
+
+=== Clojure In The Terminal
+
+    lein test-refresh
+
+=== Clojure In The Browser
+
+    lein repl
+    #_user=> (start)
+
+& link:localhost:8888/untangled-spec-server-tests.html[]
 
 === CI Testing
 
-To run the CLJ and CLJS tests on the CI server, it must have chrome, node, and npm installed. Then
-you can simply use the Makefile:
+To run the CLJ and CLJS tests on a CI server, it must have chrome, node, and npm installed. +
+Then you can simply use the Makefile:
 
     make tests
 
-or run
+or manually run:
 
 	npm install
-	lein doo chrome automated-tests once
-	lein test-refresh :run-once
+	lein test-cljs
+	lein test-clj
 
 == License
 

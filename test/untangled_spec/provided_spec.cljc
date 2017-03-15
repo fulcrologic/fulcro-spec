@@ -56,7 +56,7 @@
 #?(:clj
    (specification "provided-macro"
      (behavior "Outputs a syntax-quoted block"
-       (let [expanded (apply p/provided-fn false "some string"
+       (let [expanded (p/provided* false "some string"
                         '[(f n) => (+ n 1)
                           (f n) =2x=> (* 3 n)
                           (under-test)])]
@@ -84,7 +84,7 @@
                    {:type :provided :string "some string"})))))
 
      (behavior "Can do mocking without output"
-       (let [expanded (apply p/provided-fn false :skip-output
+       (let [expanded (p/provided* false :skip-output
                         '[(f n) => (+ n 1)
                           (f n) =2x=> (* 3 n)
                           (under-test)])

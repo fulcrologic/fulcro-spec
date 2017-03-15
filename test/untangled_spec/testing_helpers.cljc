@@ -15,4 +15,3 @@
          %)
       haystack)
     @needle))
-

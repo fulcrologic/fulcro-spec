@@ -3,7 +3,7 @@
     [clojure.spec :as s]
     [clojure.test :as t :refer [is]]
     [untangled-spec.assertions :as ae
-     :refer [triple->assertion check-error check-error* parse-criteria]]
+     :refer [check-error check-error* parse-criteria]]
     [untangled-spec.contains :refer [*contains?]]
     [untangled-spec.core
      :refer [specification component behavior assertions]]
@@ -19,7 +19,7 @@
       (->> actual second (= expected)))))
 
 (defn test-triple->assertion [form]
-  (triple->assertion false (us/conform! ::ae/triple form)))
+  (ae/triple->assertion false (us/conform! ::ae/triple form)))
 
 (defn test-block->asserts [form]
   (ae/block->asserts false (us/conform! ::ae/block form)))
@@ -109,52 +109,58 @@
         (f 6) => 7
         (f 2) => 3))))
 
+(defn get-exp-act [{exp :expected act :actual msg :message extra :extra} & [opt]]
+  (case opt
+    :all [act exp msg extra]
+    :msg [act exp msg]
+    :ae  [act exp extra]
+    [act exp]))
+
+(defmacro test-case [x & [opt]]
+  `(binding [t/report identity]
+     (get-exp-act ~(-> x test-triple->assertion) ~opt)))
+
 (specification "running assertions reports the correct data"
-  (let [get-exp-act (fn [{exp :expected act :actual msg :message extra :extra} & [opt]]
-                      (case opt
-                        :all [act exp msg extra]
-                        :msg [act exp msg]
-                        :ae  [act exp extra]
-                        [act exp]))
-        test-case (fn [x & [opt]]
-                    (binding [t/report (fn [m] m)]
-                      (-> x test-triple->assertion eval (get-exp-act opt))))]
-    (component "=>"
-      (behavior "literals"
-        (is (= [5 3] (test-case '(5 => 3)))))
-      (behavior "forms"
-        (is (= [5 3 "(+ 3 2) => (+ 2 1)"]
-               (test-case '((+ 3 2) => (+ 2 1)) :msg))))
-      (behavior "unexpected throw"
-        (is (= ["clojure.lang.ExceptionInfo: bad {}"
-                "(= \"good\" (throw (ex-info \"bad\" {})))"
-                "(throw (ex-info \"bad\" {})) => good"]
-               (mapv str (test-case '((throw (ex-info "bad" {})) => "good") :msg))))))
+  (component "=>"
+    (behavior "literals"
+      (is (= [5 3] (test-case (5 => 3)))))
+    (behavior "forms"
+      (is (= [5 3 "(+ 3 2) => (+ 2 1)"]
+             (test-case ((+ 3 2) => (+ 2 1)) :msg))))
+    (behavior "unexpected throw"
+      (is (= ["clojure.lang.ExceptionInfo: bad {}"
+              "(= \"good\" (throw (ex-info \"bad\" {})))"
+              "(throw (ex-info \"bad\" {})) => good"]
+             (mapv str (test-case ((throw (ex-info "bad" {})) => "good") :msg))))))
 
-    (component "=fn=>"
-      (behavior "literals"
-        (is (= [5 'even? "5 =fn=> even?"]
-               (test-case '(5 =fn=> even?) :msg))))
-      (behavior "lambda"
-        (is (re-find #"even\?"
-                     (->> '(7 =fn=> #(even? %))
-                       test-case second str))))
-      (behavior "forms"
-        (is (= [7 '(fn [x] (even? x))]
-               (test-case '((+ 5 2) =fn=> (fn [x] (even? x))))))))
+  (component "=fn=>"
+    (behavior "literals"
+      (is (= [5 'even? "5 =fn=> even?"]
+             (test-case (5 =fn=> even?) :msg))))
+    (behavior "lambda"
+      (is (re-find #"even\?"
+                   (str (second (test-case (7 =fn=> #(even? %))))))))
+    (behavior "forms"
+      (is (= [7 '(fn [x] (even? x))]
+             (test-case ((+ 5 2) =fn=> (fn [x] (even? x)))))))
+    (behavior "unexpected error"
+      (is (= ["clojure.lang.ExceptionInfo: bad {}"
+              "(exec even? (throw (ex-info \"bad\" {})))"
+              "(throw (ex-info \"bad\" {})) =fn=> even?"]
+             (mapv str (test-case ((throw (ex-info "bad" {})) =fn=> even?) :msg))))))
 
-    (component "=throws=>"
-      (behavior "reports if the message didnt match the regex"
-        (is (= ["foo", "asdf", "(throw (ex-info \"foo\" {})) =throws=> (clojure.lang.ExceptionInfo #\"asdf\")"
-                "exception's message did not match regex"]
-               (test-case '((throw (ex-info "foo" {}))
-                            =throws=> (clojure.lang.ExceptionInfo #"asdf"))
-                          :all))))
-      (behavior "reports if nothing was thrown"
-        (is (= ["it to throw", "(+ 5 2) =throws=> (clojure.lang.ExceptionInfo #\"asdf\")"
-                "Expected an error to be thrown!"]
-               (-> '((+ 5 2) =throws=> (clojure.lang.ExceptionInfo #"asdf"))
-                 (test-case :all) rest))))))
+  (component "=throws=>"
+    (behavior "reports if the message didnt match the regex"
+      (is (= ["foo", "asdf", "(throw (ex-info \"foo\" {})) =throws=> (clojure.lang.ExceptionInfo #\"asdf\")"
+              "exception's message did not match regex"]
+             (test-case ((throw (ex-info "foo" {}))
+                          =throws=> (clojure.lang.ExceptionInfo #"asdf"))
+               :all))))
+    (behavior "reports if nothing was thrown"
+      (is (= ["it to throw", "(+ 5 2) =throws=> (clojure.lang.ExceptionInfo #\"asdf\")"
+              "Expected an error to be thrown!"]
+             (-> ((+ 5 2) =throws=> (clojure.lang.ExceptionInfo #"asdf"))
+               (test-case :all) rest)))))
 
   (component "block->asserts"
     (behavior "wraps triples in behavior do-reports"

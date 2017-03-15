@@ -7,9 +7,10 @@
     [clojure.test :as t]
     [clojure.walk :as walk]
     [colorize.core :as c]
+    [com.stuartsierra.component :as cp]
     [io.aviso.exception :as pretty]
-    [untangled-spec.reporters.impl.diff :as diff]
-    [untangled-spec.reporters.impl.base-reporter :as base]))
+    [untangled-spec.diff :as diff]
+    [untangled-spec.reporter :as base]))
 
 (def cfg
   (atom
@@ -56,9 +57,9 @@
                                      (str exp " != " got)))
                        nil)
                      (condp (fn [p x] (pos? (p x 0))) status
-                       :failed c/red
+                       :fail c/red
                        :error  c/red
-                       :passed c/green
+                       :pass c/green
                        c/reset))]
     (apply color-fn strings)))
 
@@ -70,9 +71,6 @@
 (defn print-throwable [e]
   (print (pretty/format-exception e {:frame-limit (env :frame-limit)}))
   (some-> (.getCause e) print-throwable))
-
-(defmethod print-method Throwable [e w]
-  (print-method (c/red e) w))
 
 (defn pretty-str [s n]
   (as-> (with-out-str (pprint s)) s
@@ -132,7 +130,7 @@
 
 (defn print-where [w s print-fn]
   (let [status->str {:error "Error"
-                     :failed "Failed"}]
+                     :fail "Failed"}]
     (->> (s/replace w #"G__\d+" "")
          (str (status->str s) " in ")
          (color-str :where)
@@ -163,7 +161,7 @@
 
 (def when-fail-only-keep-failed
   (filter #(if-not (env :fail-only?) true
-             (or (pos? (:failed (:status %) 0))
+             (or (pos? (:fail (:status %) 0))
                  (pos? (:error (:status %) 0))))))
 
 (defn print-test-item [test-item print-level]
@@ -172,7 +170,7 @@
       (color-str (:status test-item)
         (:name test-item)))
     (into []
-      (comp (filter (comp #{:failed :error} :status))
+      (comp (filter (comp #{:fail :error} :status))
         (map #(print-test-result % (->> print-level inc space-level
                                      (partial println))
                 (inc print-level))))
@@ -194,80 +192,29 @@
 
 (defn print-report-data
   "Prints the current report data from the report data state and applies colors based on test results"
-  [{:keys [state]}]
-  (t/with-test-out
-    (let [{:keys [namespaces tested passed failed error]} @state]
-      (println "Running tests for:" (map :name namespaces))
-      (try (->> namespaces
-             (into [] when-fail-only-keep-failed)
-             (sort-by :name)
-             (mapv print-namespace))
-        (catch Exception e
-          (when-not (->> e ex-data ::stop?)
-            (print-throwable e))))
-      (println "\nRan" tested "tests containing"
-        (+ passed failed error) "assertions.")
-      (println failed "failures,"
-        error "errors."))))
+  [reporter]
+  (do
+    (defmethod print-method Throwable [e w]
+      (print-method (c/red e) w))
+    (t/with-test-out
+      (let [{:keys [namespaces test pass fail error]} (base/get-test-report reporter)]
+        (println "Running tests for:" (map :name namespaces))
+        (try (->> namespaces
+               (into [] when-fail-only-keep-failed)
+               (sort-by :name)
+               (mapv print-namespace))
+          (catch Exception e
+            (when-not (->> e ex-data ::stop?)
+              (print-throwable e))))
+        (println "\nRan" test "tests containing"
+          (+ pass fail error) "assertions.")
+        (println fail "failures," error "errors.")))
+    (remove-method print-method Throwable)
+    reporter))
 
 (def this
-  {:state (atom (base/make-testreport))
-   :path  (atom [])})
+  (cp/start (base/make-test-reporter)))
 
-(defmulti ^:dynamic untangled-report :type)
-
-(defmethod untangled-report :default [t])
-
-(defmethod untangled-report :pass [t]
-  (t/inc-report-counter :pass)
-  (base/pass this t))
-
-(defmethod untangled-report :error [t]
-  (t/inc-report-counter :error)
-  (base/error this t))
-
-(defmethod untangled-report :fail [t]
-  (t/inc-report-counter :fail)
-  (base/fail this t))
-
-(defmethod untangled-report :begin-test-ns [t]
-  (base/begin-namespace this t))
-
-(defmethod untangled-report :end-test-ns [t]
-  (base/end-namespace this t))
-
-(defmethod untangled-report :begin-specification [t]
-  (base/begin-specification this t))
-
-(defmethod untangled-report :end-specification [t]
-  (base/end-specification this t))
-
-(defmethod untangled-report :begin-behavior [t]
-  (base/begin-behavior this t))
-
-(defmethod untangled-report :end-behavior [t]
-  (base/end-behavior this t))
-
-(defmethod untangled-report :begin-manual [t]
-  (base/begin-manual this t))
-
-(defmethod untangled-report :end-manual [t]
-  (base/end-manual this t))
-
-(defmethod untangled-report :begin-provided [t]
-  (base/begin-provided this t))
-
-(defmethod untangled-report :end-provided [t]
-  (base/end-provided this t))
-
-(defmethod untangled-report :summary [t]
-  (base/summary this t)
-  (print-report-data this)
-  (reset! (:path this) [])
-  (reset! (:state this) (base/make-testreport)))
-
-(defmacro with-untangled-output
-  "Execute body with modified test reporting functions that produce outline output"
-  [& body]
-  `(binding [t/report untangled-report]
-     ~@body))
+(def untangled-report
+  (base/untangled-report {:test/reporter this}
+    (comp base/reset-test-report! print-report-data :test/reporter)))
