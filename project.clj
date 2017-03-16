@@ -39,8 +39,7 @@
 
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js" "resources/private/js"]
 
-  :cljsbuild {:test-commands {"unit-tests" ["phantomjs" "run-tests.js" "resources/private/unit-tests.html"]}
-              :builds        {;; For rendering specs without figwheel (eg: server side tests)
+  :cljsbuild {:builds        {;; For rendering specs without figwheel (eg: server side tests)
                               :spec-renderer {:source-paths ["src"]
                                               :compiler     {:main          untangled-spec.spec-renderer
                                                              :output-to     "resources/public/js/test/untangled-spec-renderer.js"
@@ -55,7 +54,6 @@
 
   :aliases {"jar"               ["with-profile" "with-cljs" "jar"]
             "test-cljs"         ["with-profile" "test" "doo" "phantom" "automated-tests" "once"]
-            "test-cljs-firefox" ["with-profile" "test" "doo" "firefox" "automated-tests" "once"]
             "test-clj"          ["test-refresh" ":run-once"]}
 
   :profiles {:with-cljs {:prep-tasks ["compile" ["cljsbuild" "once" "spec-renderer"]]}
