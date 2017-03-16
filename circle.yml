@@ -4,4 +4,4 @@ dependencies:
 test:
     override:
         - lein test-clj
-        - lein test-cljs
+        - xvfb-run lein test-cljs
