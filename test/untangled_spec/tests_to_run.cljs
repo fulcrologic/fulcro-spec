@@ -4,8 +4,6 @@
     untangled-spec.async-spec
     untangled-spec.contains-spec
     untangled-spec.diff-spec
-    untangled-spec.dom.events-spec
-    untangled-spec.dom.util-spec
     untangled-spec.provided-spec
     untangled-spec.selectors-spec
     untangled-spec.stub-spec

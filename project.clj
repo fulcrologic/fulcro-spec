@@ -3,22 +3,21 @@
   :url ""
   :license {:name "MIT Public License"
             :url  "https://opensource.org/licenses/MIT"}
-  :dependencies [[cljsjs/react-with-addons "15.0.1-1" :scope "provided"]
-                 [colorize "0.1.1" :exclusions [org.clojure/clojure]]
+  :dependencies [[colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [kibu/pushy "0.3.6"]
                  [lein-doo "0.1.6" :scope "test"]
-                 [navis/untangled-client "0.7.1-SNAPSHOT"]
-                 [navis/untangled-server "0.7.0-SNAPSHOT" :exclusions [com.taoensso/timbre]]
+                 [navis/untangled-client "0.8.0"]
+                 [navis/untangled-server "0.7.0" :exclusions [com.taoensso/timbre]]
                  [navis/untangled-websockets "0.3.3-SNAPSHOT"]
                  [org.clojure/clojure "1.9.0-alpha14" :scope "provided"]
                  [org.clojure/clojurescript "1.9.473" :scope "provided"]
                  [org.clojure/tools.namespace "0.3.0-alpha3"]
-                 [org.omcljs/om "1.0.0-alpha47" :scope "provided" :exclusions [cljsjs/react]]]
+                 [org.omcljs/om "1.0.0-alpha48" :scope "provided" :exclusions [cljsjs/react]]]
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.19.0" :exclusions [org.clojure/tools.namespace]]
             [lein-cljsbuild "1.1.5"]
-            [lein-doo "0.1.6"] ;; for cljs CI tests
+            [lein-doo "0.1.6"]                              ;; for cljs CI tests
             [lein-shell "0.5.0"]]
 
   :release-tasks [["shell" "bin/release" "all_tasks"]]
@@ -29,9 +28,9 @@
 
   ;; this for backwards compatability, should now use untangled-spec.suite/def-test-suite
   ;; (see dev/clj/user.clj for an example)
-  :test-refresh {:report untangled-spec.reporters.terminal/untangled-report
+  :test-refresh {:report       untangled-spec.reporters.terminal/untangled-report
                  :changes-only true
-                 :with-repl true}
+                 :with-repl    true}
   :test-selectors {:default (complement :should-fail)}
 
   ;; CI tests: Set up to support karma runner. Recommend running against chrome. See README
@@ -51,34 +50,34 @@
 
   :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
 
-  :figwheel {:nrepl-port 7888
+  :figwheel {:nrepl-port  7888
              :server-port 3457}
 
-  :aliases {"jar" ["with-profile" "with-cljs" "jar"]
-            "test-cljs" ["with-profile" "test" "doo" "chrome" "automated-tests" "once"]
+  :aliases {"jar"               ["with-profile" "with-cljs" "jar"]
+            "test-cljs"         ["with-profile" "test" "doo" "phantom" "automated-tests" "once"]
             "test-cljs-firefox" ["with-profile" "test" "doo" "firefox" "automated-tests" "once"]
-            "test-clj" ["test-refresh" ":run-once"]}
+            "test-clj"          ["test-refresh" ":run-once"]}
 
   :profiles {:with-cljs {:prep-tasks ["compile" ["cljsbuild" "once" "spec-renderer"]]}
-             :test {:cljsbuild {:builds {:automated-tests {:doc "For CI tests. Runs via doo"
-                                                           :source-paths ["src" "test"]
-                                                           :compiler     {:output-to     "resources/private/js/unit-tests.js"
-                                                                          :output-dir    "resources/private/js/unit-tests"
-                                                                          :asset-path    "js/unit-tests"
-                                                                          :main          untangled-spec.all-tests
-                                                                          :optimizations :none}}}}}
-             :dev {:cljsbuild {:builds {:test {:source-paths ["src" "dev" "test"]
-                                               :figwheel     {:on-jsload cljs.user/on-load}
-                                               :compiler     {:main          cljs.user
-                                                              :output-to     "resources/public/js/test/test.js"
-                                                              :output-dir    "resources/public/js/test/out"
-                                                              :asset-path    "js/test/out"
-                                                              :optimizations :none}}}}
-                   :source-paths ["src" "test" "dev"]
-                   :repl-options {:init-ns clj.user
-                                  :port    7007
-                                  :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
-                   :dependencies [[com.cemerick/piggieback "0.2.1"]
-                                  [figwheel-sidecar "0.5.8" :exclusions [ring/ring-core http-kit joda-time]]
-                                  [org.clojure/tools.nrepl "0.2.12"]
-                                  [org.clojure/test.check "0.9.0"]]}})
+             :test      {:cljsbuild {:builds {:automated-tests {:doc          "For CI tests. Runs via doo"
+                                                                :source-paths ["src" "test"]
+                                                                :compiler     {:output-to     "resources/private/js/unit-tests.js"
+                                                                               :output-dir    "resources/private/js/unit-tests"
+                                                                               :asset-path    "js/unit-tests"
+                                                                               :main          untangled-spec.all-tests
+                                                                               :optimizations :simple}}}}}
+             :dev       {:cljsbuild    {:builds {:test {:source-paths ["src" "dev" "test"]
+                                                        :figwheel     {:on-jsload cljs.user/on-load}
+                                                        :compiler     {:main          cljs.user
+                                                                       :output-to     "resources/public/js/test/test.js"
+                                                                       :output-dir    "resources/public/js/test/out"
+                                                                       :asset-path    "js/test/out"
+                                                                       :optimizations :none}}}}
+                         :source-paths ["src" "test" "dev"]
+                         :repl-options {:init-ns          clj.user
+                                        :port             7007
+                                        :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+                         :dependencies [[com.cemerick/piggieback "0.2.1"]
+                                        [figwheel-sidecar "0.5.8" :exclusions [ring/ring-core http-kit joda-time]]
+                                        [org.clojure/tools.nrepl "0.2.12"]
+                                        [org.clojure/test.check "0.9.0"]]}})
