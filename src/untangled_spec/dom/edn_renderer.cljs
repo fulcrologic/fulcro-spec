@@ -1,7 +1,7 @@
 (ns untangled-spec.dom.edn-renderer
   (:require
     [cljs.pprint :refer [pprint]]
-    [untangled-spec.reporters.impl.diff :as diff]
+    [untangled-spec.diff :as diff]
     [om.dom :as dom])
   (:import
     (goog.string StringBuffer)))

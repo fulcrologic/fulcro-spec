@@ -36,71 +36,209 @@ The specification DSL makes it much easier to read the tests, and also includes 
     - Mocks can simulate timelines for CSP logic
 - Protocol testing support (helps prove network interactions are correct without running the full stack)
 
-== Setting up
+== Client Tests
 
-Please use the Untangled Tutorial or TodoMVC projects as samples for setting up a project.
+A dev-time only entry point for browser test rendering:
 
-As an example, we can look inside untangled-spec for the following files:
+[source]
+----
+(ns cljs.user
+  (:require
+    [untangled-spec.tests-to-run] ;;<1>
+    [untangled-spec.suite :as suite]
+    [untangled-spec.selectors :as sel]))
 
-- link:../test/untangled_spec/all_tests.cljs[all_tests.cljs] : An entry point for CI testing from the command line.
-- link:../dev/cljs/user.cljs[user.cljs] : The entry point for browser test rendering.
-- link:../test/untangled_spec/tests_to_run.cljs[tests_to_run.cljs] : A file that does nothing more than require all of the specs. The test runners search for
-testing namespaces, so if you don't load them somewhere, they won't be found. Since there are two places tests
-run from (browser and CI) it makes sense to make this DRY.
-- `*_spec.clj(s)` : Are spec files containing tests/assertions.
+(suite/def-test-suite on-load ;;<2>
+  {:ns-regex #"untangled-spec\..*-spec"} ;;<3>
+  {:available #{:focused :should-fail} ;;<4>
+   :default #{::sel/none :focused}}) ;;<5>
+----
 
-There is a top level link:../package.json[package.json] file for installing node packages to run CI tests.
+<1> link:../test/untangled_spec/tests_to_run.cljs[tests_to_run.cljs] Just requires all of your tests. This is necessary as all cljs test runners search by looking at the loaded namespaces. Since there are two places cljs tests can run from (browser and CI), it makes sense to keep this list in one file.
+<2> Define a callback for figwheel to call to re run the tests.
+<3> `:ns-regex` is the regex to filter the loaded namespaces down to just your tests.
+<4> Is where you define your `:available` selectors, ie: legal/possible values for selectors on your `specification`.
+<5> `:default` selectors to use when you haven't yet specified any in the browser ui.
 
-The link:../project.clj[project.clj] includes various things to make all of this work:
+A cljsbuild in your project.clj (or if using boot: roughly) as follows:
 
-- The https://github.com/bensu/doo#usage[lein doo plugin], for running tests through karma *via* node (in Chrome).
-- A `:doo` section to configure the CI runner
-- A cljsbuild for testing with figwheel true. The build with id "test" link:../project.clj#L36[here], is the browser test build.
-- A cljsbuild for testing with lein doo. The build with id "automated-tests" link:../project.clj#L47[here], is the CI tests output.
-- The https://github.com/jakemcc/lein-test-refresh[lein test-refresh plugin], which will re-run server tests on save, and also can be configured with the spec renderer (see the `:test-refresh` section in the project file).
+[source]
+----
+{:source-paths ["src" "dev" "test"]
+ :figwheel     {:on-jsload cljs.user/on-load} ;;<1>
+ :compiler     {:main          cljs.user ;;<2>
+                :output-to     "resources/public/js/test/test.js" ;;<3>
+                :output-dir    "resources/public/js/test/out"
+                :asset-path    "js/test/out"
+                :optimizations :none}}
+----
+<1> References the earlier defined test suite name so figwheel can re-run the tests when it reloads the js.
+<2> Namespace entrypoint (eg: `:main`) points to the dev user namespace as described above.
+<3> Must compile to a single javascript file at `"resources/public/js/test/test.js"`.
 
-== Running server tests
-
-To run all specs, just use `lein test-refresh` at the command line, +
-and make sure https://github.com/jakemcc/lein-test-refresh[jakemcc/lein-test-refresh] is in your `:plugins`.
-
-== Running client tests (during development)
-
-Just include `-Dtest` in your JVM argument list, or run `(start-figwheel ["test"])` in the server user.clj file.
-This will cause the test build to start running via figwheel. Then just open the http://localhost:3449/test.html file in your browser.
-
-=== Running CI browser tests
-
-See https://github.com/bensu/doo#usage[lein doo] for details, but basically run `lein doo {js-env} automated-tests once`.
-
-== Anatomy of a specification
-
-The main testing macros are `specification`, `behavior`, and `assertions`:
+An entrypoint for starting figwheel (or something equivalent if in boot):
 
 [source]
 ----
 (:require
-  [untangled-spec.core :refer [specification behavior assertions])
+  [com.stuartsierra.component :as cp]
+  [figwheel-sidecar.system :as fsys])
 
-(specification "A Thing"
-  (behavior "does something"
-    (assertions
-      form => expected-form
-      form2 => expected-form2
+(defn start-figwheel
+  "Start Figwheel on the given builds, or defaults to build-ids in `figwheel-config`."
+  ([]
+   (let [props (System/getProperties) ;;<1>
+         figwheel-config (fsys/fetch-config)
+         all-builds (->> figwheel-config :data :all-builds (mapv :id))]
+     (start-figwheel (keys (select-keys props all-builds)))))
+  ([build-ids]
+   (let [figwheel-config (fsys/fetch-config)
+         target-config (-> figwheel-config
+                         (assoc-in [:data :build-ids]
+                           (or (seq build-ids) ;;<2>
+                               (-> figwheel-config :data :build-ids))))] ;;<2>
+     (-> (cp/system-map
+           :css-watcher (fsys/css-watcher {:watch-paths ["resources/public/css"]}) ;;<3>
+           :figwheel-system (fsys/figwheel-system target-config))
+       cp/start :figwheel-system fsys/cljs-repl)))) ;;<4>
+----
+<1> If no arguments, default to looking at the JVM system properties, +
+eg: if you have a build with id `:test`, it will look for `-Dtest`
+<2> Otherwise it will use the passed in `build-ids`, or the default figwheel ids.
+<3> OPTIONAL, starts a css watcher so you get automatic reloading of css when it changes.
+<4> Starts a cljs repl you can interact with, see https://github.com/bhauman/lein-figwheel/tree/master/sidecar#starting-the-repl[figwheel sidecar] for more information
 
-      "optional sub behavior clause"
-      form3 => expected-form3)))
+Open `localhost:PORT/untangled-spec-client-tests.html`, where `PORT` is defined (with leiningen) by your figwheel configuration in your link:../project.clj[project.clj], eg: `:figwheel {:server-port PORT}`.
+
+== CI Tests
+
+* You should have a top level link:../package.json[package.json] file for installing the following:
+
+[source,json]
+----
+{
+  "devDependencies": {
+    "karma": "^0.13.19",
+    "karma-chrome-launcher": "^0.2.2",
+    "karma-firefox-launcher": "^0.1.7",
+    "karma-cljs-test": "^0.1.0"
+  }
+}
 ----
 
-[TIP]
-====
-`specification` =outputs=> `(clojure|cljs).test/deftest`, +
-`behavior` =outputs=> `(clojure|cljs).test/testing`.
+* You have https://github.com/bensu/doo#doo[lein-doo] as a plugin for running tests through karma *via* nodejs.
+* A link:../test/untangled_spec/all_tests.cljs[all_tests.cljs] file for running your tests.
 
-You are therefore free to use any functions from https://clojure.github.io/clojure/clojure.test-api.html[clojure.test] or https://github.com/clojure/clojurescript/wiki/Testing[cljs.test].
-====
+[source]
+----
+(ns your.all-tests
+  (:require
+    untangled-spec.tests-to-run ;; <1>
+    [doo.runner :refer-macros [doo-all-tests]]))
 
-The `behavior` macro outputs additional events for the browser and terminal renderer to make an outline with.
+(doo-all-tests #"untangled-spec\..*-spec") ;; <2>
+----
+<1> For loading your test namespaces.
+<2> Takes a regex to run just your test namespaces.
+
+//SEPARATOR - NEEDED WHY?
+* A `:doo` section to configure the CI runner. Chrome is the recommended target js-env.
+
+[source]
+----
+:doo {:build "automated-tests", :paths {:karma "node_modules/karma/bin/karma"}}
+----
+
+* A cljsbuild with id `:automated-tests` is the CI tests output.
+
+[source]
+----
+{:source-paths ["src" "test"]
+ :compiler     {:output-to     "resources/private/js/unit-tests.js"
+                :main          untangled-spec.all-tests
+                :optimizations :none}}
+----
+
+* An html file in your `resources/private/`, eg: link:../resources/private/unit-tests.html[unit-tests.html], for renderering your `automated-tests` build.
+
+See https://github.com/bensu/doo#usage[lein-doo usage] for up to date details on how to use it from the command line and how to setup the all_tests like file, +
+TLDR: `lein doo ${js-env} automated-tests once`, where for ex `${js-env}` is `chrome`.
+
+== Server Tests
+
+=== With reporting in the terminal
+
+* The https://github.com/jakemcc/lein-test-refresh[lein test-refresh plugin], which will re-run server tests on save, and can be configured (see the `:test-refresh` section in the link:../project.clj[project.clj]).
+* link:../dev/clj/user.clj[user.clj] : The entry point for running clojure tests that should be rendered in the browser.
+
+Use `lein test-refresh` at the command line.
+Read https://github.com/jakemcc/lein-test-refresh/blob/master/CHANGES.md#040[this changelog entry]
+for information on using test-selectors. +
+
+A recommended sample configuration is:
+
+[source]
+----
+:test-refresh {:report untangled-spec.reporters.terminal/untangled-report <1>
+               :changes-only true <2>
+               :with-repl true} <3>
+----
+<1> REQUIRED, `:report` must point to the correct report function.
+<2> Only re-runs tests that have changed, useful if you have slow and/or many tests.
+<3> Gives you a limited, but handy, repl!
+
+For up to date and comprehensive information, you should treat
+https://github.com/jakemcc/lein-test-refresh[lein-test-refresh]
+itself as the authoritative source.
+
+=== With reporting in the browser
+
+* Create a webserver using `untangled-spec.suite/def-test-suite` that runs your tests and talks with your browser. +
+See the docstring for further info on the arguments.
+
+[source]
+----
+(:require
+  [untangled-spec.suite :as suite])
+
+(suite/def-test-suite my-test-suite <1>
+  {:config {:port 8888} <2>
+   :test-paths ["test"] <3><4>
+   :source-paths ["src"]} <4>
+  {:available #{:focused :unit :integration} <5>
+   :default #{:untangled-spec.selectors/none :focused :unit}}) <6>
+----
+<1> Defines a function you can call to (re-)start the test-suite, should be useful if you are changing the following arguments, ie: config, paths, or selectors.
+<2> `:config` is passed directly to the webserver, only port is required and currently advertised as available.
+<3> `:test-paths` is about finding your test namespaces.
+<4> `:source-paths` is concatenated with `:test-paths` to create a set of paths that the test-suite will watch for any changes, and refresh and namespaces contain therein.
+<5> Is where you define your `:available` selectors, ie: legal/possible values for selectors on your `specification`.
+<6> `:default` selectors to use when you haven't yet specified any in the browser ui.
+
+//SEPARATOR - NEEDED WHY?
+* Call `my-test-suite` and go to `localhost:PORT/untangled-spec-server-tests.html` to view your test report.
+
+== Anatomy of a specification
+
+The main testing macros are `specification`, `behavior`, `component`, and `assertions`:
+
+[source]
+----
+(:require
+  [untangled-spec.core :refer [specification behavior component assertions])
+
+(specification "A Thing"
+  (component "A Thing Part"
+    (behavior "does something"
+      (assertions
+        form => expected-result
+        form2 => expected-result2
+
+        "optional sub behavior clause"
+        form3 => expected-result3)))
+----
+
+See the clojure.spec/def for `::assertions` in link:../src/untangled_spec/assertions.cljc[assertions.cljc] for the grammar of the `assertions` macro.
 
 [NOTE]
 ====
@@ -109,6 +247,17 @@ It can read better if you are describing a *component* footnote:[
     *Noun*: a part or element of a larger whole.
     *Adjective*: constituting part of a larger whole; constituent.
     ] and not a behavior footnote:[*Noun*: the way in which a natural phenomenon or a machine works or functions.].
+====
+
+[TIP]
+====
+`specification` =outputs=> `(clojure|cljs).test/deftest`, +
+`behavior` =outputs=> `(clojure|cljs).test/testing`.
+
+You are therefore free to use any functions from https://clojure.github.io/clojure/clojure.test-api.html[clojure.test] or https://github.com/clojure/clojurescript/wiki/Testing[cljs.test] inside their body.
+
+However, we recommend you use these macros as opposed to `deftest` and `testing` as they emit extra reporting events that are used by our renderers. +
+You are however ok to use `is` instead of `assertions` if you prefer it.
 ====
 
 === Assertions
@@ -122,19 +271,23 @@ Assertions provides some explict arrows, unlike https://github.com/marick/Midje[
 
 (assertions
   actual => expected ;;<1>
-  actual =fn=> expected ;;<2>
-  actual =throws=> (ExceptionType opt-regex opt-pred)) ;;<3><4><5>
+  actual =fn=> (fn [act] ... ok?) ;;<2>
+  actual =throws=> ExceptionType ;; <3><6>
+  actual =throws=> (ExceptionType opt-regex opt-pred) ;;<4><6>
+  actual =throws=> {:ex-type opt-ex-type :regex opt-regex :fn opt-pred}) ;; <5><6>
 ----
 <1> Checks that actual is equal to expected, either can be anything.
 <2> `expected` is a function takes `actual` and returns a truthy value.
 <3> Expects that actual will throw an Exception and checks that the type is `ExceptionType`.
-<4> Optionally that the message matches the `opt-regex`.
-<5> Optionally matches that it passes the `opt-pred`.
+<4> Can also optionally that the message matches the `opt-regex` & `opt-pred`.
+<5> An alternative supported syntax is a map with all optional keys `:ex-type` `:regex` `:fn`
+<6> View the clojure.spec/def `::criteria` link:../src/untangled_spec/assertions.cljc[assertions.cljc] for the up to date grammar for the `expected` side of a `=throws=>` assertions.
 
 === Mocking
 
 The mocking system does a lot in a very small space. It can be invoked via the `provided` or `when-mocking` macro.
 The former requires a string and adds an outline section. The latter does not change the outline output.
+The idea with `provided` is that you are stating an assumption about some way other parts of the system are behaving for that test.
 
 Mocking must be done in the context of a specification, and creates a scope for all sub-outlines. Generally
 you want to isolate mocking to a specific behavior:
@@ -164,14 +317,16 @@ Basically, you include triples (a form, arrow, form), followed by the code & tes
 
 It is important to note that the mocking support does a bunch of verification at the end of your test:
 
-- It verifies that your functions are called the appropriate number of times (at least once is the default)
-- It uses the mocked functions in the order specified.
-- It captures the arguments in the symbols you provide (in this case arg1 and arg2). These
-are available for use in the RHS of the mock expression.
-- It returns whatever the RHS of the mock expression indicates
-- If assertions run in the RHS form, they will be honored (for test failures)
+. It uses the mocked functions in the order specified.
+. It verifies that your functions are called the appropriate number of times (at least once is the default) and no more if a number is specified.
+. It captures the arguments in the symbols you provide (in this case arg1 and arg2). These are available for use in the RHS of the mock expression.
+. If the mocked function has a `clojure.spec/fdef` with `:args`, it will validate the arguments with it.
+. It returns whatever the RHS of the mock expression indicates.
+. If the mocked function has a `clojure.spec/fdef` with `:ret`, it will validate the return value with it.
+. If the mocked function has a `clojure.spec/fdef` with `:fn` (and `:args` & `:ret`), it will validate the arguments and return value with it.
+. If assertions run in the RHS form, they will be honored (for test failures).
 
-So, the following mock script:
+So, the following mock script should pass:
 
 [source]
 ----
@@ -179,20 +334,49 @@ So, the following mock script:
   [untangled-spec.core :refer [when-mocking assertions])
 
 (when-mocking
-   (f a) =1x=> a
-   (f a) =2x=> (+ 1 a)
-   (g a b) => 17
+  (f a) =1x=> a ;;<1>
+  (f a) =2x=> (+ 1 a) ;;<2>
+  (g a b) => 17 ;;<3>
 
-   (assertions
-     (+ (f 2) (f 2) (f 2)
-        (g 3e6 :foo/bar) (g "otherwise" :invalid)
-     => 42))
+  (assertions
+    (+ (f 2) (f 2) (f 2)
+       (g 3e6 :foo/bar)
+       (g "otherwise" :invalid)) <4>
+    => 42))
 ----
 
-should pass. The first call to `f` returns the argument. The next two calls return the argument plus one.
-`g` can be called any amount (but at least once) and returns 17 each time.
+<1> The first call to `f` returns the argument.
+<2> The next two calls return the argument plus one.
+<3> `g` can be called any amount (but at least once) and returns 17 each time.
+<4> If you were to remove any call to `f` or `g` this test would fail.
 
-If you were to remove any call to `f` or `g` this test would fail.
+==== Clojure.spec mocking integration
+
+However, the following mock script will fail due to clojure.spec errors:
+
+[source]
+----
+(:require
+  [clojure.spec :as s]
+  [untangled-spec.core :refer [when-mocking assertions])
+
+(s/fdef f
+  :args number?
+  :ret number?
+  :fn #(< (:args %) (:ret %)))
+(defn f [a] (+ a 42))
+
+(when-mocking
+  (f "asdf") =1x=> 123 ;; <1>
+  (f a) =1x=> :fdsa ;; <2>
+  (f a) =1x=> (- 1 a) ;; <3>
+
+  (assertions
+    (+ (f "asdf") (f 1) (f 2)) => 42))
+----
+<1> Fails the `:args` spec `number?`
+<2> Fails the `:ret` spec `number?`
+<3> Fails the `:fn` spec `(< args ret)`
 
 ==== Spies
 
@@ -300,11 +484,3 @@ Note that you can schedule multiple things, and still return a value from the mo
 
 the above indicates that when `f` is called it will schedule `(g)` to run 200ms from \"now\" and `(h)` to run
 300ms from \"now\". Then `f` will return `true`.
-
-== Other things of interest
-
-Untangled spec also has:
-
-- `component`: Identical to behavior, but is useful for making specs more readable (creates a sub-section of outline for a sub-area)
-- `provided`: Similar to `when-mocking`, but requires a string, which is added as a subsection of the outline. The idea
-with this is that your mocking is stating an assumption about some way other parts of the system are behaving for that test.

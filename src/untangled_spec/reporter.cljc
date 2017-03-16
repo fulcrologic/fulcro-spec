@@ -1,10 +1,23 @@
-(ns untangled-spec.reporters.impl.base-reporter
+(ns untangled-spec.reporter
+  #?(:cljs (:require-macros [untangled-spec.reporter]))
   (:require
     #?@(:cljs ([cljs-uuid-utils.core :as uuid]
                [cljs.stacktrace :refer [parse-stacktrace]]))
     [clojure.set :as set]
-    [#?(:clj clojure.test :cljs cljs.test) :as t]
-    [untangled-spec.reporters.impl.diff :refer [diff]]))
+    [clojure.test :as t]
+    [com.stuartsierra.component :as cp]
+    [untangled-spec.diff :refer [diff]])
+  #?(:clj
+     (:import
+       (java.text SimpleDateFormat)
+       (java.util Date UUID))
+     :cljs
+     (:import
+       (goog.date Date))))
+
+(defn new-uuid []
+  #?(:clj (UUID/randomUUID)
+     :cljs (uuid/uuid-string (uuid/make-random-uuid))))
 
 (defn fix-str [s]
   (case s
@@ -12,23 +25,24 @@
     nil "nil"
     s))
 
+(defn now-time []
+  #?(:clj (System/currentTimeMillis) :cljs (js/Date.now)))
+
 (defn make-testreport
   ([] (make-testreport []))
   ([initial-items]
-   {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
-    :summary       ""
-    :namespaces    []
-    #?@(:clj [:tested 0])
-    :passed        0
-    :failed        0
-    :error         0}))
+   {:id (new-uuid)
+    :namespaces []
+    :start-time (now-time)
+    :test 0 :pass 0
+    :fail 0 :error 0}))
 
 (defn make-testitem
   [test-name]
-  {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
-   :name         test-name
-   :status       {}
-   :test-items   []
+  {:id (new-uuid)
+   :name test-name
+   :status {}
+   :test-items []
    :test-results []})
 
 (defn make-manual [test-name] (make-testitem (str test-name " (MANUAL TEST)")))
@@ -43,17 +57,19 @@
 (defn make-test-result
   [status t]
   (-> t
-    (merge {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
+    (merge {:id (new-uuid)
             :status status
             :where (t/testing-vars-str t)})
       (merge-in-diff-results)
       #?(:cljs (#(if (some-> % :actual .-stack)
                    (assoc % :stack (-> % :actual .-stack stack->trace))
-                   %)))))
+                   %)))
+      (update :actual fix-str)
+      (update :expected fix-str)))
 
 (defn make-tests-by-namespace
   [test-name]
-  {#?@(:cljs [:id (uuid/uuid-string (uuid/make-random-uuid))])
+  {:id (new-uuid)
    :name       test-name
    :test-items []
    :status     {}})
@@ -88,7 +104,11 @@
     (or namespace-index
       (count namespaces))))
 
+(defn inc-report-counter [type]
+  (#?(:clj t/inc-report-counter :cljs t/inc-report-counter!) type))
+
 (defn failure* [{:as this :keys [state path]} t failure-type]
+  (inc-report-counter failure-type)
   (let [path @path
         {:keys [test-results]} (get-in @state path)
         new-result (make-test-result failure-type t)]
@@ -101,9 +121,11 @@
   (failure* this t :error))
 
 (defn fail [this t]
-  (failure* this t :failed))
+  (failure* this t :fail))
 
-(defn pass [this t] (set-test-result this :passed))
+(defn pass [this t]
+  (inc-report-counter :pass)
+  (set-test-result this :pass))
 
 (defn push-test-item-path [{:keys [path]} test-item index]
   (swap! path conj :test-items index))
@@ -148,8 +170,56 @@
 (defn end-provided [this t] (pop-test-item-path this))
 
 (defn summary [{:keys [state]} t]
-  (swap! state merge
-    (set/rename-keys t
-      {:pass :passed
-       :fail :failed
-       :test :tested})))
+  (let [end-time (now-time)
+        end-date (.getTime (new Date))]
+    (swap! state
+      (fn [{:as st :keys [start-time]}]
+        (-> st
+          (assoc :end-time end-date)
+          (assoc :run-time (- end-time start-time))))))
+  (swap! state merge t))
+
+(defn reset-test-report! [{:keys [state path]}]
+  (reset! state (make-testreport))
+  (reset! path []))
+
+(defrecord TestReporter [state path]
+  cp/Lifecycle
+  (start [this] this)
+  (stop [this]
+    (reset-test-report! this)
+    this))
+
+(defn make-test-reporter
+  "Just a shell to contain minimum state necessary for reporting"
+  []
+  (map->TestReporter
+    {:state (atom (make-testreport))
+     :path (atom [])}))
+
+(defn get-test-report [reporter]
+  @(:state reporter))
+
+(defn untangled-report [{:keys [test/reporter] :as system} on-complete]
+  (fn [t]
+    (case (:type t)
+      :pass (pass reporter t)
+      :error (error reporter t)
+      :fail (fail reporter t)
+      :begin-test-ns (begin-namespace reporter t)
+      :end-test-ns (end-namespace reporter t)
+      :begin-specification (begin-specification reporter t)
+      :end-specification (end-specification reporter t)
+      :begin-behavior (begin-behavior reporter t)
+      :end-behavior (end-behavior reporter t)
+      :begin-manual (begin-manual reporter t)
+      :end-manual (end-manual reporter t)
+      :begin-provided (begin-provided reporter t)
+      :end-provided (end-provided reporter t)
+      :summary (do (summary reporter t) #?(:clj (on-complete system)))
+      #?@(:cljs [:end-run-tests (on-complete system)])
+      nil)))
+
+#?(:clj
+   (defmacro with-untangled-reporting [system on-complete & body]
+     `(binding [t/report (untangled-report ~system ~on-complete)] ~@body)))

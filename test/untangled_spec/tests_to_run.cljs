@@ -3,12 +3,11 @@
     untangled-spec.assertions-spec
     untangled-spec.async-spec
     untangled-spec.contains-spec
+    untangled-spec.diff-spec
     untangled-spec.dom.events-spec
     untangled-spec.dom.util-spec
     untangled-spec.provided-spec
-    untangled-spec.reporters.browser-spec
-    untangled-spec.reporters.impl.base-reporter-spec
-    untangled-spec.reporters.impl.diff-spec
+    untangled-spec.selectors-spec
     untangled-spec.stub-spec
     untangled-spec.timeline-spec))
 

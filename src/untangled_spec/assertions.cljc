@@ -1,6 +1,11 @@
 (ns untangled-spec.assertions
+  #?(:cljs
+     (:require-macros
+       [untangled-spec.assertions :refer [define-assert-exprs!]]))
   (:require
-    [#?(:clj clojure.spec :cljs cljs.spec) :as s]
+    #?(:clj [clojure.test])
+    cljs.test ;; contains multimethod in clojure file
+    [clojure.spec :as s]
     #?(:clj [untangled-spec.impl.macros :as im])
     [untangled-spec.spec :as us]))
 
@@ -17,7 +22,6 @@
 
 (defn fn-assert-expr [msg [f arg :as form]]
   `(let [arg# ~arg
-         ;;TODO: catch do-report or prints?
          result# (~f arg#)]
      {:type (if result# :pass :fail)
       :message ~msg :assert-type '~'exec
@@ -26,7 +30,7 @@
 (defn eq-assert-expr [msg [exp act :as form]]
   `(let [act# ~act
          exp# ~exp
-         result# (= exp# act#)]
+         result# (im/try-report ~msg (= exp# act#))]
      {:type (if result# :pass :fail)
       :message ~msg :assert-type '~'eq
       :actual act# :expected exp#}))
@@ -67,7 +71,8 @@
 (s/def ::regex ::us/regex)
 (s/def ::fn ::us/any)
 (s/def ::criteria
-  (s/or :sym symbol?
+  (s/or
+    :sym symbol?
     :list (s/cat :ex-type ::ex-type :regex (s/? ::regex) :fn (s/? ::fn))
     :map (s/keys :opt-un [::ex-type ::regex ::fn])))
 
@@ -80,12 +85,12 @@
          e# (check-error ~msg e# ~criteria)))))
 
 (defn assert-expr [msg [disp-key & form]]
-  (case (str disp-key)
-    "="       (eq-assert-expr     msg form)
-    "exec"    (fn-assert-expr     msg form)
-    "throws?" (throws-assert-expr msg form)
-    :else {:type :fail :message msg :actual disp-key
-           :expected #{"exec" "eq" "throws?"}}))
+  (case disp-key
+    =       (eq-assert-expr     msg form)
+    exec    (fn-assert-expr     msg form)
+    throws? (throws-assert-expr msg form)
+    {:type :fail :message msg :actual disp-key
+     :expected #{"exec" "eq" "throws?"}}))
 
 (defn triple->assertion [cljs? {:keys [actual arrow expected]}]
   (let [prefix (if cljs? "cljs.test" "clojure.test")
@@ -120,3 +125,18 @@
   (let [asserts (map (partial triple->assertion cljs?) triples)]
     `(im/with-reporting ~(when behavior {:type :behavior :string behavior})
        ~@asserts)))
+
+#?(:clj
+   (defmacro define-assert-exprs! []
+     (let [test-ns (im/if-cljs &env "cljs.test" "clojure.test")
+           do-report (symbol test-ns "do-report")
+           t-assert-expr (im/if-cljs &env cljs.test/assert-expr clojure.test/assert-expr)
+           do-assert-expr
+           (fn [args]
+             (let [[msg form] (cond-> args (im/cljs-env? &env) rest)]
+               `(~do-report ~(assert-expr msg form))))]
+       (defmethod t-assert-expr '=       eq-ae     [& args] (do-assert-expr args))
+       (defmethod t-assert-expr 'exec    fn-ae     [& args] (do-assert-expr args))
+       (defmethod t-assert-expr 'throws? throws-ae [& args] (do-assert-expr args))
+       nil)))
+(define-assert-exprs!)
