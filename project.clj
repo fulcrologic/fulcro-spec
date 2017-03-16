@@ -1,23 +1,23 @@
-(defproject navis/untangled-spec "0.3.9"
+(defproject navis/untangled-spec "0.4.0"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
             :url  "https://opensource.org/licenses/MIT"}
-  :dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]
-                 [org.clojure/clojurescript "1.8.51" :scope "provided"]
+  :dependencies [[org.clojure/clojure "1.9.0-alpha14" :scope "provided"]
+                 [org.clojure/clojurescript "1.9.293" :scope "provided"]
                  [colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cljsjs/react-with-addons "15.0.1-1" :scope "provided"]
-                 [org.omcljs/om "1.0.0-alpha36" :scope "provided" :exclusions [cljsjs/react]]
+                 [org.omcljs/om "1.0.0-alpha47" :scope "provided" :exclusions [cljsjs/react]]
                  [io.aviso/pretty "0.1.23"]
                  [lein-doo "0.1.6" :scope "test"]
                  [bidi "2.0.9"]
                  [kibu/pushy "0.3.6"]]
 
-  :plugins [[lein-cljsbuild "1.1.3"]
+  :plugins [[lein-cljsbuild "1.1.5"]
             [lein-doo "0.1.6"] ; for cljs CI tests
-            [lein-figwheel "0.5.3-2" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
-            [com.jakemccrary/lein-test-refresh "0.14.0"]
+            [lein-figwheel "0.5.8" :exclusions [ring/ring-core commons-fileupload clj-time joda-time org.clojure/clojure org.clojure/tools.reader]]
+            [com.jakemccrary/lein-test-refresh "0.17.0"]
             [lein-shell "0.5.0"]]
 
   :release-tasks [["shell" "bin/release" "all_tasks"]]
@@ -26,6 +26,10 @@
   :test-paths ["test"]
   :resource-paths ["src" "resources"]
 
+  :test-selectors {:default (complement :integration)
+                   :integration :integration
+                   :all (constantly true)
+                   :focused :focused}
   :test-refresh {:report untangled-spec.reporters.terminal/untangled-report
                  :changes-only true
                  :with-repl true}
@@ -40,7 +44,7 @@
               :builds        [{:id           "test"
                                :jar          true
                                :source-paths ["src" "dev" "test"]
-                               :figwheel     {:on-jsload "cljs.user/on-load"}
+                               :figwheel     {:on-jsload cljs.user/on-load}
                                :compiler     {:main                 cljs.user
                                               :output-to            "resources/public/js/test/test.js"
                                               :output-dir           "resources/public/js/test/out"
@@ -62,6 +66,6 @@
                    :repl-options {:init-ns clj.user
                                   :port    7001
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
-                   :dependencies [[figwheel-sidecar "0.5.6"]
+                   :dependencies [[figwheel-sidecar "0.5.8"]
                                   [com.cemerick/piggieback "0.2.1"]
                                   [org.clojure/tools.nrepl "0.2.12"]]}})

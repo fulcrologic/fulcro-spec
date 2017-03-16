@@ -115,26 +115,33 @@
       (not recur?) (#(cond->> % (diff-elem? %) (assoc {} []))))))
 
 (defn patch
-  ([]
-   (fn [x diffs]
-     (patch x diffs
-            (fn [d]
-              (let [{:keys [exp]} (extract d)]
-                (when-not (= nf exp) exp))))))
-  ([x diffs & [f]]
-   (let [f (or f (comp :exp extract))]
-     ;;we turn lists into vectors and back so that we can assoc-in on them
-     (as-> x x
-       (walk/prewalk #(cond-> % (seq? %) (-> vec (with-meta {::list true}))) x)
+  ([x diffs]
+   (patch x diffs
+     {:get-exp
+      ;; so we dont get noisy (& useless) diffs
+      (fn not-a-nf-diff [d]
+        (let [{:keys [exp]} (extract d)]
+          (when-not (= nf exp) exp)))}))
+  ([x diffs {:keys [get-exp]
+             :or {get-exp (comp :exp extract)}}]
+   (let [list->lvec #(cond-> % (seq? %) (-> vec (with-meta {::list true})))
+         lvec->list #(cond-> % (and (vector? %) (-> % meta ::list true?)) vec)]
+     ;; we turn lists into vectors and back so that we can assoc-in on them
+     (as-> x <>
+       (walk/prewalk list->lvec <>)
        (reduce (fn [x d]
-                 (let [path (-> d extract :path)]
-                   (if-let [exp (f d)]
-                     (assoc-in x path exp)
-                     (if-let [path' (seq (drop-last path))]
-                       (update-in x path' dissoc (last path))
-                       (dissoc x (last path))))))
-               x diffs)
-       (walk/prewalk #(cond-> % (and (vector? %) (-> % meta ::list true?)) vec) x)))))
+                 (let [path (seq (-> d extract :path))
+                       exp (get-exp d)]
+                   (cond
+                     (not path) {[] exp} ;; empty path, top level diff
+                     exp (assoc-in x path exp)
+                     (and (nil? exp) (not (map? x))) (assoc-in x path nil)
+                     ;; else drop the missing item from up a level
+                     :else (if-let [path' (seq (drop-last path))]
+                             (update-in x path' dissoc (last path))
+                             (dissoc x (last path))))))
+         <> diffs)
+       (walk/prewalk lvec->list <>)))))
 
 (defn compress [[x & _ :as coll]]
   (let [diff* (partial apply diff)]
@@ -145,5 +152,5 @@
          (into (empty coll)))))
 
 (defn decompress [[x & xs :as coll]]
-  (->> (reductions (patch) x xs)
+  (->> (reductions patch x xs)
        (into (empty coll))))

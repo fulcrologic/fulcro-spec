@@ -1,8 +1,9 @@
 (ns untangled-spec.reporters.impl.diff-spec
-  (:require [untangled-spec.reporters.impl.diff :as src
-             :refer [nf diff diff-elem patch compress decompress]]
-            [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
-             [specification behavior assertions]]))
+  (:require
+    [untangled-spec.reporters.impl.diff :as src
+     :refer [nf diff diff-elem patch compress decompress]]
+    [untangled-spec.core :as usc #?(:clj :refer :cljs :refer-macros)
+     [specification behavior assertions]]))
 
 (specification "the diff function"
   (assertions
@@ -162,7 +163,17 @@
       => '(app/mut)
       (patch '() {[1] (diff-elem 'app/mut nf)})
       =throws=> (#?(:cljs js/Error :clj IndexOutOfBoundsException)
-                          #"(?i)Index.*Out.*Of.*Bounds"))))
+                          #"(?i)Index.*Out.*Of.*Bounds")))
+  (behavior "can patch 2 vectors, where actual is larger"
+    (assertions
+      (patch [] (diff [1 2] [])) => [1 2]))
+  (behavior "gh-17, can patch a diff between a vector & a scalar"
+    (assertions
+      (patch [1 2] (diff 3 [1 2])) => {[] 3}))
+  (behavior "gh-6, can patch a diff between 2 Cons or 2 IndexedSeq"
+    (assertions
+      (patch `[(1 2)] (diff `[(3 4)] `[(1 2)])) => `[(3 4)]
+      (patch [1 2] (diff ((fn [& args] args) 3 4) [1 2])) => [3 4])))
 
 (specification "[de]compression"
   (assertions "`compress` a sequence of states"

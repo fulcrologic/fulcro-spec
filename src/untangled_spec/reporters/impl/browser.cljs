@@ -2,8 +2,14 @@
   (:require
     [cljs.stacktrace :refer [parse-stacktrace]]))
 
-(defn itemclass [status]
-  (str "test-" (name status)))
+(defn itemclass [{:keys [failed error passed manual]}]
+  (str "test-"
+    (cond
+      (pos? failed) "failed"
+      (pos? error) "error"
+      (pos? passed) "passed"
+      (pos? manual) "manual"
+      :else "pending")))
 
 (defn color-favicon-data-url [color]
   (let [cvs (.createElement js/document "canvas")]
@@ -17,12 +23,5 @@
 (defn change-favicon-to-color [color]
   (let [icon (.getElementById js/document "favicon")]
     (set! (.-href icon) (color-favicon-data-url color))))
-
-(defn filter-class [{:keys [report/filter status]}]
-  (when (or (and (#{:failed} filter)
-                 (not (#{:error :failed} status)))
-            (and (=    :manual filter)
-                 (not= :manual status)))
-    "hidden"))
 
 (defn stack->trace [st] (parse-stacktrace {} st {} {}))

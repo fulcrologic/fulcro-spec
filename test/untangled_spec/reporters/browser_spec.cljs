@@ -3,5 +3,4 @@
              :refer-macros [specification behavior provided assertions]]
             [cljs.test :as t]))
 
-(specification "untangled-spec.reporters.browser-spec"
-  (behavior "TODO"))
+(specification "untangled-spec.reporters.browser-spec")
