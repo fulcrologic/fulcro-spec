@@ -1,3 +1,11 @@
+1.0.0
+-----
+- Adding ability to render clojure tests in the browser!
+- WIP: when-mocking & provided will use clojure.spec to verify the :args passed to mocks, the :ret value you specify, and their relationship if a :fn spec if they exist.
+- Adding selectors to the specification macro that work with untangled-spec, test-refresh, doo, etc...
+    - They emit meta data on the deftest var so they are compatible with anything,
+      but also wrap the body so that untangled-spec can properly run just the selected tests.
+
 0.4.0
 -----
 Lots of bug/issue fixes:
