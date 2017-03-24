@@ -130,19 +130,15 @@
     (let [{:keys [diff actual]} (om/props this)
           [fst rst] (split-at 2 diff)]
       (->> (dom/div nil
-             (when (associative? actual)
-               (ui-foldable {:render (fn [folded?]
-                                       {:title "DIFF"
-                                        :value (html-edn actual diff)})}))
              (mapv ui-human-diff-lines fst)
-             (if (seq rst)
+             (when (seq rst)
                (ui-foldable {:render
                              (fn [folded?]
                                {:title "& more"
                                 :value (mapv ui-human-diff-lines rst)
                                 :classes ""})})))
         (dom/td nil)
-        (dom/tr #js {:className "human-diff"}
+        (dom/tr nil
           (dom/td nil "DIFFS:"))))))
 (def ui-human-diff (om/factory HumanDiff {:keyfn #(gensym "human-diff")}))
 
@@ -202,18 +198,14 @@
 
 (defui ^:once TestNamespace
   Object
-  (initLocalState [this] {:folded? false})
   (render
     [this]
-    (let [{:keys [current-filter] :as tests-by-namespace} (om/props this)
-          {:keys [folded?]} (om/get-state this)]
+    (let [{:keys [current-filter] :as tests-by-namespace} (om/props this)]
       (dom/li #js {:className "test-item"}
         (dom/div #js {:className "test-namespace"}
-          (dom/a #js {:onClick #(om/update-state! this update :folded? not)}
-            (dom/h2 #js {:className (test-item-class (:status tests-by-namespace))}
-              (if folded? \u25BA \u25BC)
-              " Testing " (str (:name tests-by-namespace))))
-          (dom/ul #js {:className (if folded? "hidden" "test-list")}
+          (dom/h2 #js {:className (test-item-class (:status tests-by-namespace))}
+            (str (:name tests-by-namespace)))
+          (dom/ul #js {:className "test-list"}
             (sequence (comp (filters current-filter)
                         (map #(assoc % :current-filter current-filter))
                         (map ui-test-item))
@@ -232,15 +224,23 @@
                                    (str " c-message--primary"))}
          data)))))
 
-(defn test-info [{:keys [pass fail error manual namespaces end-time run-time]}
+(defn find-tests [test-filter namespaces]
+  (remove
+    (some-fn nil? (comp seq :test-items))
+    (apply tree-seq
+      #_branch?  (comp seq :test-items)
+      #_children (comp (partial sequence (filters test-filter)) :test-items)
+      (sequence (filters test-filter) namespaces))))
+
+(defn test-info [{:keys [pass fail error namespaces end-time run-time]}
                  current-filter toggle-filter-cb]
   (let [total (+ pass fail error)
         end-time (.format (new DateTimeFormat "HH:mm:ss")
                    (or (and end-time (.setTime (new DateTime) end-time))
                        (new DateTime)))
-        run-time (float (/ run-time 1000))
         run-time (str/replace-first
-                   (gstr/format "%.3fs" run-time)
+                   (gstr/format "%.3fs"
+                     (float (/ run-time 1000)))
                    #"^0" "")]
     (if (pos? (+ fail error))
       (change-favicon-to-color "#d00")
@@ -250,9 +250,9 @@
       (filter-button :help total)
       (filter-button :check pass
         :passing current-filter toggle-filter-cb)
-      (filter-button :update "PENDING" ;;TODO
+      (filter-button :update (count (find-tests :pending namespaces))
         :pending current-filter toggle-filter-cb)
-      (filter-button :pan_tool (str " " (or manual 0))
+      (filter-button :pan_tool (count (find-tests :manual namespaces))
         :manual current-filter toggle-filter-cb)
       (filter-button :close fail
         :failing current-filter toggle-filter-cb)
@@ -279,15 +279,11 @@
         (dom/span #js {} (str id))))))
 (def ui-selector-control (om/factory SelectorControl {:keyfn :selector/id}))
 
-(defui ^:once TestSelectors
-  Object
-  (render [this]
-    (let [selectors (om/props this)]
-      (dom/div nil
-        (dom/h1 nil "Test Selectors:")
-        (map ui-selector-control
-          (sort-by :selector/id selectors))))))
-(def ui-test-selectors (om/factory TestSelectors {:keyfn #(gensym "test-selectors")}))
+(defn test-selectors [selectors]
+  (dom/div nil
+    (dom/h1 nil "Test Selectors:")
+    (map ui-selector-control
+      (sort-by :selector/id selectors))))
 
 (defn toolbar-button [toggle-drawer]
   (dom/div #js {:className "c-toolbar__button"}
@@ -295,20 +291,20 @@
                      :onClick toggle-drawer}
       (ui.i/icon :menu))))
 
-(defn ui-test-header [test-report current-filter toggle-drawer toggle-filter-cb]
+(defn test-header [test-report current-filter toggle-drawer toggle-filter-cb]
   (dom/header #js {:className "u-layout__header c-toolbar c-toolbar--raised"}
     (dom/div #js {:className "c-toolbar__row"}
-      (dom/div nil (ui.e/ui-field {} "Search Untangled-Spec"))
+      (dom/h1 nil "Untangled Spec")
       (dom/div #js {:className "c-toolbar__spacer"})
       (test-info test-report current-filter toggle-filter-cb))
     (toolbar-button toggle-drawer)))
 
-(defn ui-test-main [{:keys [namespaces]} current-filter]
+(defn test-main [{:keys [namespaces]} current-filter]
   (dom/main #js {:className "u-layout__content"}
     (dom/article #js {:className "o-article"}
       (ui.l/row {}
         (ui.l/col {:width 12}
-          (dom/div nil
+          (dom/div #js {:className "test-report"}
             (dom/ul nil
               (sequence
                 (comp
@@ -331,16 +327,16 @@
           toggle-filter-cb (fn [f] #(om/transact! this `[(toggle-filter ~{:filter f})]))]
       (dom/div #js {:key react-key :className "u-layout"}
         (dom/div #js {:className "u-layout__page u-layout__page--fixed"}
-          (ui-test-header test-report current-filter toggle-drawer toggle-filter-cb)
+          (test-header test-report current-filter toggle-drawer toggle-filter-cb)
           (dom/div #js {:className (cond-> "c-drawer" open-drawer? (str " is-open"))}
             (dom/div #js {:className "c-drawer__header"}
               (dom/img #js {:src "img/logo.png" :height 35 :width 35
                             :onClick toggle-drawer})
               (dom/h1 nil "Untangled Spec"))
-            (ui-test-selectors selectors))
+            (test-selectors selectors))
           (dom/div #js {:className (cond-> "c-backdrop" open-drawer? (str " is-active"))
                         :onClick toggle-drawer})
-          (ui-test-main test-report current-filter))))))
+          (test-main test-report current-filter))))))
 
 (defmethod m/mutate `render-tests [{:keys [state]} _ new-report]
   {:action #(swap! state assoc :test-report new-report)})
