@@ -1,4 +1,4 @@
-(defproject navis/untangled-spec "1.0.0-alpha1"
+(defproject navis/untangled-spec "1.0.0-alpha2"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
