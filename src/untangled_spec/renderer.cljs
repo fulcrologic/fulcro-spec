@@ -15,6 +15,9 @@
     [untangled-spec.dom.edn-renderer :refer [html-edn]]
     [untangled-spec.diff :as diff]
     [untangled-spec.selectors :as sel]
+    [untangled.icons :as ui.i]
+    [untangled.ui.layout :as ui.l]
+    [untangled.ui.elements :as ui.e]
     [untangled.websockets.networking :as wn])
   (:import
     (goog.date DateTime)
@@ -217,63 +220,46 @@
               (:test-items tests-by-namespace))))))))
 (def ui-test-namespace (om/factory TestNamespace {:keyfn :name}))
 
-(defui ^:once FilterControl
-  Object
-  (render [this]
-    (let [{:keys [this-filter current-filter]} (om/props this)]
-      (dom/a #js {:href "javascript:void(0)"
-                  :onClick #(om/transact! this `[(set-filter ~{:filter this-filter})])
-                  :className (if (= this-filter current-filter)
-                               "selected" "")}
-        (name this-filter)))))
-(def ui-filter-control (om/factory FilterControl {:keyfn identity}))
+(defn filter-button
+  ([icon data]
+   (filter-button icon data (gensym) (gensym) (constantly nil)))
+  ([icon data this-filter current-filter toggle-filter-cb]
+   (let [is-active? (= this-filter current-filter)]
+     (dom/button #js {:className "c-button c-button--icon"
+                      :onClick (toggle-filter-cb this-filter)}
+       (ui.i/icon icon :states (cond-> [] is-active? (conj :active)))
+       (dom/span #js {:className (cond-> "c-message" is-active?
+                                   (str " c-message--primary"))}
+         data)))))
 
-(defui ^:once Filters
-  Object
-  (render [this]
-    (let [{:keys [current-filter]} (om/props this)]
-      (dom/div #js {:name "filters" :className "filter-controls"}
-        (dom/label #js {:htmlFor "filters"} "Filter: ")
-        (sequence
-          (comp (map #(hash-map
-                        :this-filter %
-                        :current-filter current-filter))
-            (map ui-filter-control))
-          (keys filters))))))
-(def ui-filters (om/factory Filters {}))
-
-(defui ^:once TestCount
-  Object
-  (render [this]
-    (let [{:keys [pass fail error namespaces]} (om/props this)
-          total (+ pass fail error)]
-      (if (pos? (+ fail error))
-        (change-favicon-to-color "#d00")
-        (change-favicon-to-color "#0d0"))
-      (dom/div #js {:className "test-count"}
-        (dom/div nil
-          (str "Tested " (count namespaces) " namespaces containing "
-            total  " assertions. "))
-        (dom/div nil
-          (str pass   " passed "
-            fail   " failed "
-            error  " errors"))))))
-(def ui-test-count (om/factory TestCount {:keyfn #(gensym "test-count")}))
-
-(defui ^:once TestTiming
-  Object
-  (render [this]
-    (let [{:keys [end-time run-time]} (om/props this)
-          end-time (.format (new DateTimeFormat "HH:mm:ss.SSS")
-                     (or (and end-time (.setTime (new DateTime) end-time))
-                         (new DateTime)))
-          run-time (gstr/format "%.3fs"
-                     (float (/ run-time 1000)))]
-      (dom/div #js {:className "test-timing"}
-        (dom/div nil
-          (str "Finished at " end-time
-            " (run time: " run-time ")"))))))
-(def ui-test-timing (om/factory TestTiming {:keyfn #(gensym "test-timing")}))
+(defn test-info [{:keys [pass fail error manual namespaces end-time run-time]}
+                 current-filter toggle-filter-cb]
+  (let [total (+ pass fail error)
+        end-time (.format (new DateTimeFormat "HH:mm:ss")
+                   (or (and end-time (.setTime (new DateTime) end-time))
+                       (new DateTime)))
+        run-time (float (/ run-time 1000))
+        run-time (str/replace-first
+                   (gstr/format "%.3fs" run-time)
+                   #"^0" "")]
+    (if (pos? (+ fail error))
+      (change-favicon-to-color "#d00")
+      (change-favicon-to-color "#0d0"))
+    (dom/span nil
+      (filter-button :assignment (count namespaces))
+      (filter-button :help total)
+      (filter-button :check pass
+        :passing current-filter toggle-filter-cb)
+      (filter-button :update "PENDING" ;;TODO
+        :pending current-filter toggle-filter-cb)
+      (filter-button :pan_tool (str " " (or manual 0))
+        :manual current-filter toggle-filter-cb)
+      (filter-button :close fail
+        :failing current-filter toggle-filter-cb)
+      (filter-button :warning error
+        :failing current-filter toggle-filter-cb)
+      (filter-button :access_time end-time)
+      (filter-button :hourglass_empty run-time))))
 
 (defui ^:once SelectorControl
   static om/IQuery
@@ -281,51 +267,80 @@
   Object
   (render [this]
     (let [{:keys [selector/id selector/active?]} (om/props this)]
-      (dom/li #js {:key (str id)}
-        (dom/input #js {:id (str id) :type "checkbox"
-                        :checked active?
-                        :onChange (fn [e]
-                                    (om/transact! this
-                                      `[(sel/set-selector
-                                          ~{:selector/id id
-                                            :selector/active? (.. e -target -checked)})]))})
-        (dom/label #js {:htmlFor (str id)} (str id))))))
+      (dom/div #js {:className "c-drawer__action" :key (str id)}
+        (ui.e/ui-checkbox
+          {:id (str id)
+           :checked active?
+           :onChange (fn [e]
+                       (om/transact! this
+                         `[(sel/set-selector
+                             ~{:selector/id id
+                               :selector/active? (.. e -target -checked)})]))})
+        (dom/span #js {} (str id))))))
 (def ui-selector-control (om/factory SelectorControl {:keyfn :selector/id}))
 
 (defui ^:once TestSelectors
   Object
   (render [this]
     (let [selectors (om/props this)]
-      (dom/div #js {:className "selector-controls"}
-        (dom/ul nil
-          (map ui-selector-control
-            (sort-by :selector/id selectors)))))))
+      (dom/div nil
+        (dom/h1 nil "Test Selectors:")
+        (map ui-selector-control
+          (sort-by :selector/id selectors))))))
 (def ui-test-selectors (om/factory TestSelectors {:keyfn #(gensym "test-selectors")}))
+
+(defn toolbar-button [toggle-drawer]
+  (dom/div #js {:className "c-toolbar__button"}
+    (dom/button #js {:className "c-button c-button--icon"
+                     :onClick toggle-drawer}
+      (ui.i/icon :menu))))
+
+(defn ui-test-header [test-report current-filter toggle-drawer toggle-filter-cb]
+  (dom/header #js {:className "u-layout__header c-toolbar c-toolbar--raised"}
+    (dom/div #js {:className "c-toolbar__row"}
+      (dom/div nil (ui.e/ui-field {} "Search Untangled-Spec"))
+      (dom/div #js {:className "c-toolbar__spacer"})
+      (test-info test-report current-filter toggle-filter-cb))
+    (toolbar-button toggle-drawer)))
+
+(defn ui-test-main [{:keys [namespaces]} current-filter]
+  (dom/main #js {:className "u-layout__content"}
+    (dom/article #js {:className "o-article"}
+      (ui.l/row {}
+        (ui.l/col {:width 12}
+          (dom/div nil
+            (dom/ul nil
+              (sequence
+                (comp
+                  (filters current-filter)
+                  (map #(assoc % :current-filter current-filter))
+                  (map ui-test-namespace))
+                (sort-by :name namespaces)))))))))
 
 (defui ^:once TestReport
   static uc/InitialAppState
   (initial-state [this _] {:ui/react-key (gensym "UI_REACT_KEY")
-                           :report/filter :all})
+                           :ui/current-filter :all})
   static om/IQuery
-  (query [this] [:ui/react-key :test-report :report/filter {:selectors (om/get-query SelectorControl)}])
+  (query [this] [:ui/react-key :test-report :ui/current-filter {:selectors (om/get-query SelectorControl)}])
   Object
   (render [this]
-    (let [{:keys [ui/react-key test-report selectors] current-filter :report/filter} (om/props this)]
-      (dom/section #js {:key react-key :className "test-report"}
-        (dom/div #js {:className "test-controls"}
-          (ui-filters {:current-filter current-filter})
-          (ui-test-selectors selectors))
-        (dom/div #js {:className "test-list-container"}
-          (dom/ul #js {:className "test-list"}
-            (sequence
-              (comp
-                (filters current-filter)
-                (map #(assoc % :current-filter current-filter))
-                (map ui-test-namespace))
-              (sort-by :name (:namespaces test-report)))))
-        (dom/div #js {:className "test-summary"}
-          (ui-test-count test-report)
-          (ui-test-timing test-report))))))
+    (let [{:keys [ui/react-key test-report selectors ui/current-filter] :as props} (om/props this)
+          {:keys [open-drawer?]} (om/get-state this)
+          toggle-drawer #(om/update-state! this update :open-drawer? not)
+          toggle-filter-cb (fn [f] #(om/transact! this `[(toggle-filter ~{:filter f})]))]
+      (dom/div #js {:key react-key :className "u-layout"}
+        (dom/div #js {:className "u-layout__page u-layout__page--fixed"}
+          (ui-test-header test-report current-filter toggle-drawer toggle-filter-cb)
+          (dom/div #js {:className (cond-> "c-drawer" open-drawer? (str " is-open"))}
+            (dom/div #js {:className "c-drawer__header"}
+              (dom/img #js {:src "img/logo.png" :height 35 :width 35
+                            :onClick toggle-drawer})
+              (dom/h1 nil "Untangled Spec"))
+            (ui-test-selectors selectors))
+          (dom/div #js {:className (cond-> "c-backdrop" open-drawer? (str " is-active"))
+                        :onClick toggle-drawer})
+          (ui-test-main test-report current-filter))))))
 
 (defmethod m/mutate `render-tests [{:keys [state]} _ new-report]
   {:action #(swap! state assoc :test-report new-report)})

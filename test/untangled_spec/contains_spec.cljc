@@ -3,7 +3,7 @@
              [specification behavior assertions]]
             [untangled-spec.contains :refer [*contains?]]))
 
-(specification "*contains?"
+(specification "untangled-spec.contains *contains?"
   (behavior "can check that a string"
     (behavior "contains a string"
       (assertions

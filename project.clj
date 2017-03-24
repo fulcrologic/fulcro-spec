@@ -9,6 +9,8 @@
                  [lein-doo "0.1.6" :scope "test"]
                  [navis/untangled-client "0.8.0"]
                  [navis/untangled-server "0.7.0" :exclusions [com.taoensso/timbre org.clojure/java.classpath]]
+                 [com.taoensso/timbre "4.8.0"]
+                 [navis/untangled-ui "1.0.0-alpha1"]
                  [navis/untangled-websockets "0.3.3"]
                  [org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.473"]

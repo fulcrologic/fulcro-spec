@@ -1,7 +1,4 @@
-@import url(https://fonts.googleapis.com/css?family=Lato);
-@import url(https://fonts.googleapis.com/css?family=Cutive+Mono);
-
-.overlay {
+/*.overlay {
     background-color: rgb(230, 230, 240);
     width: 194px;
 }
@@ -11,7 +8,6 @@
 }
 
 .test-report {
-    font-family: 'Lato' sans-serif;
     display: block;
     font-size: 20pt;
 }
@@ -130,6 +126,8 @@
 #test-app {
     display: none;
 }
+
+*/
 
 .rendered-edn .collection {
     display: flex;
