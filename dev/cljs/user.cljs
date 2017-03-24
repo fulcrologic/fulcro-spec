@@ -1,12 +1,17 @@
-(ns ^:figwheel-always cljs.user
-  (:require untangled-spec.tests-to-run
-            [untangled-spec.reporters.suite
-             :refer-macros [deftest-all-suite]]))
+(ns cljs.user
+  (:require
+    [clojure.spec.test :as st]
+    [untangled-spec.tests-to-run]
+    [untangled-spec.suite :as suite]
+    [untangled-spec.selectors :as sel]))
 
 (enable-console-print!)
 
-(deftest-all-suite spec-report #"untangled.*-spec")
+;;optional, but can be helpful
+(st/instrument)
 
-(def on-load spec-report)
-
-(spec-report)
+;;define on-load as a fn that re-runs (and renders) the tests
+;;for use by figwheel's :on-jsload
+(suite/def-test-suite on-load {:ns-regex #"untangled-spec\..*-spec"}
+  {:default #{::sel/none :focused}
+   :available #{:focused :should-fail}})

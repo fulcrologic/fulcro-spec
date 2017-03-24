@@ -1,6 +1,7 @@
-(ns untangled-spec.reporters.impl.diff
-  (:require [clojure.set :as set]
-            [clojure.walk :as walk]))
+(ns untangled-spec.diff
+  (:require
+    [clojure.set :as set]
+    [clojure.walk :as walk]))
 
 (declare diff)
 (def nf '..nothing..)
