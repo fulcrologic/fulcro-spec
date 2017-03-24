@@ -81,7 +81,7 @@
            (assertions
              (take 2 (th/locate `im/with-reporting expanded))
              => `(im/with-reporting
-                   {:type :provided :string "some string"})))))
+                   {:type :provided :string "PROVIDED: some string"})))))
 
      (behavior "Can do mocking without output"
        (let [expanded (p/provided* false :skip-output
