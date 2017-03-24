@@ -15,12 +15,15 @@
     {:filter (some-> (.get data "filter") keyword)
      :selectors (some->> (.get data "selectors") sel/parse-selectors)}))
 
-(defn assoc-fragment! [history k v]
+(defn update-fragment! [history k f & args]
   (let [data (new goog.Uri.QueryData (pushy/get-token history))]
-    (.set data (name k) v)
+    (.set data (name k) (apply f (.get data (name k)) args))
     (pushy/set-token! history
       ;; so we dont get an ugly escaped url
       (.toDecodedString data))))
+
+(defn assoc-fragment! [history k v]
+  (update-fragment! history k (constantly v)))
 
 (defn new-history [parser tx!]
   (let [history (with-redefs [pushy/update-history!
@@ -32,7 +35,7 @@
     history))
 
 (defmethod m/mutate `set-page-filter [{:keys [state ast]} k {:keys [filter]}]
-  {:action #(swap! state assoc :report/filter
+  {:action #(swap! state assoc :ui/current-filter
               (or (and (nil? filter) :all)
                   (and (contains? renderer/filters filter) filter)
                   (do (js/console.warn "INVALID FILTER: " (str filter)) :all)))})
@@ -57,8 +60,12 @@
                       (om/transact! reconciler
                         `[(sel/set-active-selectors
                             ~{:selectors selectors})])))]
-      (defmethod m/mutate `renderer/set-filter [{:keys [state]} _ {:keys [filter]}]
-        {:action #(assoc-fragment! history :filter (name filter))})
+      (defmethod m/mutate `renderer/toggle-filter [{:keys [state]} _ {:keys [filter]}]
+        {:action #(update-fragment! history :filter
+                    (let [new-filter (name filter)]
+                      (fn [old-filter]
+                        (if (= old-filter new-filter)
+                          "all" new-filter))))})
       (defmethod m/mutate `sel/set-selector [{:keys [state]} _ new-selector]
         {:action #(assoc-fragment! history :selectors (sel/to-string (sel/set-selector* (:selectors @state) new-selector)))})
       (defmethod m/mutate `sel/set-selectors [{:keys [state ast]} k {:keys [selectors]}]
@@ -68,6 +75,7 @@
   (stop [this]
     (remove-method m/mutate `renderer/set-filter)
     (remove-method m/mutate `sel/set-selector)
+    (remove-method m/mutate `sel/set-selectors)
     this))
 
 (defn make-router []

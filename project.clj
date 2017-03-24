@@ -5,10 +5,12 @@
             :url  "https://opensource.org/licenses/MIT"}
   :dependencies [[colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
+                 [com.taoensso/timbre "4.8.0"]
                  [kibu/pushy "0.3.6"]
                  [lein-doo "0.1.6" :scope "test"]
                  [navis/untangled-client "0.8.0"]
                  [navis/untangled-server "0.7.0" :exclusions [com.taoensso/timbre org.clojure/java.classpath]]
+                 [navis/untangled-ui "1.0.0-alpha1"]
                  [navis/untangled-websockets "0.3.3"]
                  [org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.473"]

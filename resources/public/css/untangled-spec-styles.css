@@ -1,19 +1,5 @@
-@import url(https://fonts.googleapis.com/css?family=Lato);
-@import url(https://fonts.googleapis.com/css?family=Cutive+Mono);
-
-.overlay {
-    background-color: rgb(230, 230, 240);
-    width: 194px;
-}
-
 .hidden {
     display: none;
-}
-
-.test-report {
-    font-family: 'Lato' sans-serif;
-    display: block;
-    font-size: 20pt;
 }
 
 .test-item {
@@ -28,11 +14,6 @@
     font-size: 18pt;
 }
 
-.test-namespace a {
-    text-decoration: none;
-    cursor: pointer;
-}
-
 .foldable a {
     cursor: pointer;
 }
@@ -45,39 +26,6 @@
 
 .test-manual {
     color: orange;
-}
-
-.test-controls {
-    position: fixed;
-    top: 0px;
-    right: 0px;
-    background: rgba(255, 255, 255, 1);
-    font-size: 15pt;
-}
-
-.filter-controls { }
-
-.filter-controls label {
-}
-
-.filter-controls a {
-    padding-left: 5pt;
-}
-
-.selector-controls { }
-
-.selector-controls ul {
-  list-style-type: none;
-  margin: 0;
-}
-
-.selected {
-    color: green;
-    text-decoration: underline;
-}
-
-.test-pending {
-    color: gray;
 }
 
 .test-pass {
@@ -107,12 +55,6 @@
     font-weight: bold;
 }
 
-.test-summary {
-    position: fixed;
-    bottom: 0px;
-    background:#fff;
-}
-
 .test-report ul {
     padding-left: 10px;
     margin-bottom: 10px;
@@ -127,9 +69,7 @@
     margin-bottom: 15px;
 }
 
-#test-app {
-    display: none;
-}
+/* EDN RENDERING CSS (use in diffs) */
 
 .rendered-edn .collection {
     display: flex;
