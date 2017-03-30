@@ -201,15 +201,16 @@
   (render
     [this]
     (let [{:keys [current-filter] :as tests-by-namespace} (om/props this)]
-      (dom/li #js {:className "test-item"}
-        (dom/div #js {:className "test-namespace"}
-          (dom/h2 #js {:className (test-item-class (:status tests-by-namespace))}
-            (str (:name tests-by-namespace)))
-          (dom/ul #js {:className "test-list"}
-            (sequence (comp (filters current-filter)
-                        (map #(assoc % :current-filter current-filter))
-                        (map ui-test-item))
-              (:test-items tests-by-namespace))))))))
+      (when (seq (:test-items tests-by-namespace))
+        (dom/li #js {:className "test-item"}
+          (dom/div #js {:className "test-namespace"}
+            (dom/h2 #js {:className (test-item-class (:status tests-by-namespace))}
+              (str (:name tests-by-namespace)))
+            (dom/ul #js {:className "test-list"}
+              (sequence (comp (filters current-filter)
+                          (map #(assoc % :current-filter current-filter))
+                          (map ui-test-item))
+                        (:test-items tests-by-namespace)))))))))
 (def ui-test-namespace (om/factory TestNamespace {:keyfn :name}))
 
 (defn filter-button
