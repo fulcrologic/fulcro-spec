@@ -9,7 +9,6 @@
                  [kibu/pushy "0.3.6"]
                  [lein-doo "0.1.6" :scope "test"]
                  [untangled-web/untangled "1.0.0-SNAPSHOT"]
-                 [navis/untangled-ui "1.0.0-alpha1" :exclusions [navis/untangled-client]]
                  [org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.473"]
                  [org.clojure/tools.namespace "0.3.0-alpha3"]

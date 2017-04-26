@@ -19,7 +19,7 @@
                [ring.util.response :as resp]
                [untangled-spec.impl.macros :as im]
                [untangled-spec.watch :as watch]
-               [untangled.server.core :as usc]
+               [untangled.easy-server :as usy]
                [untangled.websockets.protocols :as ws]
                [untangled.websockets.components.channel-server :as wcs]))))
 
@@ -151,7 +151,7 @@
                                  (prn ::mutate k params))})]
             (reset! system
               (cp/start
-                (usc/make-untangled-server
+                (usy/make-untangled-server
                   :parser (oms/parser {:read api-read :mutate api-mutate})
                   :components {:config {:value (:config opts)}
                                :channel-server (wcs/make-channel-server)
