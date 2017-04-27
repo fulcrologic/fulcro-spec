@@ -8,9 +8,9 @@
                  [com.taoensso/timbre "4.8.0"]
                  [kibu/pushy "0.3.6"]
                  [lein-doo "0.1.6" :scope "test"]
-                 [untangled-web/untangled "1.0.0-SNAPSHOT"]
-                 [org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.473"]
+                 [untangled-web/untangled "1.0.0-SNAPSHOT" :scope "provided"]
+                 [org.clojure/clojure "1.9.0-alpha14" :scope "provided"]
+                 [org.clojure/clojurescript "1.9.473" :scope "provided"]
                  [org.clojure/tools.namespace "0.3.0-alpha3"]
                  [org.omcljs/om "1.0.0-alpha48"]]
 
@@ -42,7 +42,7 @@
                               :spec-renderer {:source-paths ["src"]
                                               :compiler     {:main          untangled-spec.spec-renderer
                                                              :output-to     "resources/public/js/test/untangled-spec-renderer.js"
-                                                             :output-dir    "resources/public/js/test/untangled-spec-renderer"
+                                                             :output-dir    "target/js"
                                                              :asset-path    "js/test/untangled-spec-renderer"
                                                              :optimizations :simple}}}}
 
