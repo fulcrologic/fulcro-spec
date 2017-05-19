@@ -1,7 +1,7 @@
 (ns untangled-spec.suite
   #?(:cljs (:require-macros [untangled-spec.suite]))
   (:require
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [com.stuartsierra.component :as cp]
     [untangled-spec.runner :as runner]
     [untangled-spec.selectors :as sel]

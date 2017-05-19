@@ -1,6 +1,6 @@
 (ns untangled-spec.runner
   (:require
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [clojure.test :as t]
     [cljs.test #?@(:cljs (:include-macros true))]
     [com.stuartsierra.component :as cp]

@@ -1,6 +1,6 @@
 (ns untangled-spec.provided
   (:require
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [untangled-spec.impl.macros :as im]
     [untangled-spec.stub :as stub]

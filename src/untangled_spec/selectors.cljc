@@ -2,7 +2,7 @@
   (:require
     #?(:cljs [cljs.reader :refer [read-string]])
     [clojure.set :as set]
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [untangled-spec.spec :as us]
     [untangled-spec.impl.selectors :refer [selectors]]))
 

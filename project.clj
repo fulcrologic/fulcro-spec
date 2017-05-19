@@ -9,14 +9,15 @@
                  [kibu/pushy "0.3.6"]
                  [lein-doo "0.1.6" :scope "test"]
                  [untangled-web/untangled "1.0.0-SNAPSHOT" :scope "provided"]
-                 [org.clojure/clojure "1.9.0-alpha14" :scope "provided"]
-                 [org.clojure/clojurescript "1.9.473" :scope "provided"]
+                 [org.clojure/clojure "1.9.0-alpha16" :scope "provided"]
+                 [org.clojure/clojurescript "1.9.542" :scope "provided"]
+                 [org.clojure/spec.alpha "0.1.94"]
                  [org.clojure/tools.namespace "0.3.0-alpha3"]
                  [org.omcljs/om "1.0.0-alpha48"]]
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.19.0" :exclusions [org.clojure/tools.namespace]]
-            [lein-cljsbuild "1.1.5"]
-            [lein-doo "0.1.6"]                              ;; for cljs CI tests
+            [lein-cljsbuild "1.1.6"]
+            [lein-doo "0.1.7"]                              ;; for cljs CI tests
             [lein-shell "0.5.0"]]
 
   :release-tasks [["shell" "bin/release" "all_tasks"]]
@@ -75,6 +76,6 @@
                                         :port             7007
                                         :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
                          :dependencies [[com.cemerick/piggieback "0.2.1"]
-                                        [figwheel-sidecar "0.5.8" :exclusions [ring/ring-core http-kit joda-time]]
+                                        [figwheel-sidecar "0.5.10" :exclusions [ring/ring-core http-kit joda-time]]
                                         [org.clojure/tools.nrepl "0.2.12"]
                                         [org.clojure/test.check "0.9.0"]]}})

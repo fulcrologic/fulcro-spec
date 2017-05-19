@@ -238,7 +238,7 @@ The main testing macros are `specification`, `behavior`, `component`, and `asser
         form3 => expected-result3)))
 ----
 
-See the clojure.spec/def for `::assertions` in link:../src/untangled_spec/assertions.cljc[assertions.cljc] for the grammar of the `assertions` macro.
+See the clojure.spec.alpha/def for `::assertions` in link:../src/untangled_spec/assertions.cljc[assertions.cljc] for the grammar of the `assertions` macro.
 
 [NOTE]
 ====
@@ -281,7 +281,7 @@ Assertions provides some explict arrows, unlike https://github.com/marick/Midje[
 <3> Expects that actual will throw an Exception and checks that the type is `ExceptionType`.
 <4> Can also optionally that the message matches the `opt-regex` & `opt-pred`.
 <5> An alternative supported syntax is a map with all optional keys `:ex-type` `:regex` `:fn`
-<6> View the clojure.spec/def `::criteria` link:../src/untangled_spec/assertions.cljc[assertions.cljc] for the up to date grammar for the `expected` side of a `=throws=>` assertions.
+<6> View the clojure.spec.alpha/def `::criteria` link:../src/untangled_spec/assertions.cljc[assertions.cljc] for the up to date grammar for the `expected` side of a `=throws=>` assertions.
 
 === Mocking
 
@@ -320,10 +320,10 @@ It is important to note that the mocking support does a bunch of verification at
 . It uses the mocked functions in the order specified.
 . It verifies that your functions are called the appropriate number of times (at least once is the default) and no more if a number is specified.
 . It captures the arguments in the symbols you provide (in this case arg1 and arg2). These are available for use in the RHS of the mock expression.
-. If the mocked function has a `clojure.spec/fdef` with `:args`, it will validate the arguments with it.
+. If the mocked function has a `clojure.spec.alpha/fdef` with `:args`, it will validate the arguments with it.
 . It returns whatever the RHS of the mock expression indicates.
-. If the mocked function has a `clojure.spec/fdef` with `:ret`, it will validate the return value with it.
-. If the mocked function has a `clojure.spec/fdef` with `:fn` (and `:args` & `:ret`), it will validate the arguments and return value with it.
+. If the mocked function has a `clojure.spec.alpha/fdef` with `:ret`, it will validate the return value with it.
+. If the mocked function has a `clojure.spec.alpha/fdef` with `:fn` (and `:args` & `:ret`), it will validate the arguments and return value with it.
 . If assertions run in the RHS form, they will be honored (for test failures).
 
 So, the following mock script should pass:
@@ -352,12 +352,12 @@ So, the following mock script should pass:
 
 ==== Clojure.spec mocking integration
 
-However, the following mock script will fail due to clojure.spec errors:
+However, the following mock script will fail due to clojure.spec.alpha errors:
 
 [source]
 ----
 (:require
-  [clojure.spec :as s]
+  [clojure.spec.alpha :as s]
   [untangled-spec.core :refer [when-mocking assertions])
 
 (s/fdef f

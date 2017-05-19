@@ -1,6 +1,6 @@
 (ns untangled-spec.core
   (:require
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [clojure.test]
     [untangled-spec.assertions :as ae]

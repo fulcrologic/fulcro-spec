@@ -5,7 +5,7 @@
   (:require
     #?(:clj [clojure.test])
     cljs.test ;; contains multimethod in clojure file
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     #?(:clj [untangled-spec.impl.macros :as im])
     [untangled-spec.spec :as us]))
 
