@@ -1,4 +1,4 @@
-(defproject awkay/untangled-spec "1.0.0-alpha4-SNAPSHOT"
+(defproject awkay/untangled-spec "1.0.0-beta1"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -8,7 +8,7 @@
                  [com.taoensso/timbre "4.8.0"]
                  [kibu/pushy "0.3.6"]
                  [lein-doo "0.1.7" :scope "test"]
-                 [awkay/untangled "1.0.0-SNAPSHOT" :scope "provided"]
+                 [awkay/untangled "1.0.0-beta1" :scope "provided"]
                  [org.clojure/clojure "1.9.0-alpha17" :scope "provided"]
                  [org.clojure/clojurescript "1.9.671" :scope "provided"]
                  [org.clojure/spec.alpha "0.1.123"]
