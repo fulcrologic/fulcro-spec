@@ -17,12 +17,10 @@ endif::[]
 
 A Specification testing framework.
 
-NOTE: THE LAST NON-ALPHA RELEASE WAS link:https://github.com/untangled-web/untangled-spec/tree/0.4.0[Version 0.4.0].
-
 image::https://img.shields.io/clojars/v/navis/untangled-spec.svg[link="https://clojars.org/navis/untangled-spec"]
 
-Release: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=master[link=https://github.com/untangled-web/untangled-spec/tree/master]
-Develop: image:https://api.travis-ci.org/untangled-web/untangled-spec.svg?branch=develop[link=https://github.com/untangled-web/untangled-spec/tree/develop]
+Release: image:https://api.travis-ci.org/awkay/untangled-spec.svg?branch=master[link=https://github.com/awkay/untangled-spec/tree/master]
+Develop: image:https://api.travis-ci.org/awkay/untangled-spec.svg?branch=develop[link=https://github.com/awkay/untangled-spec/tree/develop]
 
 == Usage
 
@@ -287,7 +285,6 @@ you will have to prepend a `with-profile test ...` in your command.
 
 == Learn More
 * about link:docs/index.adoc#untangled-spec-docs[Untangled Spec]
-* about link:http://untangled-web.github.io/untangled/index.html[Untangled] & checkout the link:http://untangled-web.github.io/untangled/index.html[Documentation Reference]
 * interactively with the link:http://untangled-web.github.io/untangled/tutorial.html[Untangled Tutorial]
 ** http://untangled-web.github.io/untangled/tutorial.html#!/untangled_tutorial.K_Testing[untangled_tutorial.K_Testing]
 
