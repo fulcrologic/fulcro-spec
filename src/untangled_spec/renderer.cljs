@@ -11,7 +11,7 @@
     [untangled.client.core :as uc]
     [untangled.client.data-fetch :as df]
     [untangled.client.network :as ucn]
-    [untangled.client.mutations :as m]
+    [untangled.client.mutations :as m :refer [defmutation]]
     [untangled-spec.dom.edn-renderer :refer [html-edn]]
     [untangled-spec.diff :as diff]
     [untangled-spec.selectors :as sel]
@@ -459,12 +459,13 @@
 (defui ^:once TestReport
   static uc/InitialAppState
   (initial-state [this _] {:ui/react-key (gensym "UI_REACT_KEY")
+                           :compile-error nil
                            :ui/current-filter :all})
   static om/IQuery
-  (query [this] [:ui/react-key :test-report :ui/current-filter {:selectors (om/get-query SelectorControl)}])
+  (query [this] [:ui/react-key :test-report :compile-error :ui/current-filter {:selectors (om/get-query SelectorControl)}])
   Object
   (render [this]
-    (let [{:keys [ui/react-key test-report selectors ui/current-filter] :as props} (om/props this)
+    (let [{:keys [ui/react-key compile-error test-report selectors ui/current-filter] :as props} (om/props this)
           {:keys [open-drawer?]} (om/get-state this)
           toggle-drawer #(om/update-state! this update :open-drawer? not)
           toggle-filter-cb (fn [f] #(om/transact! this `[(toggle-filter ~{:filter f})]))]
@@ -479,14 +480,36 @@
             (test-selectors selectors))
           (dom/div #js {:className (cond-> "c-backdrop" open-drawer? (str " is-active"))
                         :onClick toggle-drawer})
-          (test-main test-report current-filter))))))
+          (if compile-error
+            (dom/h1 nil compile-error)
+            (test-main test-report current-filter)))))))
 
-(defmethod m/mutate `render-tests [{:keys [state]} _ new-report]
-  {:action #(swap! state assoc :test-report new-report)})
+(defmutation render-tests
+  "Om muation: render the tests"
+  [new-report]
+  (action [{:keys [state]}]
+    (swap! state assoc :test-report new-report)))
+
+(defmutation show-compile-error
+  "Om mutation: show a compiler error"
+  [{:keys [error]}]
+  (action [{:keys [state]}]
+    (swap! state assoc :compile-error error)))
+
+(defmutation clear-compile-error
+  "Om mutation: Clear the compiler error"
+  [ignored]
+  (action [{:keys [state]}]
+    (swap! state assoc :compile-error false)))
+
 (defmethod wn/push-received `render-tests
   [{:keys [reconciler]} {test-report :msg}]
   (om/transact! (om/app-root reconciler)
-    `[(render-tests ~test-report)]))
+    `[(clear-compile-error {}) (render-tests ~test-report)]))
+
+(defmethod wn/push-received `show-compile-error
+  [{:keys [reconciler]} {message :msg}]
+  (om/transact! (om/app-root reconciler) `[(show-compile-error ~{:error message})]))
 
 (defrecord TestRenderer [root target with-websockets? runner-atom]
   cp/Lifecycle

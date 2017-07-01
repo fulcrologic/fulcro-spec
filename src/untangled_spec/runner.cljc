@@ -80,7 +80,9 @@
      (reporter/reset-test-report! (:test/reporter runner))
      (let [result (if refresh? (tools-ns-repl/refresh) :ok)]
        (if (not= :ok result)
-         (println "Refresh failed: " result)
+         (do
+           (novelty! runner 'untangled-spec.renderer/show-compile-error result)
+           (println "Refresh failed: " result))
          (reporter/with-untangled-reporting
            runner render-tests
            ((:test! runner))))))
