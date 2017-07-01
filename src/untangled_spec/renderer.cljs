@@ -177,7 +177,7 @@
 (defui ^:once TestItem
   Object
   (render [this]
-    (let [{:keys [current-filter] :as test-item-data} (om/props this)]
+    (let [{:keys [id current-filter] :as test-item-data} (om/props this)]
       (dom/li #js {:className "test-item"}
         (dom/div nil
           (dom/span #js {:className (test-item-class (:status test-item-data))}
@@ -207,7 +207,7 @@
               (sequence (comp (filters current-filter)
                           (map #(assoc % :current-filter current-filter))
                           (map ui-test-item))
-                        (:test-items tests-by-namespace)))))))))
+                        (sort-by (comp :line :form-meta) (:test-items tests-by-namespace))))))))))
 (def ui-test-namespace (om/factory TestNamespace {:keyfn :name}))
 
 (def material-icon-paths

@@ -73,26 +73,19 @@
 
 (defn- render-tests [{:keys [test/reporter] :as runner}]
   (novelty! runner 'untangled-spec.renderer/render-tests
-    (reporter/get-test-report reporter)))
+    (reporter/get-test-report reporter))
+  runner)
 
-#?(:clj
-   (defn run-tests [runner {:keys [refresh?] :or {refresh? false}}]
-     (reporter/reset-test-report! (:test/reporter runner))
-     (let [result (if refresh? (tools-ns-repl/refresh) :ok)]
-       (if (not= :ok result)
-         (do
-           (novelty! runner 'untangled-spec.renderer/show-compile-error result)
-           (println "Refresh failed: " result))
-         (reporter/with-untangled-reporting
-           runner render-tests
-           ((:test! runner))))))
-   :cljs
 (defn run-tests [runner {:keys [refresh?] :or {refresh? false}}]
   (reporter/reset-test-report! (:test/reporter runner))
-  (reporter/with-untangled-reporting
-    runner render-tests
-       ((:test! runner)))))
-
+  (let [result #?(:cljs :ok :clj (if refresh? (tools-ns-repl/refresh) :ok))]
+    (if (not= :ok result)
+      (do ;; CLJS only
+        (novelty! runner 'untangled-spec.renderer/show-compile-error result)
+        (println "Refresh failed: " result))
+      (reporter/with-untangled-reporting
+        runner render-tests
+        ((:test! runner))))))
 
 (defrecord TestRunner [opts]
   cp/Lifecycle

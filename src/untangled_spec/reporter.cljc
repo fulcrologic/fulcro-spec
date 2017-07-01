@@ -38,14 +38,15 @@
     :fail 0 :error 0}))
 
 (defn make-testitem
-  [test-name]
-  {:id (new-uuid)
-   :name test-name
-   :status {}
-   :test-items []
-   :test-results []})
+  [{:keys [string form-meta]}]
+  (cond-> {:id (new-uuid)
+           :name string
+           :status {}
+           :test-items []
+           :test-results []}
+    form-meta (assoc :form-meta form-meta)))
 
-(defn make-manual [test-name] (make-testitem (str test-name " (MANUAL TEST)")))
+(defn make-manual [test-name] (make-testitem {:string (str test-name " (MANUAL TEST)")}))
 
 #?(:cljs (defn- stack->trace [st] (parse-stacktrace {} st {} {})))
 
@@ -88,7 +89,7 @@
 
 (defn begin* [{:keys [state path]} t]
   (let [path @path
-        test-item (make-testitem (:string t))
+        test-item (make-testitem t)
         test-items-count (count (get-in @state (conj path :test-items)))]
     (swap! state assoc-in
       (conj path :test-items test-items-count)
