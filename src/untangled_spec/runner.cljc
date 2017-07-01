@@ -12,7 +12,8 @@
                [untangled.client.mutations :as m]
                [untangled-spec.renderer :as renderer]
                [untangled-spec.router :as router]))
-    #?@(:clj  ([clojure.tools.namespace.repl :as tools-ns-repl]
+    #?@(:clj (
+    [clojure.tools.namespace.repl :as tools-ns-repl]
                [clojure.walk :as walk]
                [cognitect.transit :as transit]
                [om.next.server :as oms]
@@ -74,12 +75,22 @@
   (novelty! runner 'untangled-spec.renderer/render-tests
     (reporter/get-test-report reporter)))
 
+#?(:clj
+   (defn run-tests [runner {:keys [refresh?] :or {refresh? false}}]
+     (reporter/reset-test-report! (:test/reporter runner))
+     (let [result (if refresh? (tools-ns-repl/refresh) :ok)]
+       (if (not= :ok result)
+         (println "Refresh failed: " result)
+         (reporter/with-untangled-reporting
+           runner render-tests
+           ((:test! runner))))))
+   :cljs
 (defn run-tests [runner {:keys [refresh?] :or {refresh? false}}]
   (reporter/reset-test-report! (:test/reporter runner))
-  #?(:clj (when refresh? (tools-ns-repl/refresh)))
   (reporter/with-untangled-reporting
     runner render-tests
-    ((:test! runner))))
+       ((:test! runner)))))
+
 
 (defrecord TestRunner [opts]
   cp/Lifecycle
