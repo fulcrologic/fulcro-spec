@@ -80,7 +80,7 @@
   (reporter/reset-test-report! (:test/reporter runner))
   (let [result #?(:cljs :ok :clj (if refresh? (tools-ns-repl/refresh) :ok))]
     (if (not= :ok result)
-      (do ;; CLJS only
+      (do ;; CLJ only
         (novelty! runner 'untangled-spec.renderer/show-compile-error result)
         (println "Refresh failed: " result))
       (reporter/with-untangled-reporting

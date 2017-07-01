@@ -18,3 +18,4 @@ resources/public/js
 out
 node_modules/
 resources/private/js
+package-lock.json

@@ -85,7 +85,8 @@
         scripts (parse-mocks mocks)
         skip-output? (= :skip-output string)]
     `(im/with-reporting ~(when-not skip-output? {:type :provided :string (str "PROVIDED: " string)})
-       (let [~@(mapcat (juxt :symgen :script) scripts)]
-         (with-redefs [~@(mapcat (juxt :mock-name :sstub) scripts)]
-           ~@body
-           (stub/validate-target-function-counts ~(mapv :symgen scripts)))))))
+       (im/try-report "Unexpected"
+         (let [~@(mapcat (juxt :symgen :script) scripts)]
+          (with-redefs [~@(mapcat (juxt :mock-name :sstub) scripts)]
+            ~@body
+            (stub/validate-target-function-counts ~(mapv :symgen scripts))))))))
