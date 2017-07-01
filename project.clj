@@ -1,4 +1,4 @@
-(defproject navis/untangled-spec "1.0.0-alpha3"
+(defproject awkay/untangled-spec "1.0.0-beta1"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -7,19 +7,17 @@
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [com.taoensso/timbre "4.8.0"]
                  [kibu/pushy "0.3.6"]
-                 [lein-doo "0.1.6" :scope "test"]
-                 [navis/untangled-client "0.8.0"]
-                 [navis/untangled-server "0.7.0" :exclusions [com.taoensso/timbre org.clojure/java.classpath]]
-                 [navis/untangled-ui "1.0.0-alpha1"]
-                 [navis/untangled-websockets "0.3.3"]
-                 [org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.473"]
+                 [lein-doo "0.1.7" :scope "test"]
+                 [awkay/untangled "1.0.0-beta1" :scope "provided"]
+                 [org.clojure/clojure "1.9.0-alpha17" :scope "provided"]
+                 [org.clojure/clojurescript "1.9.671" :scope "provided"]
+                 [org.clojure/spec.alpha "0.1.123"]
                  [org.clojure/tools.namespace "0.3.0-alpha3"]
-                 [org.omcljs/om "1.0.0-alpha48"]]
+                 [org.omcljs/om "1.0.0-beta1"]]
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.19.0" :exclusions [org.clojure/tools.namespace]]
-            [lein-cljsbuild "1.1.5"]
-            [lein-doo "0.1.6"]                              ;; for cljs CI tests
+            [lein-cljsbuild "1.1.6"]
+            [lein-doo "0.1.7"]                              ;; for cljs CI tests
             [lein-shell "0.5.0"]]
 
   :release-tasks [["shell" "bin/release" "all_tasks"]]
@@ -45,7 +43,7 @@
                               :spec-renderer {:source-paths ["src"]
                                               :compiler     {:main          untangled-spec.spec-renderer
                                                              :output-to     "resources/public/js/test/untangled-spec-renderer.js"
-                                                             :output-dir    "resources/public/js/test/untangled-spec-renderer"
+                                                             :output-dir    "target/js"
                                                              :asset-path    "js/test/untangled-spec-renderer"
                                                              :optimizations :simple}}}}
 
@@ -78,6 +76,6 @@
                                         :port             7007
                                         :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
                          :dependencies [[com.cemerick/piggieback "0.2.1"]
-                                        [figwheel-sidecar "0.5.8" :exclusions [ring/ring-core http-kit joda-time]]
+                                        [figwheel-sidecar "0.5.10" :exclusions [ring/ring-core http-kit joda-time]]
                                         [org.clojure/tools.nrepl "0.2.12"]
                                         [org.clojure/test.check "0.9.0"]]}})

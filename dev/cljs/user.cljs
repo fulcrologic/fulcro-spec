@@ -1,6 +1,6 @@
 (ns cljs.user
   (:require
-    [clojure.spec.test :as st]
+    [clojure.spec.test.alpha :as st]
     [untangled-spec.tests-to-run]
     [untangled-spec.suite :as suite]
     [untangled-spec.selectors :as sel]))

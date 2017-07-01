@@ -1,6 +1,6 @@
 (ns untangled-spec.assertions-spec
   (:require
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [clojure.test :as t :refer [is]]
     [untangled-spec.assertions :as ae
      :refer [check-error check-error* parse-criteria]]

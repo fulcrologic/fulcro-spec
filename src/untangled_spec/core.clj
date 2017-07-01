@@ -1,6 +1,6 @@
 (ns untangled-spec.core
   (:require
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [clojure.test]
     [untangled-spec.assertions :as ae]
@@ -29,12 +29,12 @@
   [& args]
   (let [{:keys [name selectors body]} (us/conform! ::specification args)
         test-name (-> (var-name-from-string name)
-                    (str (gensym)) symbol
                     (with-meta (zipmap selectors (repeat true))))
         prefix (im/if-cljs &env "cljs.test" "clojure.test")]
     `(~(symbol prefix "deftest") ~test-name
        (im/when-selected-for ~(us/conform! ::sel/test-selectors selectors)
-         (im/with-reporting {:type :specification :string ~name}
+         (im/with-reporting {:type :specification :string ~name
+                             :form-meta ~(select-keys (meta &form) [:line])}
            (im/try-report ~name
              ~@body))))))
 

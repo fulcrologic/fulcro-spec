@@ -1,6 +1,6 @@
 (ns untangled-spec.spec
   (:require
-    [clojure.spec :as s]))
+    [clojure.spec.alpha :as s]))
 
 (defn conform! [spec x]
   (let [rt (s/conform spec x)]

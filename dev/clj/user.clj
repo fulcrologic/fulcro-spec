@@ -30,7 +30,7 @@
 (defn start []
   (reset! ir/runner
     (suite/test-suite-internal
-      {:config {:port 8888}
+      {:config {:port 8778}
        :source-paths ["src" "dev"]
        :test-paths ["test"]}
       {:default #{::sel/none :focused}

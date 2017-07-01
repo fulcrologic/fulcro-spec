@@ -20,14 +20,16 @@
     (core/var-name-from-string "\\\"@^()[]{};',/  ∂¨∫øƒ∑Ó‡ﬁ€⁄ª•¶§¡˙√ß")
     =fn=> #(re-matches #"__\-+__" (str %))))
 
-(defmacro test-core [code-block test-fn]
-  `(let [test-var# ~code-block
-         reports# (atom [])]
-     (binding [t/report #(swap! reports# conj %)]
-       (with-redefs [sel/selected-for? (constantly true)]
-         (test-var#)))
-     (alter-meta! test-var# dissoc :test)
-     (~test-fn @reports#)))
+(defmacro test-core
+  ([code-block] `(test-core ~code-block identity))
+  ([code-block test-fn]
+   `(let [test-var# ~code-block
+          reports# (atom [])]
+      (binding [t/report #(swap! reports# conj %)]
+        (with-redefs [sel/selected-for? (constantly true)]
+          (test-var#)))
+      (alter-meta! test-var# dissoc :test)
+      (~test-fn @reports#))))
 
 (specification "uncaught errors are gracefully handled & reported"
   (let [only-errors (comp

@@ -1,6 +1,6 @@
 (ns untangled-spec.provided-spec
   (:require
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [untangled-spec.core #?(:clj :refer :cljs :refer-macros)
      [specification behavior provided assertions when-mocking]]
     #?(:clj [untangled-spec.impl.macros :as im])

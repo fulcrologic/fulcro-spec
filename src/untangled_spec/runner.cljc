@@ -1,6 +1,6 @@
 (ns untangled-spec.runner
   (:require
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [clojure.test :as t]
     [cljs.test #?@(:cljs (:include-macros true))]
     [com.stuartsierra.component :as cp]
@@ -12,14 +12,15 @@
                [untangled.client.mutations :as m]
                [untangled-spec.renderer :as renderer]
                [untangled-spec.router :as router]))
-    #?@(:clj  ([clojure.tools.namespace.repl :as tools-ns-repl]
+    #?@(:clj (
+    [clojure.tools.namespace.repl :as tools-ns-repl]
                [clojure.walk :as walk]
                [cognitect.transit :as transit]
                [om.next.server :as oms]
                [ring.util.response :as resp]
                [untangled-spec.impl.macros :as im]
                [untangled-spec.watch :as watch]
-               [untangled.server.core :as usc]
+               [untangled.easy-server :as usy]
                [untangled.websockets.protocols :as ws]
                [untangled.websockets.components.channel-server :as wcs]))))
 
@@ -72,14 +73,19 @@
 
 (defn- render-tests [{:keys [test/reporter] :as runner}]
   (novelty! runner 'untangled-spec.renderer/render-tests
-    (reporter/get-test-report reporter)))
+    (reporter/get-test-report reporter))
+  runner)
 
 (defn run-tests [runner {:keys [refresh?] :or {refresh? false}}]
   (reporter/reset-test-report! (:test/reporter runner))
-  #?(:clj (when refresh? (tools-ns-repl/refresh)))
-  (reporter/with-untangled-reporting
-    runner render-tests
-    ((:test! runner))))
+  (let [result #?(:cljs :ok :clj (if refresh? (tools-ns-repl/refresh) :ok))]
+    (if (not= :ok result)
+      (do ;; CLJ only
+        (novelty! runner 'untangled-spec.renderer/show-compile-error result)
+        (println "Refresh failed: " result))
+      (reporter/with-untangled-reporting
+        runner render-tests
+        ((:test! runner))))))
 
 (defrecord TestRunner [opts]
   cp/Lifecycle
@@ -151,7 +157,7 @@
                                  (prn ::mutate k params))})]
             (reset! system
               (cp/start
-                (usc/make-untangled-server
+                (usy/make-untangled-server
                   :parser (oms/parser {:read api-read :mutate api-mutate})
                   :components {:config {:value (:config opts)}
                                :channel-server (wcs/make-channel-server)
