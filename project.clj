@@ -8,7 +8,7 @@
                  [com.taoensso/timbre "4.8.0"]
                  [kibu/pushy "0.3.6"]
                  [lein-doo "0.1.7" :scope "test"]
-                 [fulcrologic/fulcro "1.0.0-beta2" :scope "provided"]
+                 [fulcrologic/fulcro "1.0.0-beta2"]
                  [org.clojure/clojure "1.9.0-alpha17" :scope "provided"]
                  [org.clojure/clojurescript "1.9.671" :scope "provided"]
                  [org.clojure/spec.alpha "0.1.123"]
