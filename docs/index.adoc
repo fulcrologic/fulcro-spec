@@ -1,4 +1,4 @@
-= Untangled Spec Docs
+= Fulcro Spec Docs
 :source-highlighter: coderay
 :source-language: clojure
 :toc:
@@ -22,7 +22,7 @@ endif::[]
 
 == Features
 
-The macros in untangled-spec wrap clojure/cljs test, so that you may use any of the features of the core library.
+The macros in fulcro-spec wrap clojure/cljs test, so that you may use any of the features of the core library.
 The specification DSL makes it much easier to read the tests, and also includes a number of useful features:
 
 - Outline rendering
@@ -44,17 +44,17 @@ A dev-time only entry point for browser test rendering:
 ----
 (ns cljs.user
   (:require
-    [untangled-spec.tests-to-run] ;;<1>
-    [untangled-spec.suite :as suite]
-    [untangled-spec.selectors :as sel]))
+    [fulcro-spec.tests-to-run] ;;<1>
+    [fulcro-spec.suite :as suite]
+    [fulcro-spec.selectors :as sel]))
 
 (suite/def-test-suite on-load ;;<2>
-  {:ns-regex #"untangled-spec\..*-spec"} ;;<3>
+  {:ns-regex #"fulcro-spec\..*-spec"} ;;<3>
   {:available #{:focused :should-fail} ;;<4>
    :default #{::sel/none :focused}}) ;;<5>
 ----
 
-<1> link:../test/untangled_spec/tests_to_run.cljs[tests_to_run.cljs] Just requires all of your tests. This is necessary as all cljs test runners search by looking at the loaded namespaces. Since there are two places cljs tests can run from (browser and CI), it makes sense to keep this list in one file.
+<1> link:../test/fulcro_spec/tests_to_run.cljs[tests_to_run.cljs] Just requires all of your tests. This is necessary as all cljs test runners search by looking at the loaded namespaces. Since there are two places cljs tests can run from (browser and CI), it makes sense to keep this list in one file.
 <2> Define a callback for figwheel to call to re run the tests.
 <3> `:ns-regex` is the regex to filter the loaded namespaces down to just your tests.
 <4> Is where you define your `:available` selectors, ie: legal/possible values for selectors on your `specification`.
@@ -108,7 +108,7 @@ eg: if you have a build with id `:test`, it will look for `-Dtest`
 <3> OPTIONAL, starts a css watcher so you get automatic reloading of css when it changes.
 <4> Starts a cljs repl you can interact with, see https://github.com/bhauman/lein-figwheel/tree/master/sidecar#starting-the-repl[figwheel sidecar] for more information
 
-Open `localhost:PORT/untangled-spec-client-tests.html`, where `PORT` is defined (with leiningen) by your figwheel configuration in your link:../project.clj[project.clj], eg: `:figwheel {:server-port PORT}`.
+Open `localhost:PORT/fulcro-spec-client-tests.html`, where `PORT` is defined (with leiningen) by your figwheel configuration in your link:../project.clj[project.clj], eg: `:figwheel {:server-port PORT}`.
 
 == CI Tests
 
@@ -127,16 +127,16 @@ Open `localhost:PORT/untangled-spec-client-tests.html`, where `PORT` is defined 
 ----
 
 * You have https://github.com/bensu/doo#doo[lein-doo] as a plugin for running tests through karma *via* nodejs.
-* A link:../test/untangled_spec/all_tests.cljs[all_tests.cljs] file for running your tests.
+* A link:../test/fulcro_spec/all_tests.cljs[all_tests.cljs] file for running your tests.
 
 [source]
 ----
 (ns your.all-tests
   (:require
-    untangled-spec.tests-to-run ;; <1>
+    fulcro-spec.tests-to-run ;; <1>
     [doo.runner :refer-macros [doo-all-tests]]))
 
-(doo-all-tests #"untangled-spec\..*-spec") ;; <2>
+(doo-all-tests #"fulcro-spec\..*-spec") ;; <2>
 ----
 <1> For loading your test namespaces.
 <2> Takes a regex to run just your test namespaces.
@@ -155,7 +155,7 @@ Open `localhost:PORT/untangled-spec-client-tests.html`, where `PORT` is defined 
 ----
 {:source-paths ["src" "test"]
  :compiler     {:output-to     "resources/private/js/unit-tests.js"
-                :main          untangled-spec.all-tests
+                :main          fulcro-spec.all-tests
                 :optimizations :none}}
 ----
 
@@ -179,7 +179,7 @@ A recommended sample configuration is:
 
 [source]
 ----
-:test-refresh {:report untangled-spec.reporters.terminal/untangled-report <1>
+:test-refresh {:report fulcro-spec.reporters.terminal/fulcro-report <1>
                :changes-only true <2>
                :with-repl true} <3>
 ----
@@ -193,20 +193,20 @@ itself as the authoritative source.
 
 === With reporting in the browser
 
-* Create a webserver using `untangled-spec.suite/def-test-suite` that runs your tests and talks with your browser. +
+* Create a webserver using `fulcro-spec.suite/def-test-suite` that runs your tests and talks with your browser. +
 See the docstring for further info on the arguments.
 
 [source]
 ----
 (:require
-  [untangled-spec.suite :as suite])
+  [fulcro-spec.suite :as suite])
 
 (suite/def-test-suite my-test-suite <1>
   {:config {:port 8888} <2>
    :test-paths ["test"] <3><4>
    :source-paths ["src"]} <4>
   {:available #{:focused :unit :integration} <5>
-   :default #{:untangled-spec.selectors/none :focused :unit}}) <6>
+   :default #{:fulcro-spec.selectors/none :focused :unit}}) <6>
 ----
 <1> Defines a function you can call to (re-)start the test-suite, should be useful if you are changing the following arguments, ie: config, paths, or selectors.
 <2> `:config` is passed directly to the webserver, only port is required and currently advertised as available.
@@ -216,7 +216,7 @@ See the docstring for further info on the arguments.
 <6> `:default` selectors to use when you haven't yet specified any in the browser ui.
 
 //SEPARATOR - NEEDED WHY?
-* Call `my-test-suite` and go to `localhost:PORT/untangled-spec-server-tests.html` to view your test report.
+* Call `my-test-suite` and go to `localhost:PORT/fulcro-spec-server-tests.html` to view your test report.
 
 == Anatomy of a specification
 
@@ -225,7 +225,7 @@ The main testing macros are `specification`, `behavior`, `component`, and `asser
 [source]
 ----
 (:require
-  [untangled-spec.core :refer [specification behavior component assertions])
+  [fulcro-spec.core :refer [specification behavior component assertions])
 
 (specification "A Thing"
   (component "A Thing Part"
@@ -238,7 +238,7 @@ The main testing macros are `specification`, `behavior`, `component`, and `asser
         form3 => expected-result3)))
 ----
 
-See the clojure.spec.alpha/def for `::assertions` in link:../src/untangled_spec/assertions.cljc[assertions.cljc] for the grammar of the `assertions` macro.
+See the clojure.spec.alpha/def for `::assertions` in link:../src/fulcro_spec/assertions.cljc[assertions.cljc] for the grammar of the `assertions` macro.
 
 [NOTE]
 ====
@@ -267,7 +267,7 @@ Assertions provides some explict arrows, unlike https://github.com/marick/Midje[
 [source]
 ----
 (:require
-  [untangled-spec.core :refer [assertions])
+  [fulcro-spec.core :refer [assertions])
 
 (assertions
   actual => expected ;;<1>
@@ -281,7 +281,7 @@ Assertions provides some explict arrows, unlike https://github.com/marick/Midje[
 <3> Expects that actual will throw an Exception and checks that the type is `ExceptionType`.
 <4> Can also optionally that the message matches the `opt-regex` & `opt-pred`.
 <5> An alternative supported syntax is a map with all optional keys `:ex-type` `:regex` `:fn`
-<6> View the clojure.spec.alpha/def `::criteria` link:../src/untangled_spec/assertions.cljc[assertions.cljc] for the up to date grammar for the `expected` side of a `=throws=>` assertions.
+<6> View the clojure.spec.alpha/def `::criteria` link:../src/fulcro_spec/assertions.cljc[assertions.cljc] for the up to date grammar for the `expected` side of a `=throws=>` assertions.
 
 === Mocking
 
@@ -295,7 +295,7 @@ you want to isolate mocking to a specific behavior:
 [source]
 ----
 (:require
-  [untangled-spec.core :refer [specification behavior when-mocking assertions])
+  [fulcro-spec.core :refer [specification behavior when-mocking assertions])
 
 ;; source file
 (defn my-function [x y] (launch-rockets!))
@@ -331,7 +331,7 @@ So, the following mock script should pass:
 [source]
 ----
 (:require
-  [untangled-spec.core :refer [when-mocking assertions])
+  [fulcro-spec.core :refer [when-mocking assertions])
 
 (when-mocking
   (f a) =1x=> a ;;<1>
@@ -358,7 +358,7 @@ However, the following mock script will fail due to clojure.spec.alpha errors:
 ----
 (:require
   [clojure.spec.alpha :as s]
-  [untangled-spec.core :refer [when-mocking assertions])
+  [fulcro-spec.core :refer [when-mocking assertions])
 
 (s/fdef f
   :args number?
@@ -381,12 +381,12 @@ However, the following mock script will fail due to clojure.spec.alpha errors:
 ==== Spies
 
 Sometimes it is desirable to check that a function is called but still use its original definition, this pattern is called a test spy.
-Here's an example of how to do that with untangled spec:
+Here's an example of how to do that with fulcro spec:
 
 [source]
 ----
 (:require
-  [untangled-spec.core :refer [when-mocking assertions])
+  [fulcro-spec.core :refer [when-mocking assertions])
 
 (let [real-fn f]
   (when-mocking f => (do ... (real-fn))
@@ -410,7 +410,7 @@ The fix for doing so is quite straightforward:
 
 ;; test file
 (:require
-  [untangled-spec.core :refer [when-mocking assertions])
+  [fulcro-spec.core :refer [when-mocking assertions])
 
 (when-mocking
   (please this f x) => (do ...) ;;<4>
@@ -432,7 +432,7 @@ when you're trying to simulate timing issues.
 ----
 (:require
   [cljs.test :refer [is]]
-  [untangled-spec.core :refer [specification provided with-timeline
+  [fulcro-spec.core :refer [specification provided with-timeline
                                tick async]])
 
 (def a (atom 0))
@@ -475,7 +475,7 @@ Note that you can schedule multiple things, and still return a value from the mo
 [source]
 ----
 (:require
-  [untangled-spec.core :refer [provided with-timeline async]])
+  [fulcro-spec.core :refer [provided with-timeline async]])
 
 (with-timeline
   (when-mocking

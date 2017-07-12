@@ -1,5 +1,6 @@
 1.0.0
 -----
+- Renamed to fulcro-spec
 - Ported to clojure.spec.alpha
 - Adding ability to render clojure tests in the browser!
 - WIP: when-mocking & provided will use clojure.spec.alpha to verify the :args passed to mocks, the :ret value you specify, and their relationship if a :fn spec if they exist.
