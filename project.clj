@@ -1,4 +1,4 @@
-(defproject awkay/untangled-spec "1.0.0-beta1"
+(defproject fulcrologic/fulcro-spec "1.0.0-beta1"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -8,7 +8,7 @@
                  [com.taoensso/timbre "4.8.0"]
                  [kibu/pushy "0.3.6"]
                  [lein-doo "0.1.7" :scope "test"]
-                 [awkay/untangled "1.0.0-beta1" :scope "provided"]
+                 [fulcrologic/fulcro "1.0.0-beta1" :scope "provided"]
                  [org.clojure/clojure "1.9.0-alpha17" :scope "provided"]
                  [org.clojure/clojurescript "1.9.671" :scope "provided"]
                  [org.clojure/spec.alpha "0.1.123"]
@@ -26,9 +26,9 @@
   :test-paths ["test"]
   :resource-paths ["resources"]
 
-  ;; this for backwards compatability, should now use untangled-spec.suite/def-test-suite
+  ;; this for backwards compatability, should now use fulcro-spec.suite/def-test-suite
   ;; (see dev/clj/user.clj for an example)
-  :test-refresh {:report       untangled-spec.reporters.terminal/untangled-report
+  :test-refresh {:report       fulcro-spec.reporters.terminal/fulcro-report
                  :changes-only true
                  :with-repl    true}
   :test-selectors {:default (complement :should-fail)}
@@ -41,10 +41,10 @@
 
   :cljsbuild {:builds        {;; For rendering specs without figwheel (eg: server side tests)
                               :spec-renderer {:source-paths ["src"]
-                                              :compiler     {:main          untangled-spec.spec-renderer
-                                                             :output-to     "resources/public/js/test/untangled-spec-renderer.js"
+                                              :compiler     {:main          fulcro-spec.spec-renderer
+                                                             :output-to     "resources/public/js/test/fulcro-spec-renderer.js"
                                                              :output-dir    "target/js"
-                                                             :asset-path    "js/test/untangled-spec-renderer"
+                                                             :asset-path    "js/test/fulcro-spec-renderer"
                                                              :optimizations :simple}}}}
 
   :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
@@ -62,7 +62,7 @@
                                                                 :compiler     {:output-to     "resources/private/js/unit-tests.js"
                                                                                :output-dir    "resources/private/js/unit-tests"
                                                                                :asset-path    "js/unit-tests"
-                                                                               :main          untangled-spec.all-tests
+                                                                               :main          fulcro-spec.all-tests
                                                                                :optimizations :simple}}}}}
              :dev       {:cljsbuild    {:builds {:test {:source-paths ["src" "dev" "test"]
                                                         :figwheel     {:on-jsload cljs.user/on-load}

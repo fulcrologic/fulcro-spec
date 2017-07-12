@@ -1,4 +1,4 @@
-= untangled-spec
+= fulcro-spec
 :source-highlighter: coderay
 :source-language: clojure
 :toc:
@@ -17,24 +17,24 @@ endif::[]
 
 A Specification testing framework.
 
-image::https://img.shields.io/clojars/v/awkay/untangled-spec.svg[link="https://clojars.org/awkay/untangled-spec"]
+image::https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https://clojars.org/fulcrologic/fulcro-spec"]
 
-Release: image:https://api.travis-ci.org/awkay/untangled-spec.svg?branch=master[link=https://github.com/awkay/untangled-spec/tree/master]
-Develop: image:https://api.travis-ci.org/awkay/untangled-spec.svg?branch=develop[link=https://github.com/awkay/untangled-spec/tree/develop]
+Release: image:https://api.travis-ci.org/fulcrologic/fulcro-spec.svg?branch=master[link=https://github.com/fulcrologic/fulcro-spec/tree/master]
+Develop: image:https://api.travis-ci.org/fulcrologic/fulcro-spec.svg?branch=develop[link=https://github.com/fulcrologic/fulcro-spec/tree/develop]
 
 == Usage
 
 * Make sure your link:https://clojure.org/community/downloads[clojure](link:https://github.com/clojure/clojurescript/releases[script]) versions are at or above "1.9.x".
 
-* Add `[awkay/untangled-spec "x.y.z"]` to your `:dependencies`.
+* Add `[fulcrologic/fulcro-spec "x.y.z"]` to your `:dependencies`.
 
-* Make sure you have at least one test file, eg: `test/your-ns/arithmetic_spec.cljc`, that uses `untangled-spec.core`:
+* Make sure you have at least one test file, eg: `test/your-ns/arithmetic_spec.cljc`, that uses `fulcro-spec.core`:
 
 [source]
 ----
 (ns your-ns.arithmetic-spec
   (:require
-    [untangled-spec.core :refer [specification behavior component assertions]]))
+    [fulcro-spec.core :refer [specification behavior component assertions]]))
 
 (specification "arithmetic"
   (component "addition"
@@ -49,7 +49,7 @@ Develop: image:https://api.travis-ci.org/awkay/untangled-spec.svg?branch=develop
 ** Check link:https://github.com/jakemcc/lein-test-refresh#usage[lein test refresh itself] for the latest version.
 * Add the following to your `project.clj` configuration:
 
-    :test-refresh {:report untangled-spec.reporters.terminal/untangled-report}
+    :test-refresh {:report fulcro-spec.reporters.terminal/fulcro-report}
 
 [NOTE]
 ====
@@ -62,7 +62,7 @@ Other configuration options are available, take a look at:
 * Run `lein test-refresh` in your command-line, et voila! You should see something like:
 
 ----
-Using reporter: untangled-spec.reporters.terminal/untangled-report
+Using reporter: fulcro-spec.reporters.terminal/fulcro-report
 *********************************************
 *************** Running tests ***************
 :reloading (your-ns.arithmetic-spec)
@@ -92,11 +92,11 @@ Make sure you have link:https://clojure.org/community/downloads[clojure](link:ht
 [WARNING]
 ====
 
-    Error refreshing environment: java.lang.IllegalAccessError: clj does not exist, compiling:(untangled_spec/watch.clj:1:1)
+    Error refreshing environment: java.lang.IllegalAccessError: clj does not exist, compiling:(fulcro_spec/watch.clj:1:1)
 
 Add an `:exclusions [org.clojure/tools.namespace]` for tools.namespace on lein-test-refresh +
 (and any other projects that use it, which you can check using `lein deps :tree` or `boot -pd`), +
-as untangled-spec requires "0.3.x" for clojurescript support, but lein-test-refresh doesn't need that itself.
+as fulcro-spec requires "0.3.x" for clojurescript support, but lein-test-refresh doesn't need that itself.
 ====
 
 === Clojure In The Browser
@@ -107,8 +107,8 @@ as untangled-spec requires "0.3.x" for clojurescript support, but lein-test-refr
 ----
 (ns clj.user
   (:require
-    [untangled-spec.selectors :as sel]
-    [untangled-spec.suite :as suite])
+    [fulcro-spec.selectors :as sel]
+    [fulcro-spec.suite :as suite])
 
 (suite/def-test-suite my-test-suite
   {:config {:port 8888} ;;<2>
@@ -120,7 +120,7 @@ as untangled-spec requires "0.3.x" for clojurescript support, but lein-test-refr
 (my-test-suite) ;;<1>
 ----
 <1> Starts the test suite, note that it will stop any pre-existing test suite first, so it's safe to call this whenever (eg: hot code reload).
-<2> You can now goto link:localhost:8888/untangled-spec-server-tests.html[]
+<2> You can now goto link:localhost:8888/fulcro-spec-server-tests.html[]
 
 //DIVIDER WHY OH WHY
 * Make sure the `"dev"` folder is in your `:source-paths`, if you are using lein that's probably just a `:profiles {:dev {:source-paths ["dev"]}}`.
@@ -155,8 +155,8 @@ as untangled-spec requires "0.3.x" for clojurescript support, but lein-test-refr
 (ns cljs.user
   (:require
     your-ns.arithmetic-spec ;;<1>
-    [untangled-spec.selectors :as sel]
-    [untangled-spec.suite :as suite]))
+    [fulcro-spec.selectors :as sel]
+    [fulcro-spec.suite :as suite]))
 
 (suite/def-test-suite on-load {:ns-regex #"your-ns\..*-spec"} ;;<2>
   {:default #{::sel/none :focused}
@@ -167,27 +167,27 @@ as untangled-spec requires "0.3.x" for clojurescript support, but lein-test-refr
 
 * (Optional) Create an HTML file for loading your tests in your `resources/public` folder. If you're using
 the standard figwheel config, then you can also choose to load one that is
-provided in the JAR of Untangled Spec.
+provided in the JAR of Fulcro Spec.
 
 [source,html]
 ----
 <!DOCTYPE html>
 <html>
     <head>
-        <link href="css/untangled-spec-styles.css" rel="stylesheet" type="text/css">
-        <link href="css/untangled-ui.css" rel="stylesheet" type="text/css">
+        <link href="css/fulcro-spec-styles.css" rel="stylesheet" type="text/css">
+        <link href="css/fulcro-ui.css" rel="stylesheet" type="text/css">
         <link id="favicon" rel="shortcut icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAIElEQVQ4T2NMS0v7z0ABYBw1gGE0DBhGwwCYh4ZBOgAAcQUjIUXh8RYAAAAASUVORK5CYII="/>
         <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     </head>
     <body>
-        <div id="untangled-spec-report">Loading "js/test/test.js", if you need to name that something else (conflicts?) make your own test html file</div>
+        <div id="fulcro-spec-report">Loading "js/test/test.js", if you need to name that something else (conflicts?) make your own test html file</div>
         <script src="js/test/test.js" type="text/javascript"></script>
     </body>
 </html>
 ----
 
 The HTML above is exactly the content of the built-in file
-`untangled-spec-client-tests.html`.
+`fulcro-spec-client-tests.html`.
 
 //DIVIDER WHY OH WHY
 * Add `[lein-cljsbuild "x.y.z"]` as a `:plugin` (link:https://github.com/emezeske/lein-cljsbuild#latest-version[latest version]).
@@ -214,14 +214,14 @@ The HTML above is exactly the content of the built-in file
 
 [WARNING]
 ====
-    java.lang.RuntimeException: No such var: om/dispatch, compiling:(untangled/client/mutations.cljc:8:1)
+    java.lang.RuntimeException: No such var: om/dispatch, compiling:(fulcro/client/mutations.cljc:8:1)
 
-Means you have a conflicting org.omcljs/om versions, either resolve them by looking at `lein deps :tree` or `bood -pd`, or pin your version to the link:https://github.com/omcljs/om/releases[latest version] or whatever version untangled-spec is using.
+Means you have a conflicting org.omcljs/om versions, either resolve them by looking at `lein deps :tree` or `bood -pd`, or pin your version to the link:https://github.com/omcljs/om/releases[latest version] or whatever version fulcro-spec is using.
 ====
 
-* Run the tests by loading your HTML file (or the one provided in the Untangled Spec JAR). The default figwheel
+* Run the tests by loading your HTML file (or the one provided in the Fulcro Spec JAR). The default figwheel
 port is 3449, so the URL that should always work by default if you've named your
-javascript output `js/test/test.js` would be: link:http://localhost:3449/untangled-spec-client-tests.html[]
+javascript output `js/test/test.js` would be: link:http://localhost:3449/fulcro-spec-client-tests.html[]
 
 
 ==== For CI
@@ -258,7 +258,7 @@ javascript output `js/test/test.js` would be: link:http://localhost:3449/untangl
  :compiler     {:output-to     "resources/private/js/unit-tests.js"
                 :output-dir    "resources/private/js/unit-tests"
                 :asset-path    "js/unit-tests"
-                :main          untangled-spec.all-tests
+                :main          fulcro-spec.all-tests
                 :optimizations :none}}
 
 ]}
@@ -273,7 +273,7 @@ javascript output `js/test/test.js` would be: link:http://localhost:3449/untangl
     your-ns.arithmetic-spec ;; ensures tests are loaded so doo can find them
     [doo.runner :refer-macros [doo-all-tests]]))
 
-(doo-all-tests #"untangled-spec\..*-spec")
+(doo-all-tests #"fulcro-spec\..*-spec")
 ----
 
 * Run `npm install` & then `lein doo chrome automated-tests once`, +
@@ -284,21 +284,21 @@ you will have to prepend a `with-profile test ...` in your command.
 * See link:http://github.com/bensu/doo#doo[doo] itself for further details & as a fallback if this information is somehow out of date.
 
 == Learn More
-* about link:docs/index.adoc#untangled-spec-docs[Untangled Spec]
-* interactively with the link:http://untangled-web.github.io/untangled/tutorial.html[Untangled Tutorial]
-** http://untangled-web.github.io/untangled/tutorial.html#!/untangled_tutorial.K_Testing[untangled_tutorial.K_Testing]
+* about link:docs/index.adoc#fulcro-spec-docs[Fulcro Spec]
+* interactively with the link:http://fulcro-web.github.io/fulcro/tutorial.html[Fulcro Tutorial]
+** http://fulcro-web.github.io/fulcro/tutorial.html#!/fulcro_tutorial.K_Testing[fulcro_tutorial.K_Testing]
 
 == Development
 
-NOTE: This section is for the _development_ of *untangled-spec itself*. +
-If you wanted instructions on how to use untangled-spec in your app/library, see <<Usage>>
+NOTE: This section is for the _development_ of *fulcro-spec itself*. +
+If you wanted instructions on how to use fulcro-spec in your app/library, see <<Usage>>
 
 === CLJS In The Browser
 
     lein repl
     #_user=> (start-figwheel ["test"])
 
-& link:localhost:8888/untangled-spec-server-tests.html[]
+& link:localhost:8888/fulcro-spec-server-tests.html[]
 
 === Clojure In The Terminal
 
@@ -309,7 +309,7 @@ If you wanted instructions on how to use untangled-spec in your app/library, see
     lein repl
     #_user=> (start)
 
-& link:localhost:8888/untangled-spec-server-tests.html[]
+& link:localhost:8888/fulcro-spec-server-tests.html[]
 
 === CI Testing
 

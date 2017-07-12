@@ -3,9 +3,9 @@
     [clojure.tools.namespace.repl :as tools-ns-repl]
     [com.stuartsierra.component :as cp]
     [figwheel-sidecar.system :as fsys]
-    [untangled-spec.impl.runner :as ir]
-    [untangled-spec.suite :as suite]
-    [untangled-spec.selectors :as sel]))
+    [fulcro-spec.impl.runner :as ir]
+    [fulcro-spec.suite :as suite]
+    [fulcro-spec.selectors :as sel]))
 
 (defn start-figwheel
   "Start Figwheel on the given builds, or defaults to build-ids in `figwheel-config`."

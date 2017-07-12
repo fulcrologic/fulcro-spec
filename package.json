@@ -1,5 +1,5 @@
 {
-  "name": "untangled-spec",
+  "name": "fulcro-spec",
   "version": "1.0.0",
   "description": "Testing",
   "main": "index.js",
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@gitlab.buehner-fry.com:navis/untangled-spec.git"
+    "url": "git@github.com:fulcrologic/fulcro-spec.git"
   },
   "author": "",
   "license": "NAVIS"
