@@ -298,7 +298,7 @@ If you wanted instructions on how to use fulcro-spec in your app/library, see <<
     lein repl
     #_user=> (start-figwheel ["test"])
 
-& link:localhost:8888/fulcro-spec-server-tests.html[]
+& http://localhost:3457/fulcro-spec-client-tests.html[]
 
 === Clojure In The Terminal
 
@@ -309,7 +309,7 @@ If you wanted instructions on how to use fulcro-spec in your app/library, see <<
     lein repl
     #_user=> (start)
 
-& link:localhost:8888/fulcro-spec-server-tests.html[]
+& http://localhost:8778/fulcro-spec-server-tests.html[]
 
 === CI Testing
 
