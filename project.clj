@@ -1,4 +1,4 @@
-(defproject fulcrologic/fulcro-spec "1.0.0-beta3-SNAPSHOT"
+(defproject fulcrologic/fulcro-spec "1.0.0-beta3"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -8,11 +8,12 @@
                  [com.taoensso/timbre "4.8.0"]
                  [kibu/pushy "0.3.6"]
                  [lein-doo "0.1.7" :scope "test"]
+                 [ring/ring "1.6.1"]
                  [fulcrologic/fulcro "1.0.0-beta2"]
-                 [org.clojure/clojure "1.9.0-alpha17" :scope "provided"]
-                 [org.clojure/clojurescript "1.9.671" :scope "provided"]
+                 [org.clojure/clojure "1.9.0-alpha17"]
+                 [org.clojure/clojurescript "1.9.671"]
                  [org.clojure/spec.alpha "0.1.123"]
-                 [org.clojure/tools.namespace "0.3.0-alpha3"]
+                 [org.clojure/tools.namespace "0.3.0-alpha4"]
                  [org.omcljs/om "1.0.0-beta1"]]
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.19.0" :exclusions [org.clojure/tools.namespace]]
@@ -39,22 +40,22 @@
 
   :clean-targets ^{:protect false} [:target-path "target" "resources/public/js" "resources/private/js"]
 
-  :cljsbuild {:builds        {;; For rendering specs without figwheel (eg: server side tests)
-                              :spec-renderer {:source-paths ["src"]
-                                              :compiler     {:main          fulcro-spec.spec-renderer
-                                                             :output-to     "resources/public/js/test/fulcro-spec-renderer.js"
-                                                             :output-dir    "target/js"
-                                                             :asset-path    "js/test/fulcro-spec-renderer"
-                                                             :optimizations :simple}}}}
+  :cljsbuild {:builds {;; For rendering specs without figwheel (eg: server side tests)
+                       :spec-renderer {:source-paths ["src"]
+                                       :compiler     {:main          fulcro-spec.spec-renderer
+                                                      :output-to     "resources/public/js/test/fulcro-spec-renderer.js"
+                                                      :output-dir    "target/js"
+                                                      :asset-path    "js/test/fulcro-spec-renderer"
+                                                      :optimizations :simple}}}}
 
   :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
 
   :figwheel {:nrepl-port  7888
              :server-port 3457}
 
-  :aliases {"jar"               ["with-profile" "with-cljs" "jar"]
-            "test-cljs"         ["with-profile" "test" "doo" "phantom" "automated-tests" "once"]
-            "test-clj"          ["test-refresh" ":run-once"]}
+  :aliases {"jar"       ["with-profile" "with-cljs" "jar"]
+            "test-cljs" ["with-profile" "test" "doo" "phantom" "automated-tests" "once"]
+            "test-clj"  ["test-refresh" ":run-once"]}
 
   :profiles {:with-cljs {:prep-tasks ["compile" ["cljsbuild" "once" "spec-renderer"]]}
              :test      {:cljsbuild {:builds {:automated-tests {:doc          "For CI tests. Runs via doo"
