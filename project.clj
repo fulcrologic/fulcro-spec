@@ -22,6 +22,7 @@
             [lein-shell "0.5.0"]]
 
   :release-tasks [["shell" "bin/release" "all_tasks"]]
+  :jar-exclusions [#".*/index.html"]
 
   :source-paths ["src"]
   :test-paths ["test"]
