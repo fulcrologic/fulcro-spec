@@ -2,7 +2,7 @@
   (:require
     [fulcro-spec.diff :as src
      :refer [nf diff diff-elem patch compress decompress]]
-    [fulcro-spec.core :as usc :refer
+    [fulcro-spec.core :as fsc :refer
      [specification behavior assertions]]))
 
 (specification "the diff function"

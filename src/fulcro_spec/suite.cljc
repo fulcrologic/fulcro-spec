@@ -5,7 +5,7 @@
     [com.stuartsierra.component :as cp]
     [fulcro-spec.runner :as runner]
     [fulcro-spec.selectors :as sel]
-    [fulcro-spec.spec :as us]
+    [fulcro-spec.spec :as fss]
     #?@(:cljs ([fulcro-spec.renderer :as renderer]
                [fulcro-spec.router :as router]))
     #?@(:clj ([clojure.java.io :as io]

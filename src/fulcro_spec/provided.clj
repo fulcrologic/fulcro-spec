@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.stub :as stub]
-    [fulcro-spec.spec :as us]))
+    [fulcro-spec.spec :as ffs]))
 
 (defn parse-arrow-count
   "parses how many times the mock/stub should be called with.
@@ -67,21 +67,21 @@
   (s/and list?
     (s/cat
       :mock-name symbol?
-      :params (s/* ::us/any))))
+      :params (s/* ::ffs/any))))
 (s/def ::arrow arrow?)
 (s/def ::triple
   (s/cat
     :under-mock ::under-mock
     :arrow ::arrow
-    :result ::us/any))
+    :result ::ffs/any))
 (s/def ::mocks
   (s/cat
     :mocks (s/+ ::triple)
-    :body (s/+ ::us/any)))
+    :body (s/+ ::ffs/any)))
 
 (defn provided*
   [cljs? string forms]
-  (let [{:keys [mocks body]} (us/conform! ::mocks forms)
+  (let [{:keys [mocks body]} (ffs/conform! ::mocks forms)
         scripts (parse-mocks mocks)
         skip-output? (= :skip-output string)]
     `(im/with-reporting ~(when-not skip-output? {:type :provided :string (str "PROVIDED: " string)})

@@ -7,7 +7,7 @@
     [fulcro-spec.assertions :as ae]
     [fulcro-spec.reporter :as reporter]
     [fulcro-spec.selectors :as sel]
-    [fulcro-spec.spec :as us]
+    [fulcro-spec.spec :as fss]
     #?@(:cljs ([om.next :as om]
                [fulcro.client.mutations :as m]
                [fulcro-spec.renderer :as renderer]
@@ -20,7 +20,7 @@
                [ring.util.response :as resp]
                [fulcro-spec.impl.macros :as im]
                [fulcro-spec.watch :as watch]
-               [fulcro.easy-server :as usy]
+               [fulcro.easy-server :as fsy]
                [fulcro.websockets.protocols :as ws]
                [fulcro.websockets.components.channel-server :as wcs]))))
 
@@ -104,7 +104,7 @@
 
 (s/def ::test-paths (s/coll-of string?))
 (s/def ::source-paths (s/coll-of string?))
-(s/def ::ns-regex ::us/regex)
+(s/def ::ns-regex ::fss/regex)
 (s/def ::port number?)
 (s/def ::config (s/keys :req-un [::port]))
 (s/def ::opts (s/keys :req-un [#?@(:cljs [::ns-regex])
@@ -157,7 +157,7 @@
                                  (prn ::mutate k params))})]
             (reset! system
               (cp/start
-                (usy/make-fulcro-server
+                (fsy/make-fulcro-server
                   :parser (oms/parser {:read api-read :mutate api-mutate})
                   :components {:config {:value (:config opts)}
                                :channel-server (wcs/make-channel-server)

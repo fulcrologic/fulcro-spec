@@ -10,7 +10,7 @@
     [fulcro-spec.runner] ;;side effects
     [fulcro-spec.selectors :as sel]
     [fulcro-spec.stub]
-    [fulcro-spec.spec :as us]))
+    [fulcro-spec.spec :as fss]))
 
 (defn var-name-from-string [s]
   (symbol (str "__" (str/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))
@@ -19,7 +19,7 @@
   (s/cat
     :name string?
     :selectors (s/* keyword?)
-    :body (s/* ::us/any)))
+    :body (s/* ::fss/any)))
 
 (s/fdef specification :args ::specification)
 (defmacro specification
@@ -27,12 +27,12 @@
    description. Technically outputs a deftest with additional output reporting.
    When *load-tests* is false, the specification is ignored."
   [& args]
-  (let [{:keys [name selectors body]} (us/conform! ::specification args)
+  (let [{:keys [name selectors body]} (fss/conform! ::specification args)
         test-name (-> (var-name-from-string name)
                     (with-meta (zipmap selectors (repeat true))))
         prefix (im/if-cljs &env "cljs.test" "clojure.test")]
     `(~(symbol prefix "deftest") ~test-name
-       (im/when-selected-for ~(us/conform! ::sel/test-selectors selectors)
+       (im/when-selected-for ~(fss/conform! ::sel/test-selectors selectors)
          (im/with-reporting {:type :specification :string ~name
                              :form-meta ~(select-keys (meta &form) [:line])}
            (im/try-report ~name
@@ -41,7 +41,7 @@
 (s/def ::behavior (s/cat
                     :name (constantly true)
                     :opts (s/* keyword?)
-                    :body (s/* ::us/any)))
+                    :body (s/* ::fss/any)))
 (s/fdef behavior :args ::behavior)
 
 (defmacro behavior
@@ -52,7 +52,7 @@
 
    (behavior \"blows up when the moon is full\" :manual-test)"
   [& args]
-  (let [{:keys [name opts body]} (us/conform! ::behavior args)
+  (let [{:keys [name opts body]} (fss/conform! ::behavior args)
         typekw (if (contains? opts :manual-test)
                  :manual :behavior)
         prefix (im/if-cljs &env "cljs.test" "clojure.test")]
@@ -82,7 +82,7 @@
 
 (s/fdef assertions :args ::ae/assertions)
 (defmacro assertions [& forms]
-  (let [blocks (ae/fix-conform (us/conform! ::ae/assertions forms))
+  (let [blocks (ae/fix-conform (fss/conform! ::ae/assertions forms))
         asserts (map (partial ae/block->asserts (im/cljs-env? &env)) blocks)]
     `(do ~@asserts true)))
 

@@ -8,9 +8,9 @@
     [om.dom :as dom]
     [om.next :as om :refer-macros [defui]]
     [pushy.core :as pushy]
-    [fulcro.client.core :as uc]
+    [fulcro.client.core :as fc]
     [fulcro.client.data-fetch :as df]
-    [fulcro.client.network :as ucn]
+    [fulcro.client.network :as fcn]
     [fulcro.client.mutations :as m :refer [defmutation]]
     [fulcro-spec.dom.edn-renderer :refer [html-edn]]
     [fulcro-spec.diff :as diff]
@@ -457,7 +457,7 @@
                 (sort-by :name namespaces)))))))))
 
 (defui ^:once TestReport
-  static uc/InitialAppState
+  static fc/InitialAppState
   (initial-state [this _] {:ui/react-key (gensym "UI_REACT_KEY")
                            :compile-error nil
                            :ui/current-filter :all})
@@ -514,10 +514,10 @@
 (defrecord TestRenderer [root target with-websockets? runner-atom]
   cp/Lifecycle
   (start [this]
-    (let [app (uc/new-fulcro-client
+    (let [app (fc/new-fulcro-client
                 :networking (if with-websockets?
                               (wn/make-channel-client "/_fulcro_spec_chsk")
-                              (reify ucn/FulcroNetwork
+                              (reify fcn/FulcroNetwork
                                 (start [this app] this)
                                 (send [this edn ok err]
                                   (ok ((om/parser @runner-atom) @runner-atom edn)))))
@@ -525,7 +525,7 @@
                 (fn [app]
                   (df/load app :selectors SelectorControl
                     {:post-mutation `sel/set-selectors})))]
-      (assoc this :app (uc/mount app root target))))
+      (assoc this :app (fc/mount app root target))))
   (stop [this]
     (assoc this :app nil)))
 

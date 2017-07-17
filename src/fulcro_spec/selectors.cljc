@@ -3,7 +3,7 @@
     #?(:cljs [cljs.reader :refer [read-string]])
     [clojure.set :as set]
     [clojure.spec.alpha :as s]
-    [fulcro-spec.spec :as us]
+    [fulcro-spec.spec :as fss]
     [fulcro-spec.impl.selectors :refer [selectors]]))
 
 (s/def :selector/active? boolean?)
