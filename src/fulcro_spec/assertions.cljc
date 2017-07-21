@@ -7,14 +7,14 @@
     cljs.test ;; contains multimethod in clojure file
     [clojure.spec.alpha :as s]
     #?(:clj [fulcro-spec.impl.macros :as im])
-    [fulcro-spec.spec :as us]))
+    [fulcro-spec.spec :as fss]))
 
 (s/def ::arrow (comp #{"=>" "=fn=>" "=throws=>"} str))
 (s/def ::behavior string?)
 (s/def ::triple (s/cat
-                  :actual   ::us/any
+                  :actual   ::fss/any
                   :arrow    ::arrow
-                  :expected ::us/any))
+                  :expected ::fss/any))
 (s/def ::block (s/cat
                  :behavior (s/? ::behavior)
                  :triples  (s/+ ::triple)))
@@ -68,8 +68,8 @@
      (assoc criteria :fn-pr fn-pr))))
 
 (s/def ::ex-type symbol?)
-(s/def ::regex ::us/regex)
-(s/def ::fn ::us/any)
+(s/def ::regex ::fss/regex)
+(s/def ::fn ::fss/any)
 (s/def ::criteria
   (s/or
     :sym symbol?
@@ -77,7 +77,7 @@
     :map (s/keys :opt-un [::ex-type ::regex ::fn])))
 
 (defn throws-assert-expr [msg [cljs? should-throw criteria]]
-  (let [criteria (parse-criteria (us/conform! ::criteria criteria))]
+  (let [criteria (parse-criteria (fss/conform! ::criteria criteria))]
     `(try ~should-throw
        (throw (ex-info "Expected an error to be thrown!"
                 {:type ::internal :criteria ~criteria}))

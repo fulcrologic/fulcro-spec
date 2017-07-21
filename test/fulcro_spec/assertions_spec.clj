@@ -8,7 +8,7 @@
     [fulcro-spec.core
      :refer [specification component behavior assertions]]
     [fulcro-spec.impl.macros :as im]
-    [fulcro-spec.spec :as us]
+    [fulcro-spec.spec :as fss]
     [fulcro-spec.testing-helpers :as th])
   (:import clojure.lang.ExceptionInfo))
 
@@ -19,22 +19,22 @@
       (->> actual second (= expected)))))
 
 (defn test-triple->assertion [form]
-  (ae/triple->assertion false (us/conform! ::ae/triple form)))
+  (ae/triple->assertion false (fss/conform! ::ae/triple form)))
 
 (defn test-block->asserts [form]
-  (ae/block->asserts false (us/conform! ::ae/block form)))
+  (ae/block->asserts false (fss/conform! ::ae/block form)))
 
 (def test-regex #"a-simple-test-regex")
 
 (specification "check-error"
   (behavior "supports many syntaxes"
     (assertions
-      (us/conform! ::ae/criteria 'ExceptionInfo)
+      (fss/conform! ::ae/criteria 'ExceptionInfo)
       => [:sym 'ExceptionInfo]
-      (us/conform! ::ae/criteria {:ex-type 'ExceptionInfo
+      (fss/conform! ::ae/criteria {:ex-type 'ExceptionInfo
                                   :fn even?, :regex test-regex})
       => [:map {:ex-type 'ExceptionInfo :fn even? :regex test-regex}]
-      (us/conform! ::ae/criteria ['ExceptionInfo])
+      (fss/conform! ::ae/criteria ['ExceptionInfo])
       => [:list {:ex-type 'ExceptionInfo}]
 
       (parse-criteria [:sym 'irr]) => {:ex-type 'irr}
@@ -175,6 +175,6 @@
   (assertions
     (mapv (juxt :behavior (comp count :triples))
       (ae/fix-conform
-        (us/conform! ::ae/assertions
+        (fss/conform! ::ae/assertions
           '("foo" 1 => 2 "bar" 3 => 4, 5 => 6 "qux" 7 => 8, 9 => 10))))
     => '[["foo" 1] ["bar" 2] ["qux" 2]]))

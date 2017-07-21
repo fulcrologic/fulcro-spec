@@ -5,10 +5,10 @@
             :url  "https://opensource.org/licenses/MIT"}
   :dependencies [[colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
-                 [com.taoensso/timbre "4.8.0"]
-                 [kibu/pushy "0.3.6"]
+                 [com.taoensso/timbre "4.10.0"]
+                 [kibu/pushy "0.3.7"]
                  [lein-doo "0.1.7" :scope "test"]
-                 [ring/ring "1.6.1"]
+                 [ring/ring "1.6.2"]
                  [fulcrologic/fulcro "1.0.0-beta5"]
                  [org.clojure/clojure "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.671"]
@@ -78,6 +78,6 @@
                                         :port             7007
                                         :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
                          :dependencies [[com.cemerick/piggieback "0.2.1"]
-                                        [figwheel-sidecar "0.5.10" :exclusions [ring/ring-core http-kit joda-time]]
-                                        [org.clojure/tools.nrepl "0.2.12"]
+                                        [figwheel-sidecar "0.5.11" :exclusions [ring/ring-core http-kit joda-time]]
+                                        [org.clojure/tools.nrepl "0.2.13"]
                                         [org.clojure/test.check "0.9.0"]]}})

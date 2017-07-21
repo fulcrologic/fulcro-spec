@@ -6,7 +6,7 @@
     #?(:clj [fulcro-spec.impl.macros :as im])
     #?(:clj [fulcro-spec.provided :as p])
     [fulcro-spec.stub :as stub]
-    [fulcro-spec.spec :as us]
+    [fulcro-spec.spec :as fss]
     [fulcro-spec.testing-helpers :as th])
   #?(:clj
       (:import clojure.lang.ExceptionInfo)))
@@ -28,7 +28,7 @@
 #?(:clj
    (specification "parse-mock-triple"
      (let [test-parse (comp p/parse-mock-triple
-                        (partial us/conform! :fulcro-spec.provided/triple))]
+                        (partial fss/conform! :fulcro-spec.provided/triple))]
        (let [result (test-parse '[(f a b) =2x=> (+ a b)])]
          (behavior "includes a call count"
            (assertions

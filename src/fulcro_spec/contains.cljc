@@ -1,14 +1,14 @@
 (ns fulcro-spec.contains
   (:require
     [clojure.set :refer [subset?]]
-    [fulcro-spec.spec :as us]))
+    [fulcro-spec.spec :as fss]))
 
 (defn todo []
   (throw (ex-info "todo / not-implemented" {})))
 
 (defn ->kw-type [x]
   (cond
-    (string? x) :string (us/regex? x) :regex
+    (string? x) :string (fss/regex? x) :regex
     (map? x)    :map    (set? x)      :set
     (list? x)   :list   (vector? x)   :list))
 
