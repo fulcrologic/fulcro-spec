@@ -55,6 +55,7 @@
   (let [report-as (fn [status] #(update % :status select-keys [status]))
         no-test-results #(dissoc % :test-results)]
     {:all (map identity)
+     nil      (map identity)
      :failing (filter (comp #(some pos? %) (juxt :fail :error) :status))
      :manual  (comp (filter (has-status? #(-> % :manual pos?)))
                 (map no-test-results)
@@ -514,6 +515,7 @@
 (defrecord TestRenderer [root target with-websockets? runner-atom]
   cp/Lifecycle
   (start [this]
+    (try
     (let [app (uc/new-fulcro-client
                 :networking (if with-websockets?
                               (wn/make-channel-client "/_fulcro_spec_chsk")
@@ -525,7 +527,9 @@
                 (fn [app]
                   (df/load app :selectors SelectorControl
                     {:post-mutation `sel/set-selectors})))]
-      (assoc this :app (uc/mount app root target))))
+        (assoc this :app (uc/mount app root target)))
+      (catch js/Object e (js/console.log "Error starting: " e)
+                         this)))
   (stop [this]
     (assoc this :app nil)))
 
