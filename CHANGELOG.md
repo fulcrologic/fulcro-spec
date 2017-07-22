@@ -8,6 +8,7 @@
     - They emit meta data on the deftest var so they are compatible with anything,
       but also wrap the body so that untangled-spec can properly run just the selected tests.
 - Fixed minor bug in renderer that could cause failure to start
+- Backported to Clojure 1.8. Should now work in 1.8 and 1.9
 
 0.4.0
 -----
