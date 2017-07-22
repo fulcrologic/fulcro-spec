@@ -78,7 +78,7 @@
                          :repl-options {:init-ns          clj.user
                                         :port             7007
                                         :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
-                         :dependencies [[com.cemerick/piggieback "0.2.1"]
+                         :dependencies [[com.cemerick/piggieback "0.2.2"]
                                         [figwheel-sidecar "0.5.11" :exclusions [ring/ring-core http-kit joda-time]]
                                         [org.clojure/tools.nrepl "0.2.13"]
                                         [org.clojure/test.check "0.9.0"]]}})
