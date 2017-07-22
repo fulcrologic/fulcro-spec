@@ -1,4 +1,5 @@
 (ns fulcro-spec.runner
+  #?(:clj (use clojure.future))
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :as t]
@@ -14,7 +15,6 @@
                [fulcro-spec.router :as router]))
     #?@(:clj (
     [clojure.tools.namespace.repl :as tools-ns-repl]
-               [clojure.future :refer [any?]]
                [clojure.walk :as walk]
                [cognitect.transit :as transit]
                [om.next.server :as oms]
@@ -24,6 +24,7 @@
                [fulcro.easy-server :as fsy]
                [fulcro.websockets.protocols :as ws]
                [fulcro.websockets.components.channel-server :as wcs]))))
+
 
 #?(:clj
    (defmethod print-method Throwable [e w]
