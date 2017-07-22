@@ -14,6 +14,7 @@
                [fulcro-spec.router :as router]))
     #?@(:clj (
     [clojure.tools.namespace.repl :as tools-ns-repl]
+               [clojure.future :refer [any?]]
                [clojure.walk :as walk]
                [cognitect.transit :as transit]
                [om.next.server :as oms]
