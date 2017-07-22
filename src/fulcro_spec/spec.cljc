@@ -9,7 +9,7 @@
                (s/explain-data spec x))))
     rt))
 
-(s/def ::any any?)
+(s/def ::any (constantly true))
 
 (defn regex? [x] (= (type x) (type #"")))
 (s/def ::regex regex?)

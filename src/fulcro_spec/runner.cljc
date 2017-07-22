@@ -15,6 +15,7 @@
     #?@(:clj (
     [clojure.tools.namespace.repl :as tools-ns-repl]
                [clojure.walk :as walk]
+               [clojure.future :refer :all]
                [cognitect.transit :as transit]
                [om.next.server :as oms]
                [ring.util.response :as resp]
@@ -23,6 +24,7 @@
                [fulcro.easy-server :as fsy]
                [fulcro.websockets.protocols :as ws]
                [fulcro.websockets.components.channel-server :as wcs]))))
+
 
 #?(:clj
    (defmethod print-method Throwable [e w]

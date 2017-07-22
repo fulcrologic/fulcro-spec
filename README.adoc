@@ -17,6 +17,9 @@ endif::[]
 
 A Specification testing framework.
 
+NOTE: 1.0.0-beta5 was backported to Clojure 1.8. It should still work fine with Clojure 1.9, but now
+it should also work with projects using 1.8.
+
 image::https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https://clojars.org/fulcrologic/fulcro-spec"]
 
 Release: image:https://api.travis-ci.org/fulcrologic/fulcro-spec.svg?branch=master[link=https://github.com/fulcrologic/fulcro-spec/tree/master]

@@ -1,6 +1,7 @@
 (ns fulcro-spec.selectors
   (:require
     #?(:cljs [cljs.reader :refer [read-string]])
+    #?(:clj [clojure.future :refer :all])
     [clojure.set :as set]
     [clojure.spec.alpha :as s]
     [fulcro-spec.spec :as fss]
@@ -44,7 +45,7 @@
 (s/fdef initialize-selectors!
   :args (s/cat :initial-selectors ::initial-selectors))
 (defn initialize-selectors! [{:keys [available default]
-                              :or {default #{::none}}}]
+                              :or   {default #{::none}}}]
   (swap! selectors assoc :current
     (mapv (fn [sel] {:selector/id sel :selector/active? (contains? default sel)})
       (conj available ::none)))

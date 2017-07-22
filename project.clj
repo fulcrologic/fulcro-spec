@@ -1,4 +1,4 @@
-(defproject fulcrologic/fulcro-spec "1.0.0-beta4"
+(defproject fulcrologic/fulcro-spec "1.0.0-beta5"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -9,11 +9,12 @@
                  [kibu/pushy "0.3.7"]
                  [lein-doo "0.1.7" :scope "test"]
                  [ring/ring "1.6.2"]
-                 [fulcrologic/fulcro "1.0.0-beta5"]
-                 [org.clojure/clojure "1.9.0-alpha17"]
+                 [fulcrologic/fulcro "1.0.0-beta6" :exclusions [org.clojure/clojure]]
+                 [org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.671"]
-                 [org.clojure/spec.alpha "0.1.123"]
+                 ;[org.clojure/spec.alpha "0.1.123"]
                  [org.clojure/tools.namespace "0.3.0-alpha4"]
+                 [clojure-future-spec "1.9.0-alpha17"]
                  [org.omcljs/om "1.0.0-beta1"]]
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.19.0" :exclusions [org.clojure/tools.namespace]]
@@ -77,7 +78,7 @@
                          :repl-options {:init-ns          clj.user
                                         :port             7007
                                         :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
-                         :dependencies [[com.cemerick/piggieback "0.2.1"]
+                         :dependencies [[com.cemerick/piggieback "0.2.2"]
                                         [figwheel-sidecar "0.5.11" :exclusions [ring/ring-core http-kit joda-time]]
                                         [org.clojure/tools.nrepl "0.2.13"]
                                         [org.clojure/test.check "0.9.0"]]}})
