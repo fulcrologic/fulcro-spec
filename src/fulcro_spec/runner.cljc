@@ -1,5 +1,4 @@
 (ns fulcro-spec.runner
-  #?(:clj (use clojure.future))
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :as t]
@@ -16,6 +15,7 @@
     #?@(:clj (
     [clojure.tools.namespace.repl :as tools-ns-repl]
                [clojure.walk :as walk]
+               [clojure.future :refer :all]
                [cognitect.transit :as transit]
                [om.next.server :as oms]
                [ring.util.response :as resp]
