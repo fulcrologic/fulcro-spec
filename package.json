@@ -11,7 +11,7 @@
   "devDependencies": {
     "karma": "^0.13.19",
     "karma-cljs-test": "^0.1.0",
-    "karma-phantomjs-launcher": "^1.0.4"
+    "karma-firefox-launcher": "~1"
   },
   "repository": {
     "type": "git",
