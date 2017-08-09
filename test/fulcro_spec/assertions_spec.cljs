@@ -1,5 +1,5 @@
 (ns fulcro-spec.assertions-spec
-  (:require [fulcro-spec.core :refer-macros [specification assertions]]))
+  (:require [fulcro-spec.core :refer [specification assertions]]))
 
 (specification "assertions blocks work on cljs"
   (assertions

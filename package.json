@@ -9,8 +9,8 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "karma": "^0.13.19",
-    "karma-cljs-test": "^0.1.0",
+    "karma": "~1",
+    "karma-cljs-test": ">=0.1",
     "karma-firefox-launcher": "~1"
   },
   "repository": {

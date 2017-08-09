@@ -39,17 +39,17 @@
         [1 21] =fn=> (comp not (*contains? [1 2]))
         [12 1] =fn=> (comp not (*contains? [1 2]))
         ))
-    (behavior "contains a subseq with gaps"
-      #_(assertions
+    #_(behavior "contains a subseq with gaps"
+      (assertions
           [3 7 0 1] =fn=> (*contains? [3 1] :gaps)
           [3 7 0 1] =fn=> (*contains? [3 7] :gaps)
           [3 7 0 1] =fn=> (comp not (*contains? [1 0] :gaps))
           ))
-    (behavior "contains a subseq in any order"
-      #_(assertions
+    #_(behavior "contains a subseq in any order"
+      (assertions
           [34 7 1 87] =fn=> (*contains? [87 1] :any-order)
           ))
-    (behavior "contains a subseq with gaps & in any order"
-      #_(assertions
+    #_(behavior "contains a subseq with gaps & in any order"
+      (assertions
           [98 32 78 16] =fn=> (*contains? [16 98] :both)
           ))))

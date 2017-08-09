@@ -8,7 +8,7 @@
                  [com.taoensso/timbre "4.10.0"]
                  [kibu/pushy "0.3.7"]
                  [lein-doo "0.1.7" :scope "test"]
-                 [ring/ring "1.6.2"]
+                 [ring/ring "1.6.2" :exclusions [commons-codec]]
                  [fulcrologic/fulcro "1.0.0-beta7-SNAPSHOT" :exclusions [org.clojure/clojure]]
                  [org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.854"]
@@ -65,7 +65,7 @@
                                                                                :output-dir    "resources/private/js/unit-tests"
                                                                                :asset-path    "js/unit-tests"
                                                                                :main          fulcro-spec.all-tests
-                                                                               :optimizations :simple}}}}}
+                                                                               :optimizations :whitespace}}}}}
              :dev       {:cljsbuild    {:builds {:test {:source-paths ["src" "dev" "test"]
                                                         :figwheel     {:on-jsload cljs.user/on-load}
                                                         :compiler     {:main          cljs.user
@@ -78,6 +78,6 @@
                                         :port             7007
                                         :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
                          :dependencies [[com.cemerick/piggieback "0.2.2"]
-                                        [figwheel-sidecar "0.5.11" :exclusions [ring/ring-core http-kit joda-time]]
+                                        [figwheel-sidecar "0.5.12" :exclusions [ring/ring-core http-kit joda-time]]
                                         [org.clojure/tools.nrepl "0.2.13"]
                                         [org.clojure/test.check "0.9.0"]]}})
