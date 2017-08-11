@@ -520,7 +520,7 @@
                  :networking (if with-websockets?
                                (wn/make-channel-client "/_fulcro_spec_chsk")
                                (reify fcn/FulcroNetwork
-                                 (start [this app] this)
+                                 (start [this] this)
                                  (send [this edn ok err]
                                    (ok ((om/parser @runner-atom) @runner-atom edn)))))
                  :started-callback
