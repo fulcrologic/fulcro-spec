@@ -22,8 +22,8 @@ it should also work with projects using 1.8.
 
 image::https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https://clojars.org/fulcrologic/fulcro-spec"]
 
-Release: image:https://api.travis-ci.org/fulcrologic/fulcro-spec.svg?branch=master[link=https://github.com/fulcrologic/fulcro-spec/tree/master]
-Develop: image:https://api.travis-ci.org/fulcrologic/fulcro-spec.svg?branch=develop[link=https://github.com/fulcrologic/fulcro-spec/tree/develop]
+Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master"]
+Snapshot: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop"]
 
 == Usage
 
