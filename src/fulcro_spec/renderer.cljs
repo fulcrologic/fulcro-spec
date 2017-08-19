@@ -512,22 +512,25 @@
   [{:keys [reconciler]} {message :msg}]
   (om/transact! (om/app-root reconciler) `[(show-compile-error ~{:error message})]))
 
+(defonce networking (wn/make-channel-client "/_fulcro_spec_chsk"))
+
 (defrecord TestRenderer [root target with-websockets? runner-atom]
   cp/Lifecycle
   (start [this]
     (try
       (let [app (fc/new-fulcro-client
-                 :networking (if with-websockets?
-                               (wn/make-channel-client "/_fulcro_spec_chsk")
-                               (reify fcn/FulcroNetwork
-                                 (start [this] this)
-                                 (send [this edn ok err]
-                                   (ok ((om/parser @runner-atom) @runner-atom edn)))))
-                 :started-callback
-                 (fn [app]
-                   (df/load app :selectors SelectorControl
-                     {:post-mutation `sel/set-selectors})))]
-       (assoc this :app (fc/mount app root target)))
+                  :networking (if with-websockets?
+                                networking
+                                (reify fcn/FulcroNetwork
+                                  (start [this] this)
+                                  (send [this edn ok err]
+                                    (ok ((om/parser @runner-atom) @runner-atom edn)))))
+                  :started-callback
+                  (fn [app]
+                    (wn/install-push-handlers networking app)
+                    (df/load app :selectors SelectorControl
+                      {:post-mutation `sel/set-selectors})))]
+        (assoc this :app (fc/mount app root target)))
       (catch js/Object e (js/console.log "Startup Failed: " e))))
   (stop [this]
     (assoc this :app nil)))

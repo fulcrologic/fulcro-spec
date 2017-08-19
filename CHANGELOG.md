@@ -1,5 +1,9 @@
-1.0.0
------
+1.0.0-beta8
+-----------
+- Fixed bug in server renderer due to networking change (beta7 is broken for server-in-browser)
+
+1.0.0-beta1
+-----------
 - Renamed to fulcro-spec
 - Ported to clojure.spec.alpha
 - Adding ability to render clojure tests in the browser!
