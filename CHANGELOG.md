@@ -1,3 +1,7 @@
+1.0.0-beta9
+-----------
+- bugfix: client renderer tried to connect to server test websocket
+
 1.0.0-beta8
 -----------
 - Fixed bug in server renderer due to networking change (beta7 is broken for server-in-browser)
