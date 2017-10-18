@@ -1,3 +1,7 @@
+1.0.0
+-----
+- Fixed clj test running to include stack trace on unexpected throws
+
 1.0.0-beta9
 -----------
 - bugfix: client renderer tried to connect to server test websocket

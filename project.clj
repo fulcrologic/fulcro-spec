@@ -1,4 +1,4 @@
-(defproject fulcrologic/fulcro-spec "1.0.0-beta9"
+(defproject fulcrologic/fulcro-spec "1.0.0"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -6,12 +6,12 @@
   :dependencies [[colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [com.taoensso/timbre "4.10.0"]
-                 [kibu/pushy "0.3.7"]
-                 [lein-doo "0.1.7" :scope "test"]
+                 [kibu/pushy "0.3.8"]
+                 [lein-doo "0.1.8" :scope "test"]
                  [ring/ring "1.6.2" :exclusions [commons-codec]]
-                 [fulcrologic/fulcro "1.0.0-beta8" :exclusions [org.clojure/clojure]]
+                 [fulcrologic/fulcro "1.0.0" :exclusions [org.clojure/clojure]]
                  [org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.9.908"]
+                 [org.clojure/clojurescript "1.9.946"]
                  [org.clojure/tools.namespace "0.3.0-alpha4"]
                  [clojure-future-spec "1.9.0-alpha17"]
                  [org.omcljs/om "1.0.0-beta1"]]
@@ -56,7 +56,8 @@
 
   :aliases {"jar"       ["with-profile" "with-cljs" "jar"]
             "test-cljs" ["with-profile" "test" "doo" "firefox" "automated-tests" "once"]
-            "test-clj"  ["test-refresh" ":run-once"]}
+            "test-clj"  ["test-refresh" ":run-once"]
+            "clojars"   ["with-profile" "with-cljs" "deploy" "clojars"]}
 
   :profiles {:with-cljs {:prep-tasks ["compile" ["cljsbuild" "once" "spec-renderer"]]}
              :test      {:cljsbuild {:builds {:automated-tests {:doc          "For CI tests. Runs via doo"
@@ -78,6 +79,6 @@
                                         :port             7007
                                         :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
                          :dependencies [[com.cemerick/piggieback "0.2.2"]
-                                        [figwheel-sidecar "0.5.13" :exclusions [ring/ring-core http-kit joda-time]]
+                                        [figwheel-sidecar "0.5.14" :exclusions [ring/ring-core http-kit joda-time]]
                                         [org.clojure/tools.nrepl "0.2.13"]
                                         [org.clojure/test.check "0.9.0"]]}})

@@ -62,7 +62,11 @@
             :status status
             :where (t/testing-vars-str t)})
       (merge-in-diff-results)
-      #?(:cljs (#(if (some-> % :actual .-stack)
+    #?(:clj  (#(if (some->> % :actual (instance? Throwable))
+                 (assoc % :stack (with-out-str
+                                   (-> % :actual (.printStackTrace (new java.io.PrintWriter *out*)))))
+                 %))
+       :cljs (#(if (some-> % :actual .-stack)
                    (assoc % :stack (-> % :actual .-stack stack->trace))
                    %)))
       (update :actual fix-str)
