@@ -14,7 +14,8 @@
         do-report (symbol prefix "do-report")]
     `(try ~@body
        (catch ~(if-cljs &env (symbol "js" "Object") (symbol "Throwable"))
-         e# (~do-report {:type :error :actual e#
+         e#
+         (~do-report {:type :error :actual e#
                          :message ~block :expected "IT TO NOT THROW!"})))))
 
 (defmacro with-reporting

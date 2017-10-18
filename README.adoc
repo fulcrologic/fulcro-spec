@@ -25,6 +25,17 @@ image::https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https:
 Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master"]
 Snapshot: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop"]
 
+== Super Quick Start
+
+Use the fulcro lein template to get a project with CLJ tests, CLJS tests, and CI testing already configured and
+set to go with:
+
+```
+lein new fulcro my-project
+```
+
+The resulting project's README has instructions for running the parts.
+
 == Usage
 
 * Make sure your link:https://clojure.org/community/downloads[clojure](link:https://github.com/clojure/clojurescript/releases[script]) versions are at or above "1.9.x".
