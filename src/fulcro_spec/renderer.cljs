@@ -72,7 +72,8 @@
   (render [this]
     (let [{:keys [folded?]} (om/get-state this)
           {:keys [render]} (om/props this)
-          {:keys [title value classes]} (render folded?)]
+          {:keys [title value classes]} (render folded?)
+          value (js->clj value)]
       (dom/div #js {:className "foldable"}
         (dom/a #js {:className classes
                     :onClick   #(om/update-state! this update :folded? not)}
@@ -116,10 +117,10 @@
               (dom/td nil (str path))))
           (dom/tr #js {:className "expected"}
             (dom/td nil "exp: ")
-            (dom/td nil (html-edn exp)))
+            (dom/td nil (html-edn (js->clj exp))))
           (dom/tr #js {:className "actual"}
             (dom/td nil "got: ")
-            (dom/td nil (html-edn got))))))))
+            (dom/td nil (html-edn (js->clj got)))))))))
 (def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn #(gensym "human-diff-lines")}))
 
 (defui ^:once HumanDiff
