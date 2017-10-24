@@ -13,7 +13,7 @@
                  [org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.946"]
                  [org.clojure/tools.namespace "0.3.0-alpha4"]
-                 [clojure-future-spec "1.9.0-alpha17"]
+                 [clojure-future-spec "1.9.0-beta2"]
                  [org.omcljs/om "1.0.0-beta1"]]
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.19.0" :exclusions [org.clojure/tools.namespace]]
