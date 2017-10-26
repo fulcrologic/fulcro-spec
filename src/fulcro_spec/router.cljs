@@ -2,7 +2,7 @@
   (:require
     [clojure.set :as set]
     [com.stuartsierra.component :as cp]
-    [om.next :as om]
+    [fulcro.client.primitives :as om]
     [pushy.core :as pushy]
     [fulcro-spec.renderer :as renderer]
     [fulcro-spec.selectors :as sel]

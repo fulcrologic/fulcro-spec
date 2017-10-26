@@ -2,7 +2,7 @@
   (:require
     [cljs.pprint :refer [pprint]]
     [fulcro-spec.diff :as diff]
-    [om.dom :as dom])
+    [fulcro.client.dom :as dom])
   (:import
     (goog.string StringBuffer)))
 
