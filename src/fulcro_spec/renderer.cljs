@@ -66,43 +66,19 @@
                 (map no-test-results)
                 (map (report-as :pending)))}))
 
-(defui ^:once Foldable
-  Object
-  (initLocalState [this] {:folded? true})
-  (render [this]
-    (let [{:keys [folded?]} (om/get-state this)
-          {:keys [render]} (om/props this)
-          {:keys [title value classes]} (render folded?)
-          value (js->clj value)]
-      (dom/div #js {:className "foldable"}
-        (dom/a #js {:className classes
-                    :onClick   #(om/update-state! this update :folded? not)}
-          (if folded? \u25BA \u25BC)
-          (if folded?
-            (str (apply str (take 40 title))
-              (when (< 40 (count title)) "..."))
-            (str title)))
-        (dom/div #js {:className (when folded? "hidden")}
-          value)))))
-(def ui-foldable (om/factory Foldable {:keyfn #(gensym "foldable")}))
-
 (defui ^:once ResultLine
   Object
   (render [this]
     (let [{:keys [title value stack type]} (om/props this)]
       (dom/tr nil
-        (dom/td #js {:className (str "test-result-title "
-                                  (name type))}
+        (dom/td (clj->js {:style {:verticalAlign :top} :className (str "test-result-title "
+                                                                    (name type))})
           title)
         (dom/td #js {:className "test-result"}
           (dom/code nil
-            (ui-foldable
-              {:render (fn [folded?]
-                         {:title   (if stack (str value)
-                                             (if folded? (str value) title))
-                          :value   (if stack stack (if-not folded? (html-edn value)))
-                          :classes (if stack "stack")})})))))))
-(def ui-result-line (om/factory ResultLine {:keyfn #(gensym "result-line")}))
+            (if stack (dom/pre nil stack) (html-edn value))))))))
+
+(def ui-result-line (om/factory ResultLine {:keyfn :title}))
 
 (defui ^:once HumanDiffLines
   Object
@@ -113,45 +89,36 @@
         (dom/tbody nil
           (when (seq path)
             (dom/tr #js {:className "path"}
-              (dom/td nil "at: ")
+              (dom/td nil "At Data Path: ")
               (dom/td nil (str path))))
           (dom/tr #js {:className "expected"}
-            (dom/td nil "exp: ")
+            (dom/td nil "Expected: ")
             (dom/td nil (html-edn (js->clj exp))))
           (dom/tr #js {:className "actual"}
-            (dom/td nil "got: ")
+            (dom/td nil "Found: ")
             (dom/td nil (html-edn (js->clj got)))))))))
-(def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn #(gensym "human-diff-lines")}))
+
+(def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn (fn [props] (om/get-computed props :index))}))
 
 (defui ^:once HumanDiff
   Object
   (render [this]
-    (let [{:keys [diff actual]} (om/props this)
+    (let [{:keys [index diff actual]} (om/props this)
           [fst rst] (split-at 2 diff)]
       (->> (dom/div nil
-             (mapv ui-human-diff-lines fst)
+             (map-indexed (fn [idx line] (ui-human-diff-lines (om/computed line {:index (str "first-" idx)}))) fst)
              (when (seq rst)
-               (ui-foldable {:render
-                             (fn [folded?]
-                               {:title   "& more"
-                                :value   (mapv ui-human-diff-lines rst)
-                                :classes ""})})))
+               (map-indexed (fn [idx line] (ui-human-diff-lines (om/computed line {:index (str "rest-" idx)}))) rst)))
         (dom/td nil)
         (dom/tr nil
-          (dom/td nil "DIFFS:"))))))
-(def ui-human-diff (om/factory HumanDiff {:keyfn #(gensym "human-diff")}))
+          (dom/td (clj->js {:style {:verticalAlign "top"}}) "DIFFS:"))))))
+(def ui-human-diff (om/factory HumanDiff {:keyfn :index}))
 
 (defui ^:once TestResult
   Object
   (render [this]
     (let [{:keys [where message extra actual expected stack diff]} (om/props this)]
       (->> (dom/tbody nil
-             (dom/tr nil
-               (dom/td #js {:className "test-result-title"}
-                 "Where: ")
-               (dom/td #js {:className "test-result"}
-                 (str/replace (str where)
-                   #"G__\d+" "")))
              (when message
                (ui-result-line {:type  :normal
                                 :title "ASSERTION: "
@@ -169,6 +136,7 @@
                                 :value extra}))
              (when diff
                (ui-human-diff {:actual actual
+                               :index  "diff"
                                :diff   diff})))
         (dom/table nil)
         (dom/li nil)))))
