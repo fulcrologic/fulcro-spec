@@ -299,8 +299,8 @@ you will have to prepend a `with-profile test ...` in your command.
 
 == Learn More
 * about link:docs/index.adoc#fulcro-spec-docs[Fulcro Spec]
-* interactively with the link:http://fulcrologic.github.io/fulcro/tutorial.html[Fulcro Tutorial]
-** http://fulcrologic.github.io/fulcro/tutorial.html#!/fulcro_tutorial.K_Testing[fulcro_tutorial.K_Testing]
+* interactively with the link:http://fulcrologic.github.io/fulcro/guide.html[Fulcro Guide]
+** http://fulcrologic.github.io/fulcro/guide.html#!/fulcro_devguide.K_Testing[fulcro_devguide.K_Testing]
 
 == Development
 
