@@ -19,7 +19,7 @@ A Specification testing framework.
 
 Current Production: [fulcrologic/fulcro-spec "1.0.0"]
 
-Upcoming 2.x version: image::https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https://clojars.org/fulcrologic/fulcro-spec"]
+Upcoming 2.x version: image:https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https://clojars.org/fulcrologic/fulcro-spec"]
 
 Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master"]
 Snapshot: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop"]
