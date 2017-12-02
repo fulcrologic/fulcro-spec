@@ -8,7 +8,7 @@
     [fulcro.client.dom :as dom]
     [fulcro.client.primitives :as prim :refer [defui]]
     [pushy.core :as pushy]
-    [fulcro.client.core :as fc]
+    [fulcro.client :as fc]
     [fulcro.client.data-fetch :as df]
     [fulcro.client.network :as fcn]
     [fulcro.client.mutations :as m :refer [defmutation]]
