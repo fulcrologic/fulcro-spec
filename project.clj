@@ -1,4 +1,4 @@
-(defproject fulcrologic/fulcro-spec "1.0.1-SNAPSHOT"
+(defproject fulcrologic/fulcro-spec "2.0.0-beta1"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url ""
   :license {:name "MIT Public License"
@@ -9,12 +9,11 @@
                  [kibu/pushy "0.3.8"]
                  [lein-doo "0.1.8" :scope "test"]
                  [ring/ring "1.6.2" :exclusions [commons-codec]]
-                 [fulcrologic/fulcro "1.0.0" :exclusions [org.clojure/clojure]]
+                 [fulcrologic/fulcro "2.0.0-beta1" :exclusions [org.clojure/clojure]]
                  [org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.946"]
                  [org.clojure/tools.namespace "0.3.0-alpha4"]
-                 [clojure-future-spec "1.9.0-beta2"]
-                 [org.omcljs/om "1.0.0-beta1"]]
+                 [clojure-future-spec "1.9.0-beta2"]]
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.19.0" :exclusions [org.clojure/tools.namespace]]
             [lein-cljsbuild "1.1.7"]

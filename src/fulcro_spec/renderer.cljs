@@ -5,10 +5,10 @@
     [goog.string :as gstr]
     [com.stuartsierra.component :as cp]
     [goog.dom :as gdom]
-    [om.dom :as dom]
-    [om.next :as om :refer-macros [defui]]
+    [fulcro.client.dom :as dom]
+    [fulcro.client.primitives :as prim :refer [defui]]
     [pushy.core :as pushy]
-    [fulcro.client.core :as fc]
+    [fulcro.client :as fc]
     [fulcro.client.data-fetch :as df]
     [fulcro.client.network :as fcn]
     [fulcro.client.mutations :as m :refer [defmutation]]
@@ -66,92 +66,59 @@
                 (map no-test-results)
                 (map (report-as :pending)))}))
 
-(defui ^:once Foldable
-  Object
-  (initLocalState [this] {:folded? true})
-  (render [this]
-    (let [{:keys [folded?]} (om/get-state this)
-          {:keys [render]} (om/props this)
-          {:keys [title value classes]} (render folded?)
-          value (js->clj value)]
-      (dom/div #js {:className "foldable"}
-        (dom/a #js {:className classes
-                    :onClick   #(om/update-state! this update :folded? not)}
-          (if folded? \u25BA \u25BC)
-          (if folded?
-            (str (apply str (take 40 title))
-              (when (< 40 (count title)) "..."))
-            (str title)))
-        (dom/div #js {:className (when folded? "hidden")}
-          value)))))
-(def ui-foldable (om/factory Foldable {:keyfn #(gensym "foldable")}))
-
 (defui ^:once ResultLine
   Object
   (render [this]
-    (let [{:keys [title value stack type]} (om/props this)]
+    (let [{:keys [title value stack type]} (prim/props this)]
       (dom/tr nil
-        (dom/td #js {:className (str "test-result-title "
-                                  (name type))}
+        (dom/td (clj->js {:style {:verticalAlign :top} :className (str "test-result-title "
+                                                                    (name type))})
           title)
         (dom/td #js {:className "test-result"}
           (dom/code nil
-            (ui-foldable
-              {:render (fn [folded?]
-                         {:title   (if stack (str value)
-                                             (if folded? (str value) title))
-                          :value   (if stack stack (if-not folded? (html-edn value)))
-                          :classes (if stack "stack")})})))))))
-(def ui-result-line (om/factory ResultLine {:keyfn #(gensym "result-line")}))
+            (if stack (dom/pre nil stack) (html-edn value))))))))
+
+(def ui-result-line (prim/factory ResultLine {:keyfn :title}))
 
 (defui ^:once HumanDiffLines
   Object
   (render [this]
-    (let [d (om/props this)
+    (let [d (prim/props this)
           {:keys [exp got path]} (diff/extract d)]
       (dom/table #js {:className "human-diff-lines"}
         (dom/tbody nil
           (when (seq path)
             (dom/tr #js {:className "path"}
-              (dom/td nil "at: ")
+              (dom/td nil "At Data Path: ")
               (dom/td nil (str path))))
           (dom/tr #js {:className "expected"}
-            (dom/td nil "exp: ")
+            (dom/td nil "Expected: ")
             (dom/td nil (html-edn (js->clj exp))))
           (dom/tr #js {:className "actual"}
-            (dom/td nil "got: ")
+            (dom/td nil "Found: ")
             (dom/td nil (html-edn (js->clj got)))))))))
-(def ui-human-diff-lines (om/factory HumanDiffLines {:keyfn #(gensym "human-diff-lines")}))
+
+(def ui-human-diff-lines (prim/factory HumanDiffLines {:keyfn (fn [props] (prim/get-computed props :index))}))
 
 (defui ^:once HumanDiff
   Object
   (render [this]
-    (let [{:keys [diff actual]} (om/props this)
+    (let [{:keys [index diff actual]} (prim/props this)
           [fst rst] (split-at 2 diff)]
       (->> (dom/div nil
-             (mapv ui-human-diff-lines fst)
+             (map-indexed (fn [idx line] (ui-human-diff-lines (prim/computed line {:index (str "first-" idx)}))) fst)
              (when (seq rst)
-               (ui-foldable {:render
-                             (fn [folded?]
-                               {:title   "& more"
-                                :value   (mapv ui-human-diff-lines rst)
-                                :classes ""})})))
+               (map-indexed (fn [idx line] (ui-human-diff-lines (prim/computed line {:index (str "rest-" idx)}))) rst)))
         (dom/td nil)
         (dom/tr nil
-          (dom/td nil "DIFFS:"))))))
-(def ui-human-diff (om/factory HumanDiff {:keyfn #(gensym "human-diff")}))
+          (dom/td (clj->js {:style {:verticalAlign "top"}}) "DIFFS:"))))))
+(def ui-human-diff (prim/factory HumanDiff {:keyfn :index}))
 
 (defui ^:once TestResult
   Object
   (render [this]
-    (let [{:keys [where message extra actual expected stack diff]} (om/props this)]
+    (let [{:keys [where message extra actual expected stack diff]} (prim/props this)]
       (->> (dom/tbody nil
-             (dom/tr nil
-               (dom/td #js {:className "test-result-title"}
-                 "Where: ")
-               (dom/td #js {:className "test-result"}
-                 (str/replace (str where)
-                   #"G__\d+" "")))
              (when message
                (ui-result-line {:type  :normal
                                 :title "ASSERTION: "
@@ -169,17 +136,18 @@
                                 :value extra}))
              (when diff
                (ui-human-diff {:actual actual
+                               :index  "diff"
                                :diff   diff})))
         (dom/table nil)
         (dom/li nil)))))
-(def ui-test-result (om/factory TestResult {:keyfn :id}))
+(def ui-test-result (prim/factory TestResult {:keyfn :id}))
 
 (declare ui-test-item)
 
 (defui ^:once TestItem
   Object
   (render [this]
-    (let [{:keys [id current-filter] :as test-item-data} (om/props this)]
+    (let [{:keys [id current-filter] :as test-item-data} (prim/props this)]
       (dom/li #js {:className "test-item"}
         (dom/div nil
           (dom/span #js {:className (test-item-class (:status test-item-data))}
@@ -193,13 +161,13 @@
                 (map #(assoc % :current-filter current-filter))
                 (map ui-test-item))
               (:test-items test-item-data))))))))
-(def ui-test-item (om/factory TestItem {:keyfn :id}))
+(def ui-test-item (prim/factory TestItem {:keyfn :id}))
 
 (defui ^:once TestNamespace
   Object
   (render
     [this]
-    (let [{:keys [current-filter] :as tests-by-namespace} (om/props this)]
+    (let [{:keys [current-filter] :as tests-by-namespace} (prim/props this)]
       (when (seq (:test-items tests-by-namespace))
         (dom/li #js {:className "test-item"}
           (dom/div #js {:className "test-namespace"}
@@ -210,7 +178,7 @@
                           (map #(assoc % :current-filter current-filter))
                           (map ui-test-item))
                 (sort-by (comp :line :form-meta) (:test-items tests-by-namespace))))))))))
-(def ui-test-namespace (om/factory TestNamespace {:keyfn :name}))
+(def ui-test-namespace (prim/factory TestNamespace {:keyfn :name}))
 
 (def material-icon-paths
   {:access_time     "M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"
@@ -347,22 +315,22 @@
       (render-input attrs))))
 
 (defui ^:once SelectorControl
-  static om/IQuery
+  static prim/IQuery
   (query [this] [:selector/id :selector/active?])
   Object
   (render [this]
-    (let [{:keys [selector/id selector/active?]} (om/props this)]
+    (let [{:keys [selector/id selector/active?]} (prim/props this)]
       (dom/div #js {:className "c-drawer__action" :key (str id)}
         (ui-checkbox
           {:id       (str id)
            :checked  active?
            :onChange (fn [e]
-                       (om/transact! this
+                       (prim/transact! this
                          `[(sel/set-selector
                              ~{:selector/id      id
                                :selector/active? (.. e -target -checked)})]))})
         (dom/span #js {} (str id))))))
-(def ui-selector-control (om/factory SelectorControl {:keyfn :selector/id}))
+(def ui-selector-control (prim/factory SelectorControl {:keyfn :selector/id}))
 
 (defn test-selectors [selectors]
   (dom/div nil
@@ -459,18 +427,18 @@
                 (sort-by :name namespaces)))))))))
 
 (defui ^:once TestReport
-  static fc/InitialAppState
+  static prim/InitialAppState
   (initial-state [this _] {:ui/react-key      (gensym "UI_REACT_KEY")
                            :compile-error     nil
                            :ui/current-filter :all})
-  static om/IQuery
-  (query [this] [:ui/react-key :test-report :compile-error :ui/current-filter {:selectors (om/get-query SelectorControl)}])
+  static prim/IQuery
+  (query [this] [:ui/react-key :test-report :compile-error :ui/current-filter {:selectors (prim/get-query SelectorControl)}])
   Object
   (render [this]
-    (let [{:keys [ui/react-key compile-error test-report selectors ui/current-filter] :as props} (om/props this)
-          {:keys [open-drawer?]} (om/get-state this)
-          toggle-drawer    #(om/update-state! this update :open-drawer? not)
-          toggle-filter-cb (fn [f] #(om/transact! this `[(toggle-filter ~{:filter f})]))]
+    (let [{:keys [ui/react-key compile-error test-report selectors ui/current-filter] :as props} (prim/props this)
+          {:keys [open-drawer?]} (prim/get-state this)
+          toggle-drawer    #(prim/update-state! this update :open-drawer? not)
+          toggle-filter-cb (fn [f] #(prim/transact! this `[(toggle-filter ~{:filter f})]))]
       (dom/div #js {:key react-key :className "u-layout"}
         (dom/div #js {:className "u-layout__page u-layout__page--fixed"}
           (test-header test-report current-filter toggle-drawer toggle-filter-cb)
@@ -506,12 +474,12 @@
 
 (defmethod wn/push-received `render-tests
   [{:keys [reconciler]} {test-report :msg}]
-  (om/transact! (om/app-root reconciler)
+  (prim/transact! (prim/app-root reconciler)
     `[(clear-compile-error {}) (render-tests ~test-report)]))
 
 (defmethod wn/push-received `show-compile-error
   [{:keys [reconciler]} {message :msg}]
-  (om/transact! (om/app-root reconciler) `[(show-compile-error ~{:error message})]))
+  (prim/transact! (prim/app-root reconciler) `[(show-compile-error ~{:error message})]))
 
 (defonce networking (atom nil))
 
@@ -527,7 +495,7 @@
                                 (reify fcn/FulcroNetwork
                                   (start [this] this)
                                   (send [this edn ok err]
-                                    (ok ((om/parser @runner-atom) @runner-atom edn)))))
+                                    (ok ((prim/parser @runner-atom) @runner-atom edn)))))
                   :started-callback
                   (fn [app]
                     (when (and with-websockets? @networking)

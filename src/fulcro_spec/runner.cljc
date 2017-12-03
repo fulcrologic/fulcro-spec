@@ -8,7 +8,7 @@
     [fulcro-spec.reporter :as reporter]
     [fulcro-spec.selectors :as sel]
     [fulcro-spec.spec :as fss]
-    #?@(:cljs ([om.next :as om]
+    #?@(:cljs ([fulcro.client.primitives :as om]
                [fulcro.client.mutations :as m]
                [fulcro-spec.renderer :as renderer]
                [fulcro-spec.router :as router]))
@@ -17,7 +17,7 @@
                [clojure.walk :as walk]
                [clojure.future :refer :all]
                [cognitect.transit :as transit]
-               [om.next.server :as oms]
+               [fulcro.server :as oms]
                [ring.util.response :as resp]
                [fulcro-spec.impl.macros :as im]
                [fulcro-spec.watch :as watch]
