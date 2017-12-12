@@ -236,6 +236,20 @@ Means you have a conflicting org.omcljs/om versions, either resolve them by look
 port is 3449, so the URL that should always work by default if you've named your
 javascript output `js/test/test.js` would be: link:http://localhost:3449/fulcro-spec-client-tests.html[]
 
+== Focusing in on Tests
+
+Fulcro Spec allows you to tag specifications with arbitrary keywords that you define, and allows you to specify which of
+those are in your "default" set. This can allow you to separate integration tests, or simply focus in on the test you're
+working on.
+
+```
+(specification "My Test" :focused
+   ...)
+``` 
+
+The selectors configuration shown earlier (`:default` and `:available`) are where you define which ones you start out
+with. The special keyword `::sel/none` is for tests that have no tag. The browser-based UI will let you choose the 
+selectors to run from the pull out menu in the upper-left corner.
 
 ==== For CI
 
