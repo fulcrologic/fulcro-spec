@@ -1,3 +1,7 @@
+2.0.0
+-----
+- Upgraded to use Fulcro 2.x.
+
 1.0.0
 -----
 - Fixed clj test running to include stack trace on unexpected throws
