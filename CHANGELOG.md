@@ -1,3 +1,7 @@
+2.0.1
+-----
+- Removed dependency on timbre
+
 2.0.0
 -----
 - Upgraded to use Fulcro 2.x.
