@@ -1,3 +1,7 @@
+2.0.2
+-----
+- Fixed an expression that refused to compile in shadow-cljs
+
 2.0.1
 -----
 - Removed dependency on timbre
