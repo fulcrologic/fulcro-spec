@@ -205,8 +205,11 @@
 (defn get-test-report [reporter]
   @(:state reporter))
 
+(defmulti fulcro-reporter :type)
+
 (defn fulcro-report [{:keys [test/reporter] :as system} on-complete]
-  (fn [t]
+  (remove-method fulcro-reporter :default)
+  (defmethod fulcro-reporter :default [t]
     (case (:type t)
       :pass (pass reporter t)
       :error (error reporter t)
@@ -223,7 +226,8 @@
       :end-provided (end-provided reporter t)
       :summary (do (summary reporter t) #?(:clj (on-complete system)))
       #?@(:cljs [:end-run-tests (on-complete system)])
-      nil)))
+      nil))
+  fulcro-reporter)
 
 #?(:clj
    (defmacro with-fulcro-reporting [system on-complete & body]

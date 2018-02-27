@@ -1,3 +1,7 @@
+2.0.3
+-----
+- Fixed bug with server-side test rendering
+
 2.0.2
 -----
 - Fixed an expression that refused to compile in shadow-cljs
