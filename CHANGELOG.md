@@ -1,3 +1,7 @@
+2.0.3
+-----
+- Fixed bug with server-side test rendering. A multimethod was expected by the back-end but we were passing a fn.
+
 2.0.2
 -----
 - Fixed an expression that refused to compile in shadow-cljs
