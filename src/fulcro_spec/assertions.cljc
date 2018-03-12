@@ -1,7 +1,6 @@
 (ns fulcro-spec.assertions
   #?(:cljs
-     (:require-macros
-       [fulcro-spec.assertions :refer [define-assert-exprs!]]))
+     (:require-macros fulcro-spec.assertions))
   (:require
     #?(:clj [clojure.test])
             cljs.test                                       ;; contains multimethod in clojure file
@@ -128,16 +127,17 @@
        ~@asserts)))
 
 #?(:clj
-   (defmacro define-assert-exprs! []
-     (let [test-ns       (im/if-cljs &env "cljs.test" "clojure.test")
-           do-report     (symbol test-ns "do-report")
-           t-assert-expr (im/if-cljs &env cljs.test/assert-expr clojure.test/assert-expr)
-           do-assert-expr
-                         (fn [args]
-                           (let [[msg form] (cond-> args (im/cljs-env? &env) rest)]
-                             `(~do-report ~(assert-expr msg form))))]
-       (defmethod t-assert-expr '= eq-ae [& args] (do-assert-expr args))
-       (defmethod t-assert-expr 'exec fn-ae [& args] (do-assert-expr args))
-       (defmethod t-assert-expr 'throws? throws-ae [& args] (do-assert-expr args))
-       nil)))
-(define-assert-exprs!)
+   (do
+     (defmethod cljs.test/assert-expr '= [env msg form]
+       `(cljs.test/do-report ~(assert-expr msg form)))
+     (defmethod cljs.test/assert-expr 'throws? [env msg form]
+       `(cljs.test/do-report ~(assert-expr msg form)))
+     (defmethod cljs.test/assert-expr 'exec [env msg form]
+       `(cljs.test/do-report ~(assert-expr msg form)))
+     (defmethod clojure.test/assert-expr '= [msg form]
+       `(clojure.test/do-report ~(assert-expr msg form)))
+     (defmethod clojure.test/assert-expr 'throws? [msg form]
+       `(clojure.test/do-report ~(assert-expr msg form)))
+     (defmethod clojure.test/assert-expr 'exec [msg form]
+       `(clojure.test/do-report ~(assert-expr msg form)))))
+
