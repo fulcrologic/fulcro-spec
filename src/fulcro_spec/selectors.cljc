@@ -58,9 +58,10 @@
           :new-selectors ::shorthand)
   :ret ::selectors)
 (defn set-selectors* [current-selectors new-selectors]
-  (mapv (fn [{:as sel :keys [selector/id]}]
-          (assoc sel :selector/active? (contains? new-selectors id)))
-    current-selectors))
+  (when-not (map? current-selectors) ; loading selectors
+    (mapv (fn [{:as sel :keys [selector/id]}]
+            (assoc sel :selector/active? (contains? new-selectors id)))
+      current-selectors)))
 
 (defn set-selectors! [test-selectors]
   (swap! selectors update :current set-selectors*
