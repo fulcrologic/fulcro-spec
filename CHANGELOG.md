@@ -1,3 +1,8 @@
+2.0.4
+-----
+- Fixed error on startup related to selectors
+- Change assertions internals to not side-effect in a setup macro.
+
 2.0.3
 -----
 - Fixed bug with server-side test rendering. A multimethod was expected by the back-end but we were passing a fn.
