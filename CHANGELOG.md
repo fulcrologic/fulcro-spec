@@ -37,9 +37,9 @@
 - Ported to clojure.spec.alpha
 - Adding ability to render clojure tests in the browser!
 - WIP: when-mocking & provided will use clojure.spec.alpha to verify the :args passed to mocks, the :ret value you specify, and their relationship if a :fn spec if they exist.
-- Adding selectors to the specification macro that work with untangled-spec, test-refresh, doo, etc...
+- Adding selectors to the specification macro
     - They emit meta data on the deftest var so they are compatible with anything,
-      but also wrap the body so that untangled-spec can properly run just the selected tests.
+      but also wrap the body so that fulcro-spec can properly run just the selected tests.
 - Fixed minor bug in renderer that could cause failure to start
 - Backported to Clojure 1.8. Should now work in 1.8 and 1.9
 
@@ -82,12 +82,12 @@ Assorted fixes/improvements:
 
 0.3.6 - April 22, 2016
 -----
-- Added untangled-spec.reporters.terminal/merge-cfg!
+- Added fulcro-spec.reporters.terminal/merge-cfg!
     - No arguments will print the valid keys, and if you pass it a map it will
       verify that you are only modifying existing key-value pairs.
 - Adding gensym to the symbol specification generates for deftest.
     - Conflicts with specification names & any other vars are now impossible
-- Can now configure pprint *print-level* & *print-depth* using untangled-spec.reporters.terminal/merge-cfg!
+- Can now configure pprint *print-level* & *print-depth* using fulcro-spec.reporters.terminal/merge-cfg!
 
 0.1.1
 -----

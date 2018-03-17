@@ -80,7 +80,7 @@
 
 #?(:clj
    (defmacro test-suite-internal
-     "FOR INTERNAL (DEV TIME) UNTANGLED_SPEC USE ONLY
+     "FOR INTERNAL (DEV TIME) USE ONLY
 
       WARNING: You should not need to use this directly,
       instead you should be starting a server `def-test-suite`
