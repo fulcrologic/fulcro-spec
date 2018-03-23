@@ -1,6 +1,6 @@
-(defproject fulcrologic/fulcro-spec "2.0.4"
+(defproject fulcrologic/fulcro-spec "2.1.0-SNAPSHOT"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
-  :url ""
+  :url "https://github.com/fulcrologic/fulcro-spec"
   :license {:name "MIT Public License"
             :url  "https://opensource.org/licenses/MIT"}
   :dependencies [[colorize "0.1.1" :exclusions [org.clojure/clojure]]
@@ -8,7 +8,8 @@
                  [kibu/pushy "0.3.8"]
                  [lein-doo "0.1.8" :scope "test"]
                  [ring/ring "1.6.3" :exclusions [commons-codec]]
-                 [fulcrologic/fulcro "2.2.1" :exclusions [org.clojure/clojure org.clojure/tools.reader]]
+                 [fulcrologic/fulcro "2.5.0-SNAPSHOT" ]
+                 [fulcrologic/fulcro-auxillary "1.0.0-SNAPSHOT" ]
                  [org.clojure/core.async "0.4.474"]
                  [org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.946"]
