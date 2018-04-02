@@ -17,7 +17,7 @@
 
                  [org.clojure/core.async "0.4.474"]
                  [org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.9.946"]
+                 [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/tools.namespace "0.3.0-alpha4"]
                  [clojure-future-spec "1.9.0-beta4"]]
 
@@ -54,14 +54,18 @@
                                                       :asset-path    "js/test/fulcro-spec-renderer"
                                                       :optimizations :simple}}}}
 
-  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
+  :jvm-opts ~(let [version (System/getProperty "java.version")
+                   base-options ["-XX:-OmitStackTraceInFastThrow" ]
+                   [major _ _] (clojure.string/split version #"\.")]
+               (if (>= (Integer. major) 9)
+                 (conj base-options "--add-modules" "java.xml.bind")
+                 base-options))
 
   :figwheel {:nrepl-port  7888
              :server-port 3457}
 
   :aliases {"jar"       ["with-profile" "with-cljs" "jar"]
             "test-cljs" ["with-profile" "test" "doo" "firefox" "automated-tests" "once"]
-            "test-clj"  ["test-refresh" ":run-once"]
             "clojars"   ["with-profile" "with-cljs" "deploy" "clojars"]}
 
   :profiles {:with-cljs {:prep-tasks ["compile" ["cljsbuild" "once" "spec-renderer"]]}

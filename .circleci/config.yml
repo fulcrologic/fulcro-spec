@@ -12,7 +12,7 @@ jobs:
       - image: circleci/clojure:lein-2.8.1-node-browsers
     steps:
       - checkout
-      - run: lein test-clj
+      - run: lein test
 workflows:
   version: 2
   fullstack:
