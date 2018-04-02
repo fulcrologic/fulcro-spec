@@ -1,7 +1,6 @@
 (ns fulcro-spec.selectors
   (:require
     #?(:cljs [cljs.reader :refer [read-string]])
-    #?(:clj [clojure.future :refer :all])
     [clojure.set :as set]
     [clojure.spec.alpha :as s]
     [fulcro-spec.spec :as fss]

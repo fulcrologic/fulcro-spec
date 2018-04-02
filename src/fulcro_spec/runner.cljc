@@ -15,7 +15,6 @@
     #?@(:clj (
     [clojure.tools.namespace.repl :as tools-ns-repl]
                [clojure.walk :as walk]
-               [clojure.future :refer :all]
                [cognitect.transit :as transit]
                [fulcro.server :as oms]
                [ring.util.response :as resp]
