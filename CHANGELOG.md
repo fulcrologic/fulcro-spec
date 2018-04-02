@@ -1,3 +1,9 @@
+2.1.0
+-----
+- Upgrade to Clojure 1.9, Clojurescript 1.10
+- Removed use of clojure future spec
+- One bug fix to work with new DOM
+
 2.0.4
 -----
 - Fixed error on startup related to selectors
