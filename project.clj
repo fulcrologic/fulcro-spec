@@ -1,14 +1,20 @@
-(defproject fulcrologic/fulcro-spec "2.0.4"
+(defproject fulcrologic/fulcro-spec "2.1.0"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
-  :url ""
+  :url "https://github.com/fulcrologic/fulcro-spec"
   :license {:name "MIT Public License"
             :url  "https://opensource.org/licenses/MIT"}
   :dependencies [[colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [kibu/pushy "0.3.8"]
-                 [lein-doo "0.1.8" :scope "test"]
-                 [ring/ring "1.6.3" :exclusions [commons-codec]]
-                 [fulcrologic/fulcro "2.2.1" :exclusions [org.clojure/clojure org.clojure/tools.reader]]
+                 [lein-doo "0.1.10" :scope "test"]
+                 [fulcrologic/fulcro "2.4.3"]
+
+                 [http-kit "2.2.0"]
+                 [ring/ring-core "1.6.3" :exclusions [commons-codec]]
+                 [bk/ring-gzip "0.2.1"]
+                 [bidi "2.1.3"]
+                 [com.taoensso/sente "1.12.0"]
+
                  [org.clojure/core.async "0.4.474"]
                  [org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.946"]
@@ -17,7 +23,7 @@
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.22.0" :exclusions [org.clojure/tools.namespace]]
             [lein-cljsbuild "1.1.7"]
-            [lein-doo "0.1.8"]                              ;; for cljs CI tests
+            [lein-doo "0.1.10"]                             ;; for cljs CI tests
             [lein-shell "0.5.0"]]
 
   :release-tasks [["shell" "bin/release" "all_tasks"]]

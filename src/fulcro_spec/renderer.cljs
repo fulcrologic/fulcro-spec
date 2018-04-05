@@ -15,7 +15,8 @@
     [fulcro-spec.dom.edn-renderer :refer [html-edn]]
     [fulcro-spec.diff :as diff]
     [fulcro-spec.selectors :as sel]
-    [fulcro.websockets.networking :as wn])
+    [fulcro.websockets.networking :as wn]
+    [fulcro.ui.html-entities :as ent])
   (:import
     (goog.date DateTime)
     (goog.i18n DateTimeFormat)))
@@ -300,7 +301,7 @@
 (let [render-input (fn [{:keys [type id] :as props}]
                      (dom/span nil
                        (dom/input (clj->js props))
-                       (dom/label #js {:htmlFor id} \u00A0)))]
+                       (dom/label #js {:htmlFor id} ent/nbsp)))]
   (defn ui-checkbox
     "Render a checkbox (not the label). Props is a normal clj(s) map with React/HTML attributes plus:
 
