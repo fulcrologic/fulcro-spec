@@ -1,3 +1,7 @@
+2.1.0
+-----
+- Changes to make spec work well with Fulcro 2.5+
+
 2.0.4
 -----
 - Fixed error on startup related to selectors
