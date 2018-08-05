@@ -22,6 +22,38 @@ image:https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https:/
 Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master"]
 Snapshot: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop"]
 
+= End Of Maintenance Notice
+
+Fulcro Spec was created at a time when other alternatives with similar support did not exist for Clojurescript.  Those days have reached an
+end and the Fulcro team would rather devote our limited resources to maintaining a smaller core set of libraries. As a result
+Fulcro Spec will no longer be maintained.  If a maintainer would like to step forward, we would gladly consider redirecting people
+to a fork of this library.
+
+There are a few useful macros in this library that do not yet have great cljc equivalents: particularly the `when-mocking`
+and `assertions`.  These will either be pulled into the main Fulcro library, or released as a small stand-alone library.
+
+== Recommended Alternatives
+
+For CLJS, we highly recommend using Wilker Lucio's new https://github.com/nubank/workspaces[workspaces] library.  Not only does
+it do a great job at giving you a cljs test UI, it is also has some improvements over devcards.
+
+As for CLJ testing: the IDE support for running Clojure tests in Emacs and Cursive is already quite good against `clojure.test`.
+You should learn how to use those tools instead of this library. Use the `testing` macro there as a replacement for
+`behavior` (behavior is really just an alias for that, with nesting).
+
+== Porting away from Fulcro Spec
+
+The `specification` macro is really just `deftest`. If you're porting to workspaces, then just use `ws/deftest` and
+change your string to a symbol (hyphenate your test name?).  `behavior`/`component` can be `testing`.  We'll release the
+`assertions`/`when-mocking` to a smaller library soon, so you should not need to port away from those (leave fulcro-spec in
+your deps until that happens).
+
+Workspaces `ws/deftest` works in CLJC, so you can still do single tests for shared target code.
+
+=== Porting and CI
+
+Since all of the tests are just `deftest` (and always have been), the story for CI should be no different than it was.
+
 == Super Quick Start
 
 Use the fulcro lein template to get a project with CLJ tests, CLJS tests, and CI testing already configured and
