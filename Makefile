@@ -1,7 +1,7 @@
 tests:
 	npm install
 	lein test-cljs
-	lein test-clj
+	lein test
 
 deploy:
 	lein with-profile with-cljs deploy clojars

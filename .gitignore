@@ -19,3 +19,5 @@ out
 node_modules/
 resources/private/js
 package-lock.json
+hs_err*
+replay_pid*

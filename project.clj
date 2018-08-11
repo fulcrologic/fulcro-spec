@@ -1,23 +1,28 @@
-(defproject fulcrologic/fulcro-spec "2.0.4"
+(defproject fulcrologic/fulcro-spec "2.1.0-2"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
-  :url ""
+  :url "https://github.com/fulcrologic/fulcro-spec"
   :license {:name "MIT Public License"
             :url  "https://opensource.org/licenses/MIT"}
   :dependencies [[colorize "0.1.1" :exclusions [org.clojure/clojure]]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [kibu/pushy "0.3.8"]
-                 [lein-doo "0.1.8" :scope "test"]
-                 [ring/ring "1.6.3" :exclusions [commons-codec]]
-                 [fulcrologic/fulcro "2.2.1" :exclusions [org.clojure/clojure org.clojure/tools.reader]]
-                 [org.clojure/core.async "0.4.474"]
-                 [org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.9.946"]
-                 [org.clojure/tools.namespace "0.3.0-alpha4"]
-                 [clojure-future-spec "1.9.0-beta4"]]
+                 [lein-doo "0.1.10" :scope "test"]
+                 [fulcrologic/fulcro "2.4.3"]
 
-  :plugins [[com.jakemccrary/lein-test-refresh "0.22.0" :exclusions [org.clojure/tools.namespace]]
+                 [http-kit "2.2.0"]
+                 [ring/ring-core "1.6.3" :exclusions [commons-codec]]
+                 [bk/ring-gzip "0.2.1"]
+                 [bidi "2.1.3"]
+                 [com.taoensso/sente "1.12.0" :exclusions [org.clojure/tools.reader]]
+
+                 [org.clojure/core.async "0.4.474"]
+                 [org.clojure/clojure "1.9.0"]
+                 [org.clojure/clojurescript "1.10.238"]
+                 [org.clojure/tools.namespace "0.3.0-alpha4"]]
+
+  :plugins [[com.jakemccrary/lein-test-refresh "0.21.1"]
             [lein-cljsbuild "1.1.7"]
-            [lein-doo "0.1.8"]                              ;; for cljs CI tests
+            [lein-doo "0.1.10"]                             ;; for cljs CI tests
             [lein-shell "0.5.0"]]
 
   :release-tasks [["shell" "bin/release" "all_tasks"]]
@@ -48,14 +53,18 @@
                                                       :asset-path    "js/test/fulcro-spec-renderer"
                                                       :optimizations :simple}}}}
 
-  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
+  :jvm-opts ~(let [version (System/getProperty "java.version")
+                   base-options ["-XX:-OmitStackTraceInFastThrow"]
+                   [major & _] (clojure.string/split version #"\.")]
+               (if (>= (Integer/parseInt major) 9)
+                 (conj base-options "--add-modules" "java.xml.bind")
+                 base-options))
 
   :figwheel {:nrepl-port  7888
              :server-port 3457}
 
   :aliases {"jar"       ["with-profile" "with-cljs" "jar"]
             "test-cljs" ["with-profile" "test" "doo" "firefox" "automated-tests" "once"]
-            "test-clj"  ["test-refresh" ":run-once"]
             "clojars"   ["with-profile" "with-cljs" "deploy" "clojars"]}
 
   :profiles {:with-cljs {:prep-tasks ["compile" ["cljsbuild" "once" "spec-renderer"]]}
