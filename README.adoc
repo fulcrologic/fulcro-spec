@@ -22,6 +22,25 @@ image:https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https:/
 Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master"]
 Snapshot: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop"]
 
+== Why?
+
+The standard `clojure.test` library is "good enough" for many testing tasks, and has great IDE integration (at least
+for Clojure).  Fulcro-spec can help in a few distinct ways:
+
+. As a helper library to add clarity and convenience to certain testing tasks.
+. As a standardized wrapper that allows you to work with Clojure and Clojurescript tests in the same way.
+. As a wrapper library that augments how you write and run your tests.
+
+In the former case you continue to use `deftest`, `is`, `are`, and other `clojure.test` features, but also use things like
+fulcro-spec's `provided` macro to isolate units of code.
+
+In the latter case you adopt more of the macros to get some additional advantages:
+
+- More expressiveness around what your tests are meant to test.
+- More expressive test output.
+- Clearer data diffs on assertion failures (in both clj and cljs).
+- Test output control, rendering, and refresh with a browser interface.
+
 == Usage
 
 * Make sure your link:https://clojure.org/community/downloads[clojure](link:https://github.com/clojure/clojurescript/releases[script]) versions are at or above "1.9.x".
@@ -246,6 +265,46 @@ it literally checks the args and return values in the stubbed logic by looking u
 
 With the above two changes you now get a failing test, and the error message will tell you when your mock either receives
 an incorrect argument, or returns a non-conforming result.
+
+==== Limitations of Mocking
+
+The mocking system uses `with-redefs` internally.  Thus, anything that cannot be clearly redefined at runtime cannot be mocked.  This
+includes (but is not limited to):
+
+- Macros: Macros expand at compile time. There is no way to "circumvent them" at test runtime.
+- Inlined functions: An inlined function is replaced with it's body at compile time.
+- Java artifacts: Java does not participate in Clojure's dynamism. You must still use something like Mockito (or clojure
+thin wrappers).
+
+A workaround the works well for many things is to just wrap the problem call in a standard function.
+
+=== Testing Macros
+
+This isn't really a feature of the library, but is just a note about how to test macros in Clojure in general.  Macros
+are expanded at compile-time, so testing them in a runtime environment will not work. However, there is a very easy
+workaround: Realize that a macro is nothing more than a special function that picks up unevaluated forms, and returns
+a replacement for them.  The fact that it runs at compile time is the inconvenient part.
+
+The solution is quite simple: Write a true *function* that does the form maniputions, and call *that* from the macro.
+You can then easily test that the macro does what you expect:
+
+[source]
+----
+(defn the-macro* [form]
+  `(do
+     ~form
+     (output-form "hello"))
+
+(defmacro the-macro [form]
+  (the-macro* form))
+
+...
+
+(specification "The macro"
+  (behavior "does some stuff"
+    (assertions
+      (the-macro* '(f 2)) => `(clojure.core/do (ns-of-f/f 2) (other-ns/output-form "hello")))))
+----
 
 == Using the Fulcro Spec Runner/Reporter
 
