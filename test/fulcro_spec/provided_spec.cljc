@@ -2,14 +2,14 @@
   (:require
     [clojure.spec.alpha :as s]
     [fulcro-spec.core #?(:clj :refer :cljs :refer-macros)
-     [specification behavior provided assertions when-mocking]]
+     [specification behavior provided assertions when-mocking provided! when-mocking!]]
     #?(:clj [fulcro-spec.impl.macros :as im])
     #?(:clj [fulcro-spec.provided :as p])
     [fulcro-spec.stub :as stub]
     [fulcro-spec.spec :as fss]
     [fulcro-spec.testing-helpers :as th])
   #?(:clj
-      (:import clojure.lang.ExceptionInfo)))
+     (:import clojure.lang.ExceptionInfo)))
 
 #?(:clj
    (specification "parse-arrow-count"
@@ -27,7 +27,7 @@
 
 #?(:clj
    (specification "parse-mock-triple"
-     (let [test-parse (comp p/parse-mock-triple
+     (let [test-parse (comp (partial p/parse-mock-triple false)
                         (partial fss/conform! :fulcro-spec.provided/triple))]
        (let [result (test-parse '[(f a b) =2x=> (+ a b)])]
          (behavior "includes a call count"
@@ -84,10 +84,10 @@
                    {:type :provided :string "PROVIDED: some string"})))))
 
      (behavior "Can do mocking without output"
-       (let [expanded (p/provided* false :skip-output
-                        '[(f n) => (+ n 1)
-                          (f n) =2x=> (* 3 n)
-                          (under-test)])
+       (let [expanded    (p/provided* false :skip-output
+                           '[(f n) => (+ n 1)
+                             (f n) =2x=> (* 3 n)
+                             (under-test)])
              redef-block (th/locate `with-redefs expanded)]
          (assertions
            (first redef-block) => `with-redefs
@@ -107,8 +107,8 @@
       (my-square n) =2x=> 1
       (assertions
         (+ (my-square 7)
-           (my-square 7)
-           (my-square 7)) => 3))
+          (my-square 7)
+          (my-square 7)) => 3))
 
     (behavior "throws an exception if the mock is called too many times"
       (when-mocking
@@ -116,8 +116,8 @@
         (my-square n) =1x=> (+ n 7)
         (assertions
           (+ (my-square 1)
-             (my-square 1)
-             (my-square 1))
+            (my-square 1)
+            (my-square 1))
           =throws=> (ExceptionInfo))))
 
     (provided "a mock for 3 calls with 2 different return values"
@@ -126,8 +126,8 @@
       (behavior "all 3 mocked calls return the mocked values"
         (assertions
           (+ (my-square 1)
-             (my-square 1)
-             (my-square 1)) => 22))))
+            (my-square 1)
+            (my-square 1)) => 22))))
 
   (provided "we can mock a var args function"
     (my-varargs-sum x y) =1x=> [x y]
@@ -158,3 +158,35 @@
         (vreset! detector true))
       (assertions
         @detector => true))))
+
+(defn function-with-spec
+  ([a])
+  ([a b])
+  ([a b & more]))
+
+(s/fdef function-with-spec
+  :args (s/alt
+          :unary (s/cat :a int?)
+          :binary (s/cat :a int? :b int?)
+          :many (s/cat :a int? :b int? :c (s/* int?)))
+  :ret int?)
+
+(defn call-to-test [a]
+  (function-with-spec a))
+
+(specification "provided! and when-mocking!"
+  (behavior "Force mocks to conform to the specs of the original function"
+    (provided! "The stubbed function returns an ok value"
+      (function-with-spec n) => 22
+
+      (assertions
+        "Throws an exception if the arguments to the mock do not conform"
+        (call-to-test "a") =throws=> {:regex #"was sent argument"}
+        "Allows the body to run if args and return are ok"
+        (call-to-test 42) => 22))
+    (provided! "The stubbed function returns something incorrect for the spec"
+      (function-with-spec n) => "crap"
+
+      (assertions
+        "Throws an exception about the stub's return value"
+        (call-to-test 42) =throws=> {:regex #"returned a value"}))))

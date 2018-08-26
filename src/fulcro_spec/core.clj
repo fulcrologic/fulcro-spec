@@ -7,7 +7,7 @@
     [fulcro-spec.async :as async]
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.provided :as p]
-    [fulcro-spec.runner] ;;side effects
+    [fulcro-spec.runner]                                    ;;side effects
     [fulcro-spec.selectors :as sel]
     [fulcro-spec.stub]
     [fulcro-spec.spec :as fss]))
@@ -30,10 +30,10 @@
   (let [{:keys [name selectors body]} (fss/conform! ::specification args)
         test-name (-> (var-name-from-string name)
                     (with-meta (zipmap selectors (repeat true))))
-        prefix (im/if-cljs &env "cljs.test" "clojure.test")]
+        prefix    (im/if-cljs &env "cljs.test" "clojure.test")]
     `(~(symbol prefix "deftest") ~test-name
        (im/when-selected-for ~(fss/conform! ::sel/test-selectors selectors)
-         (im/with-reporting {:type :specification :string ~name
+         (im/with-reporting {:type      :specification :string ~name
                              :form-meta ~(select-keys (meta &form) [:line])}
            (im/try-report ~name
              ~@body))))))
@@ -71,18 +71,28 @@
    See the clojure.spec for `::p/mocks`.
    See the doc string for `p/parse-arrow-count`."
   [string & forms]
-  (p/provided* (im/cljs-env? &env) string forms))
+  (p/provided* false string forms))
 
 (defmacro when-mocking
   "A macro that works just like 'provided', but requires no string and outputs no extra text in the test output.
    See the clojure.spec for `::p/mocks`.
    See the doc string for `p/parse-arrow-count`."
   [& forms]
-  (p/provided* (im/cljs-env? &env) :skip-output forms))
+  (p/provided* false :skip-output forms))
+
+(defmacro provided!
+  "Just like `provided`, but forces mocked functions to conform to the spec of the original function (if available)."
+  [description & forms]
+  (p/provided* true description forms))
+
+(defmacro when-mocking!
+  "Just like when-mocking, but forces mocked functions to conform to the spec of the original function (if available)."
+  [& forms]
+  (p/provided* true :skip-output forms))
 
 (s/fdef assertions :args ::ae/assertions)
 (defmacro assertions [& forms]
-  (let [blocks (ae/fix-conform (fss/conform! ::ae/assertions forms))
+  (let [blocks  (ae/fix-conform (fss/conform! ::ae/assertions forms))
         asserts (map (partial ae/block->asserts (im/cljs-env? &env)) blocks)]
     `(do ~@asserts true)))
 
