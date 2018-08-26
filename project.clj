@@ -1,4 +1,4 @@
-(defproject fulcrologic/fulcro-spec "2.1.0-2"
+(defproject fulcrologic/fulcro-spec "2.1.1"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url "https://github.com/fulcrologic/fulcro-spec"
   :license {:name "MIT Public License"
@@ -17,7 +17,7 @@
 
                  [org.clojure/core.async "0.4.474"]
                  [org.clojure/clojure "1.9.0"]
-                 [org.clojure/clojurescript "1.10.238"]
+                 [org.clojure/clojurescript "1.10.339"]
                  [org.clojure/tools.namespace "0.3.0-alpha4"]]
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.21.1"]

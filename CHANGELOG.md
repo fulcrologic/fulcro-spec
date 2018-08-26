@@ -1,3 +1,7 @@
+2.1.1
+-----
+- Added spec-checking `provided!` and `when-mocking!`
+
 2.1.0
 -----
 - Upgrade to Clojure 1.9, Clojurescript 1.10
