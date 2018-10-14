@@ -8,21 +8,21 @@
     [fulcro-spec.reporter :as reporter]
     [fulcro-spec.selectors :as sel]
     [fulcro-spec.spec :as fss]
-    #?@(:cljs ([fulcro.client.primitives :as om]
-               [fulcro.client.mutations :as m]
-               [fulcro-spec.renderer :as renderer]
-               [fulcro-spec.router :as router]))
+    [fulcro.client.primitives :as prim]
+    #?@(:cljs ([fulcro.client.mutations :as m]
+                [fulcro-spec.renderer :as renderer]
+                [fulcro-spec.router :as router]))
     #?@(:clj (
     [clojure.tools.namespace.repl :as tools-ns-repl]
-               [clojure.walk :as walk]
-               [cognitect.transit :as transit]
-               [fulcro.server :as oms]
-               [ring.util.response :as resp]
-               [fulcro-spec.impl.macros :as im]
-               [fulcro-spec.watch :as watch]
-               [fulcro.easy-server :as fsy]
-               [fulcro.websockets.protocols :as ws]
-               [fulcro.websockets.components.channel-server :as wcs]))))
+    [clojure.walk :as walk]
+    [cognitect.transit :as transit]
+    [fulcro.server :as oms]
+    [ring.util.response :as resp]
+    [fulcro-spec.impl.macros :as im]
+    [fulcro-spec.watch :as watch]
+    [fulcro.easy-server :as fsy]
+    [fulcro.websockets.protocols :as ws]
+    [fulcro.websockets.components.channel-server :as wcs]))))
 
 
 #?(:clj
@@ -33,8 +33,8 @@
    (defn- ensure-encodable [tr]
      (letfn [(encodable? [x]
                (some #(% x)
-                     [number? string? symbol? keyword? sequential?
-                      (every-pred map? (comp not record?))]))]
+                 [number? string? symbol? keyword? sequential?
+                  (every-pred map? (comp not record?))]))]
        (walk/postwalk #(cond-> % (not (encodable? %)) pr-str) tr))))
 
 #?(:clj
@@ -68,9 +68,10 @@
        [:channel-server :test/reporter])))
 
 (defn- novelty! [system mut-key novelty]
-  #?(:cljs (om/transact! (om/app-root (get-in system [:test/renderer :test/renderer :app :reconciler]))
-             `[(~mut-key ~novelty)])
-     :clj (send-renderer-msg system mut-key novelty)))
+  #?(:cljs (let [reconciler (get-in system [:test/renderer :test/renderer :app :reconciler])]
+             (prim/transact! reconciler `[(~mut-key ~novelty)])
+             (prim/force-root-render! reconciler))
+     :clj  (send-renderer-msg system mut-key novelty)))
 
 (defn- render-tests [{:keys [test/reporter] :as runner}]
   (novelty! runner 'fulcro-spec.renderer/render-tests
@@ -81,7 +82,7 @@
   (reporter/reset-test-report! (:test/reporter runner))
   (let [result #?(:cljs :ok :clj (if refresh? (tools-ns-repl/refresh) :ok))]
     (if (not= :ok result)
-      (do ;; CLJ only
+      (do                                                   ;; CLJ only
         (novelty! runner 'fulcro-spec.renderer/show-compile-error result)
         (println "Refresh failed: " result))
       (reporter/with-fulcro-reporting
@@ -120,55 +121,55 @@
              (cp/system-map
                :test/runner (make-test-runner opts test!
                               {:test/renderer renderer
-                               :read (fn [runner k params]
-                                       {:value
-                                        (case k
-                                          :selectors (sel/get-current-selectors)
-                                          (prn ::read k params))})
-                               :mutate (fn [runner k params]
-                                         {:action
-                                          #(condp = k
-                                             `sel/set-selector
-                                             #_=> (do
-                                                    (sel/set-selector! params)
-                                                    (run-tests runner {}))
-                                             `sel/set-active-selectors
-                                             #_=> (do
-                                                    (sel/set-selectors! (:selectors params))
-                                                    (run-tests runner {}))
-                                             (prn ::mutate k params))})})
+                               :read          (fn [runner k params]
+                                                {:value
+                                                 (case k
+                                                   :selectors (sel/get-current-selectors)
+                                                   (prn ::read k params))})
+                               :mutate        (fn [runner k params]
+                                                {:action
+                                                 #(condp = k
+                                                    `sel/set-selector
+                                                    #_=> (do
+                                                           (sel/set-selector! params)
+                                                           (run-tests runner {}))
+                                                    `sel/set-active-selectors
+                                                    #_=> (do
+                                                           (sel/set-selectors! (:selectors params))
+                                                           (run-tests runner {}))
+                                                    (prn ::mutate k params))})})
                :test/reporter (reporter/make-test-reporter)))
-     :clj (let [system (atom nil)
-                api-read (fn [env k params]
-                           {:value
-                            (case k
-                              :selectors (sel/get-current-selectors)
-                              (prn ::read k params))})
-                api-mutate (fn [env k params]
-                             {:action
-                              #(condp = k
-                                 `sel/set-selector
-                                 #_=> (do
-                                        (sel/set-selector! params)
-                                        (run-tests (:test/runner @system) {}))
-                                 `sel/set-active-selectors
-                                 #_=> (do
-                                        (sel/set-selectors! (:selectors params))
-                                        (run-tests (:test/runner @system) {}))
-                                 (prn ::mutate k params))})]
-            (reset! system
-              (cp/start
-                (fsy/make-fulcro-server
-                  :parser (oms/parser {:read api-read :mutate api-mutate})
-                  :components {:config {:value (:config opts)}
-                               :channel-server (wcs/make-channel-server)
-                               :channel-listener (make-channel-listener)
-                               :test/runner (make-test-runner opts test!)
-                               :test/reporter (reporter/make-test-reporter)
-                               :change/watcher (watch/on-change-listener opts run-tests)}
-                  :extra-routes {:routes   ["/" {"_fulcro_spec_chsk" :web-socket
-                                                 "fulcro-spec-server-tests.html" :server-tests}]
-                                 :handlers {:web-socket wcs/route-handlers
-                                            :server-tests (fn [{:keys [request]} _match]
-                                                            (resp/resource-response "fulcro-spec-server-tests.html"
-                                                              {:root "public"}))}}))))))
+     :clj  (let [system     (atom nil)
+                 api-read   (fn [env k params]
+                              {:value
+                               (case k
+                                 :selectors (sel/get-current-selectors)
+                                 (prn ::read k params))})
+                 api-mutate (fn [env k params]
+                              {:action
+                               #(condp = k
+                                  `sel/set-selector
+                                  #_=> (do
+                                         (sel/set-selector! params)
+                                         (run-tests (:test/runner @system) {}))
+                                  `sel/set-active-selectors
+                                  #_=> (do
+                                         (sel/set-selectors! (:selectors params))
+                                         (run-tests (:test/runner @system) {}))
+                                  (prn ::mutate k params))})]
+             (reset! system
+               (cp/start
+                 (fsy/make-fulcro-server
+                   :parser (oms/parser {:read api-read :mutate api-mutate})
+                   :components {:config           {:value (:config opts)}
+                                :channel-server   (wcs/make-channel-server)
+                                :channel-listener (make-channel-listener)
+                                :test/runner      (make-test-runner opts test!)
+                                :test/reporter    (reporter/make-test-reporter)
+                                :change/watcher   (watch/on-change-listener opts run-tests)}
+                   :extra-routes {:routes   ["/" {"_fulcro_spec_chsk"             :web-socket
+                                                  "fulcro-spec-server-tests.html" :server-tests}]
+                                  :handlers {:web-socket   wcs/route-handlers
+                                             :server-tests (fn [{:keys [request]} _match]
+                                                             (resp/resource-response "fulcro-spec-server-tests.html"
+                                                               {:root "public"}))}}))))))
