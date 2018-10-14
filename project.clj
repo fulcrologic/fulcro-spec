@@ -1,4 +1,4 @@
-(defproject fulcrologic/fulcro-spec "2.1.1"
+(defproject fulcrologic/fulcro-spec "2.1.2"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url "https://github.com/fulcrologic/fulcro-spec"
   :license {:name "MIT Public License"
@@ -7,20 +7,22 @@
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [kibu/pushy "0.3.8"]
                  [lein-doo "0.1.10" :scope "test"]
-                 [fulcrologic/fulcro "2.4.3"]
+                 [fulcrologic/fulcro "2.6.7"]
 
                  [http-kit "2.2.0"]
                  [ring/ring-core "1.6.3" :exclusions [commons-codec]]
                  [bk/ring-gzip "0.2.1"]
                  [bidi "2.1.3"]
-                 [com.taoensso/sente "1.12.0" :exclusions [org.clojure/tools.reader]]
+                 [com.taoensso/sente "1.13.1"]
 
                  [org.clojure/core.async "0.4.474"]
-                 [org.clojure/clojure "1.9.0"]
-                 [org.clojure/clojurescript "1.10.339"]
-                 [org.clojure/tools.namespace "0.3.0-alpha4"]]
+                 [org.clojure/clojure "1.9.0" :scope "provided"]
+                 [org.clojure/clojurescript "1.10.339" :scope "provided"]
+                 [org.clojure/tools.namespace "0.3.0-alpha4"]
+                 [org.clojure/tools.reader "1.3.0"]
+                 [clojure-future-spec "1.9.0-beta4"]]
 
-  :plugins [[com.jakemccrary/lein-test-refresh "0.21.1"]
+  :plugins [[com.jakemccrary/lein-test-refresh "0.23.0" :exclusions [org.clojure/tools.namespace]]
             [lein-cljsbuild "1.1.7"]
             [lein-doo "0.1.10"]                             ;; for cljs CI tests
             [lein-shell "0.5.0"]]
@@ -65,6 +67,7 @@
 
   :aliases {"jar"       ["with-profile" "with-cljs" "jar"]
             "test-cljs" ["with-profile" "test" "doo" "firefox" "automated-tests" "once"]
+            "test-clj"  ["test-refresh" ":run-once"]
             "clojars"   ["with-profile" "with-cljs" "deploy" "clojars"]}
 
   :profiles {:with-cljs {:prep-tasks ["compile" ["cljsbuild" "once" "spec-renderer"]]}

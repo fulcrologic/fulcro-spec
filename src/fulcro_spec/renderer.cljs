@@ -6,7 +6,7 @@
     [com.stuartsierra.component :as cp]
     [goog.dom :as gdom]
     [fulcro.client.dom :as dom]
-    [fulcro.client.primitives :as prim :refer [defui]]
+    [fulcro.client.primitives :as prim :refer [defsc]]
     [pushy.core :as pushy]
     [fulcro.client :as fc]
     [fulcro.client.data-fetch :as df]
@@ -42,8 +42,10 @@
     (.toDataURL cvs)))
 
 (defn change-favicon-to-color [color]
-  (let [favicon (.getElementById js/document "favicon")]
-    (set! (.-href favicon) (color-favicon-data-url color))))
+  (try
+    (let [favicon (.getElementById js/document "favicon")]
+     (set! (.-href favicon) (color-favicon-data-url color)))
+    (catch :default e)))
 
 (defn has-status? [p]
   (fn has-status?* [x]
@@ -67,118 +69,103 @@
                 (map no-test-results)
                 (map (report-as :pending)))}))
 
-(defui ^:once ResultLine
-  Object
-  (render [this]
-    (let [{:keys [title value stack type]} (prim/props this)]
-      (dom/tr nil
-        (dom/td (clj->js {:style {:verticalAlign :top} :className (str "test-result-title "
-                                                                    (name type))})
-          title)
-        (dom/td #js {:className "test-result"}
-          (dom/code nil
-            (if stack (dom/pre nil stack) (html-edn value))))))))
+(defsc ResultLine [this {:keys [title value stack type]}]
+  (dom/tr nil
+    (dom/td (clj->js {:style {:verticalAlign :top} :className (str "test-result-title "
+                                                                (name type))})
+      title)
+    (dom/td {:className "test-result"}
+      (dom/code nil
+        (if stack (dom/pre nil stack) (html-edn value))))))
 
 (def ui-result-line (prim/factory ResultLine {:keyfn :title}))
 
-(defui ^:once HumanDiffLines
-  Object
-  (render [this]
-    (let [d (prim/props this)
-          {:keys [exp got path]} (diff/extract d)]
-      (dom/table #js {:className "human-diff-lines"}
-        (dom/tbody nil
-          (when (seq path)
-            (dom/tr #js {:className "path"}
-              (dom/td nil "At Data Path: ")
-              (dom/td nil (str path))))
-          (dom/tr #js {:className "expected"}
-            (dom/td nil "Expected: ")
-            (dom/td nil (html-edn (js->clj exp))))
-          (dom/tr #js {:className "actual"}
-            (dom/td nil "Found: ")
-            (dom/td nil (html-edn (js->clj got)))))))))
+(defsc HumanDiffLines [this d]
+  (let [{:keys [exp got path]} (diff/extract d)]
+    (dom/table {:className "human-diff-lines"}
+      (dom/tbody nil
+        (when (seq path)
+          (dom/tr {:className "path"}
+            (dom/td nil "At Data Path: ")
+            (dom/td nil (str path))))
+        (dom/tr {:className "expected"}
+          (dom/td nil "Expected: ")
+          (dom/td nil (html-edn (js->clj exp))))
+        (dom/tr {:className "actual"}
+          (dom/td nil "Found: ")
+          (dom/td nil (html-edn (js->clj got))))))))
 
 (def ui-human-diff-lines (prim/factory HumanDiffLines {:keyfn (fn [props] (prim/get-computed props :index))}))
 
-(defui ^:once HumanDiff
-  Object
-  (render [this]
-    (let [{:keys [index diff actual]} (prim/props this)
-          [fst rst] (split-at 2 diff)]
-      (->> (dom/div nil
-             (map-indexed (fn [idx line] (ui-human-diff-lines (prim/computed line {:index (str "first-" idx)}))) fst)
-             (when (seq rst)
-               (map-indexed (fn [idx line] (ui-human-diff-lines (prim/computed line {:index (str "rest-" idx)}))) rst)))
-        (dom/td nil)
-        (dom/tr nil
-          (dom/td (clj->js {:style {:verticalAlign "top"}}) "DIFFS:"))))))
+(defsc HumanDiff [this {:keys [index diff actual]}]
+  (let [[fst rst] (split-at 2 diff)]
+    (->> (dom/div nil
+           (map-indexed (fn [idx line] (ui-human-diff-lines (prim/computed line {:index (str "first-" idx)}))) fst)
+           (when (seq rst)
+             (map-indexed (fn [idx line] (ui-human-diff-lines (prim/computed line {:index (str "rest-" idx)}))) rst)))
+      (dom/td nil)
+      (dom/tr nil
+        (dom/td (clj->js {:style {:verticalAlign "top"}}) "DIFFS:")))))
+
 (def ui-human-diff (prim/factory HumanDiff {:keyfn :index}))
 
-(defui ^:once TestResult
-  Object
-  (render [this]
-    (let [{:keys [where message extra actual expected stack diff]} (prim/props this)]
-      (->> (dom/tbody nil
-             (when message
-               (ui-result-line {:type  :normal
-                                :title "ASSERTION: "
-                                :value message}))
-             (ui-result-line {:type  :normal
-                              :title "Actual: "
-                              :value actual
-                              :stack stack})
-             (ui-result-line {:type  :normal
-                              :title "Expected: "
-                              :value expected})
-             (when extra
-               (ui-result-line {:type  :normal
-                                :title "Message: "
-                                :value extra}))
-             (when diff
-               (ui-human-diff {:actual actual
-                               :index  "diff"
-                               :diff   diff})))
-        (dom/table nil)
-        (dom/li nil)))))
+(defsc TestResult [this {:keys [where message extra actual expected stack diff]}]
+  (->> (dom/tbody nil
+         (when message
+           (ui-result-line {:type  :normal
+                            :title "ASSERTION: "
+                            :value message}))
+         (ui-result-line {:type  :normal
+                          :title "Actual: "
+                          :value actual
+                          :stack stack})
+         (ui-result-line {:type  :normal
+                          :title "Expected: "
+                          :value expected})
+         (when extra
+           (ui-result-line {:type  :normal
+                            :title "Message: "
+                            :value extra}))
+         (when diff
+           (ui-human-diff {:actual actual
+                           :index  "diff"
+                           :diff   diff})))
+    (dom/table nil)
+    (dom/li nil)))
+
 (def ui-test-result (prim/factory TestResult {:keyfn :id}))
 
 (declare ui-test-item)
 
-(defui ^:once TestItem
-  Object
-  (render [this]
-    (let [{:keys [id current-filter] :as test-item-data} (prim/props this)]
-      (dom/li #js {:className "test-item"}
-        (dom/div nil
-          (dom/span #js {:className (test-item-class (:status test-item-data))}
-            (:name test-item-data))
-          (dom/ul #js {:className "test-list"}
-            (mapv ui-test-result
-              (:test-results test-item-data)))
-          (dom/ul #js {:className "test-list"}
-            (sequence
-              (comp (filters current-filter)
-                (map #(assoc % :current-filter current-filter))
-                (map ui-test-item))
-              (:test-items test-item-data))))))))
+(defsc TestItem [this {:keys [id current-filter] :as test-item-data}]
+  (dom/li {:className "test-item"}
+    (dom/div nil
+      (dom/span {:className (test-item-class (:status test-item-data))}
+        (:name test-item-data))
+      (dom/ul {:className "test-list"}
+        (mapv ui-test-result
+          (:test-results test-item-data)))
+      (dom/ul {:className "test-list"}
+        (sequence
+          (comp (filters current-filter)
+            (map #(assoc % :current-filter current-filter))
+            (map ui-test-item))
+          (:test-items test-item-data))))))
+
 (def ui-test-item (prim/factory TestItem {:keyfn :id}))
 
-(defui ^:once TestNamespace
-  Object
-  (render
-    [this]
-    (let [{:keys [current-filter] :as tests-by-namespace} (prim/props this)]
-      (when (seq (:test-items tests-by-namespace))
-        (dom/li #js {:className "test-item"}
-          (dom/div #js {:className "test-namespace"}
-            (dom/h2 #js {:className (test-item-class (:status tests-by-namespace))}
-              (str (:name tests-by-namespace)))
-            (dom/ul #js {:className "test-list"}
-              (sequence (comp (filters current-filter)
-                          (map #(assoc % :current-filter current-filter))
-                          (map ui-test-item))
-                (sort-by (comp :line :form-meta) (:test-items tests-by-namespace))))))))))
+(defsc TestNamespace [this {:keys [current-filter] :as tests-by-namespace}]
+  (when (seq (:test-items tests-by-namespace))
+    (dom/li {:className "test-item"}
+      (dom/div {:className "test-namespace"}
+        (dom/h2 {:className (test-item-class (:status tests-by-namespace))}
+          (str (:name tests-by-namespace)))
+        (dom/ul {:className "test-list"}
+          (sequence (comp (filters current-filter)
+                      (map #(assoc % :current-filter current-filter))
+                      (map ui-test-item))
+            (sort-by (comp :line :form-meta) (:test-items tests-by-namespace))))))))
+
 (def ui-test-namespace (prim/factory TestNamespace {:keyfn :name}))
 
 (def material-icon-paths
@@ -247,18 +234,18 @@
                     :viewBox         "0 0 24 24"}
                    onClick (assoc :onClick #(onClick))))
         (dom/title nil (str (title-case (str/replace (name icon-path) #"_" " "))))
-        (dom/path #js {:d path-check})))))
+        (dom/path {:d path-check})))))
 
 (defn filter-button
   ([icon-type data]
    (filter-button icon-type data (gensym) (gensym) (constantly nil)))
   ([icon-type data this-filter current-filter toggle-filter-cb]
    (let [is-active? (= this-filter current-filter)]
-     (dom/button #js {:className "c-button c-button--icon"
-                      :onClick   (toggle-filter-cb this-filter)}
+     (dom/button {:className "c-button c-button--icon"
+                  :onClick   (toggle-filter-cb this-filter)}
        (icon icon-type :states (cond-> [] is-active? (conj :active)))
-       (dom/span #js {:className (cond-> "c-message" is-active?
-                                   (str " c-message--primary"))}
+       (dom/span {:className (cond-> "c-message" is-active?
+                               (str " c-message--primary"))}
          data)))))
 
 (defn find-tests [test-filter namespaces]
@@ -301,7 +288,7 @@
 (let [render-input (fn [{:keys [type id] :as props}]
                      (dom/span nil
                        (dom/input (clj->js props))
-                       (dom/label #js {:htmlFor id} ent/nbsp)))]
+                       (dom/label {:htmlFor id} ent/nbsp)))]
   (defn ui-checkbox
     "Render a checkbox (not the label). Props is a normal clj(s) map with React/HTML attributes plus:
 
@@ -315,22 +302,19 @@
           attrs   (assoc props :type "checkbox" :checked checked :className classes)]
       (render-input attrs))))
 
-(defui ^:once SelectorControl
-  static prim/IQuery
-  (query [this] [:selector/id :selector/active?])
-  Object
-  (render [this]
-    (let [{:keys [selector/id selector/active?]} (prim/props this)]
-      (dom/div #js {:className "c-drawer__action" :key (str id)}
-        (ui-checkbox
-          {:id       (str id)
-           :checked  active?
-           :onChange (fn [e]
-                       (prim/transact! this
-                         `[(sel/set-selector
-                             ~{:selector/id      id
-                               :selector/active? (.. e -target -checked)})]))})
-        (dom/span #js {} (str id))))))
+(defsc SelectorControl [this {:keys [selector/id selector/active?]}]
+  {:query [:selector/id :selector/active?]}
+  (dom/div {:className "c-drawer__action" :key (str id)}
+    (ui-checkbox
+      {:id       (str id)
+       :checked  active?
+       :onChange (fn [e]
+                   (prim/transact! this
+                     `[(sel/set-selector
+                         ~{:selector/id      id
+                           :selector/active? (.. e -target -checked)})]))})
+    (dom/span (str id))))
+
 (def ui-selector-control (prim/factory SelectorControl {:keyfn :selector/id}))
 
 (defn test-selectors [selectors]
@@ -340,16 +324,16 @@
       (sort-by :selector/id selectors))))
 
 (defn toolbar-button [toggle-drawer]
-  (dom/div #js {:className "c-toolbar__button"}
-    (dom/button #js {:className "c-button c-button--icon"
-                     :onClick   toggle-drawer}
+  (dom/div {:className "c-toolbar__button"}
+    (dom/button {:className "c-button c-button--icon"
+                 :onClick   toggle-drawer}
       (icon :menu))))
 
 (defn test-header [test-report current-filter toggle-drawer toggle-filter-cb]
-  (dom/header #js {:className "u-layout__header c-toolbar c-toolbar--raised"}
-    (dom/div #js {:className "c-toolbar__row"}
-      (dom/h1 nil "Fulcro Spec")
-      (dom/div #js {:className "c-toolbar__spacer"})
+  (dom/header {:className "u-layout__header c-toolbar c-toolbar--raised"}
+    (dom/div {:className "c-toolbar__row"}
+      (dom/h1 "Fulcro Spec")
+      (dom/div {:className "c-toolbar__spacer"})
       (test-info test-report current-filter toggle-filter-cb))
     (toolbar-button toggle-drawer)))
 
@@ -414,11 +398,11 @@
     (apply dom/div attrs children)))
 
 (defn test-main [{:keys [namespaces]} current-filter]
-  (dom/main #js {:className "u-layout__content"}
-    (dom/article #js {:className "o-article"}
+  (dom/main {:className "u-layout__content"}
+    (dom/article {:className "o-article"}
       (row {}
         (col {:width 12}
-          (dom/div #js {:className "test-report"}
+          (dom/div {:className "test-report"}
             (dom/ul nil
               (sequence
                 (comp
@@ -427,48 +411,43 @@
                   (map ui-test-namespace))
                 (sort-by :name namespaces)))))))))
 
-(defui ^:once TestReport
-  static prim/InitialAppState
-  (initial-state [this _] {:ui/react-key      (gensym "UI_REACT_KEY")
-                           :compile-error     nil
-                           :ui/current-filter :all})
-  static prim/IQuery
-  (query [this] [:ui/react-key :test-report :compile-error :ui/current-filter {:selectors (prim/get-query SelectorControl)}])
-  Object
-  (render [this]
-    (let [{:keys [ui/react-key compile-error test-report selectors ui/current-filter] :as props} (prim/props this)
-          {:keys [open-drawer?]} (prim/get-state this)
-          toggle-drawer    #(prim/update-state! this update :open-drawer? not)
-          toggle-filter-cb (fn [f] #(prim/transact! this `[(toggle-filter ~{:filter f})]))]
-      (dom/div #js {:key react-key :className "u-layout"}
-        (dom/div #js {:className "u-layout__page u-layout__page--fixed"}
-          (test-header test-report current-filter toggle-drawer toggle-filter-cb)
-          (dom/div #js {:className (cond-> "c-drawer" open-drawer? (str " is-open"))}
-            (dom/div #js {:className "c-drawer__header"}
-              (dom/img #js {:src     "img/logo.png" :height 35 :width 35
-                            :onClick toggle-drawer})
-              (dom/h1 nil "Fulcro Spec"))
-            (test-selectors selectors))
-          (dom/div #js {:className (cond-> "c-backdrop" open-drawer? (str " is-active"))
-                        :onClick   toggle-drawer})
-          (if compile-error
-            (dom/h1 nil compile-error)
-            (test-main test-report current-filter)))))))
+(defsc TestReport [this {:keys [compile-error test-report selectors ui/current-filter] :as props}]
+  {:initial-state {:compile-error     nil
+                   :ui/current-filter :all}
+   :query         [:test-report :compile-error :ui/current-filter {:selectors (prim/get-query SelectorControl)}]}
+  (let [{:keys [open-drawer?]} (prim/get-state this)
+        toggle-drawer    #(prim/update-state! this update :open-drawer? not)
+        toggle-filter-cb (fn [f] #(prim/transact! this `[(toggle-filter ~{:filter f})]))]
+    (dom/div {:className "u-layout"}
+      (dom/div {:className "u-layout__page u-layout__page--fixed"}
+        (test-header test-report current-filter toggle-drawer toggle-filter-cb)
+        (dom/div {:className (cond-> "c-drawer" open-drawer? (str " is-open"))}
+          (dom/div {:className "c-drawer__header"}
+            (dom/img {:src     "img/logo.png" :height 35 :width 35
+                      :onClick toggle-drawer})
+            (dom/h1 nil "Fulcro Spec"))
+          (test-selectors selectors))
+        (dom/div {:className (cond-> "c-backdrop" open-drawer? (str " is-active"))
+                  :onClick   toggle-drawer})
+        (if compile-error
+          (dom/h1 nil compile-error)
+          (test-main test-report current-filter))))))
 
 (defmutation render-tests
-  "Om muation: render the tests"
+  "Muation: render the tests"
   [new-report]
   (action [{:keys [state]}]
-    (swap! state assoc :test-report new-report)))
+    (swap! state assoc :test-report new-report))
+  (refresh [_] [:test-report]))
 
 (defmutation show-compile-error
-  "Om mutation: show a compiler error"
+  "Mutation: show a compiler error"
   [{:keys [error]}]
   (action [{:keys [state]}]
     (swap! state assoc :compile-error error)))
 
 (defmutation clear-compile-error
-  "Om mutation: Clear the compiler error"
+  "Mutation: Clear the compiler error"
   [ignored]
   (action [{:keys [state]}]
     (swap! state assoc :compile-error false)))
