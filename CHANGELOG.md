@@ -1,3 +1,9 @@
+2.1.2
+-----
+- Updated dependencies
+- Ported to defsc (finally)
+- Fixed a few glicthes that seemed to be affecting rendering
+
 2.1.1
 -----
 - Added spec-checking `provided!` and `when-mocking!`
