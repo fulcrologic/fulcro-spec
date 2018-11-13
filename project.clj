@@ -1,4 +1,4 @@
-(defproject fulcrologic/fulcro-spec "2.1.2"
+(defproject fulcrologic/fulcro-spec "2.1.3"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url "https://github.com/fulcrologic/fulcro-spec"
   :license {:name "MIT Public License"
