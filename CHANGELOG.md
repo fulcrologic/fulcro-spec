@@ -1,3 +1,8 @@
+2.1.3
+-----
+- Made fulcro spec events not propagate to clojure test reporter, so
+  test runners don't see the events.
+
 2.1.2
 -----
 - Updated dependencies
