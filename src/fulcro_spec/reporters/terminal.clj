@@ -12,6 +12,16 @@
     [fulcro-spec.diff :as diff]
     [fulcro-spec.reporter :as base]))
 
+;; ensure test runners don't see fulcro-spec's extended events
+(defmethod t/report :begin-specification [_])
+(defmethod t/report :end-specification [_])
+(defmethod t/report :begin-behavior [_])
+(defmethod t/report :end-behavior [_])
+(defmethod t/report :begin-manual [_])
+(defmethod t/report :end-manual [_])
+(defmethod t/report :begin-provided [_])
+(defmethod t/report :end-provided [_])
+
 (def cfg
   (atom
     (let [COLOR        (System/getenv "US_DIFF_HL")
