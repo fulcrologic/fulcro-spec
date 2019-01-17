@@ -13,16 +13,17 @@
                 [fulcro-spec.renderer :as renderer]
                 [fulcro-spec.router :as router]))
     #?@(:clj (
-    [clojure.tools.namespace.repl :as tools-ns-repl]
-    [clojure.walk :as walk]
-    [cognitect.transit :as transit]
-    [fulcro.server :as oms]
-    [ring.util.response :as resp]
-    [fulcro-spec.impl.macros :as im]
-    [fulcro-spec.watch :as watch]
-    [fulcro.easy-server :as fsy]
-    [fulcro.websockets.protocols :as ws]
-    [fulcro.websockets.components.channel-server :as wcs]))))
+               [clojure.tools.namespace.repl :as tools-ns-repl]
+               [clojure.walk :as walk]
+               [cognitect.transit :as transit]
+               [fulcro.server :as oms]
+               [ring.util.response :as resp]
+               [fulcro-spec.impl.macros :as im]
+               [fulcro.websockets :as ws]
+               [fulcro.websockets.protocols :as wsp]
+               [fulcro-spec.watch :as watch]
+               [fulcro.easy-server :as fsy]))
+    [fulcro.server :as server]))
 
 
 #?(:clj
@@ -40,32 +41,13 @@
 #?(:clj
    (defn- send-renderer-msg
      ([system k edn cid]
-      (let [cs (:channel-server system)]
-        (ws/push cs cid k
+      (let [cs (:websockets system)]
+        (wsp/push cs cid k
           (ensure-encodable edn))))
      ([system k edn]
-      (->> system :channel-server
-        :connected-cids deref :any
+      (->> system :websockets
+        :connected-uids deref :any
         (mapv (partial send-renderer-msg system k edn))))))
-
-#?(:clj
-   (defrecord ChannelListener [channel-server]
-     ws/WSListener
-     (client-dropped [this cs cid] this)
-     (client-added [this cs cid] this)
-     cp/Lifecycle
-     (start [this]
-       (wcs/add-listener wcs/listeners this)
-       this)
-     (stop [this]
-       (wcs/remove-listener wcs/listeners this)
-       this)))
-
-#?(:clj
-   (defn- make-channel-listener []
-     (cp/using
-       (map->ChannelListener {})
-       [:channel-server :test/reporter])))
 
 (defn- novelty! [system mut-key novelty]
   #?(:cljs (let [reconciler (get-in system [:test/renderer :test/renderer :app :reconciler])]
@@ -102,7 +84,7 @@
   (cp/using
     (merge (map->TestRunner {:opts opts :test! test!})
       extra)
-    [:test/reporter #?(:clj :channel-server)]))
+    [:test/reporter #?(:clj :websockets)]))
 
 (s/def ::test-paths (s/coll-of string?))
 (s/def ::source-paths (s/coll-of string?))
@@ -111,6 +93,7 @@
 (s/def ::config (s/keys :req-un [::port]))
 (s/def ::opts (s/keys :req-un [#?@(:cljs [::ns-regex])
                                #?@(:clj [::source-paths ::test-paths ::config])]))
+
 (s/fdef test-runner
   :args (s/cat
           :opts ::opts
@@ -161,15 +144,12 @@
                (cp/start
                  (fsy/make-fulcro-server
                    :parser (oms/parser {:read api-read :mutate api-mutate})
-                   :components {:config           {:value (:config opts)}
-                                :channel-server   (wcs/make-channel-server)
-                                :channel-listener (make-channel-listener)
-                                :test/runner      (make-test-runner opts test!)
-                                :test/reporter    (reporter/make-test-reporter)
-                                :change/watcher   (watch/on-change-listener opts run-tests)}
-                   :extra-routes {:routes   ["/" {"_fulcro_spec_chsk"             :web-socket
-                                                  "fulcro-spec-server-tests.html" :server-tests}]
-                                  :handlers {:web-socket   wcs/route-handlers
-                                             :server-tests (fn [{:keys [request]} _match]
+                   :components {:config         {:value (:config opts)}
+                                :websockets     (ws/make-websockets server/parser {:websockets-uri "/_fulcro_spec_chsk"})
+                                :test/runner    (make-test-runner opts test!)
+                                :test/reporter  (reporter/make-test-reporter)
+                                :change/watcher (watch/on-change-listener opts run-tests)}
+                   :extra-routes {:routes   ["/" {"fulcro-spec-server-tests.html" :server-tests}]
+                                  :handlers {:server-tests (fn [{:keys [request]} _match]
                                                              (resp/resource-response "fulcro-spec-server-tests.html"
                                                                {:root "public"}))}}))))))

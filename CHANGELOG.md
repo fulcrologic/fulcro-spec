@@ -1,6 +1,8 @@
 2.2.0
 -----
-- Compatible with Fulcro 2.7.2+
+- NOTE: THIS VERSION REQUIRES FULCRO 2.7+
+- Upgraded dependencies
+- Recompiled server test runner to work with Fulcro 2.7+
 
 2.1.3
 -----
