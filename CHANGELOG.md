@@ -1,3 +1,9 @@
+2.2.0
+-----
+- NOTE: THIS VERSION REQUIRES FULCRO 2.7+
+- Upgraded dependencies
+- Recompiled server test runner to work with Fulcro 2.7+
+
 2.1.3
 -----
 - Made fulcro spec events not propagate to clojure test reporter, so

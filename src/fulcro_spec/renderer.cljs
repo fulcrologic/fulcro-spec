@@ -15,7 +15,7 @@
     [fulcro-spec.dom.edn-renderer :refer [html-edn]]
     [fulcro-spec.diff :as diff]
     [fulcro-spec.selectors :as sel]
-    [fulcro.websockets.networking :as wn]
+    [fulcro.websockets :as ws]
     [fulcro.ui.html-entities :as ent])
   (:import
     (goog.date DateTime)
@@ -44,7 +44,7 @@
 (defn change-favicon-to-color [color]
   (try
     (let [favicon (.getElementById js/document "favicon")]
-     (set! (.-href favicon) (color-favicon-data-url color)))
+      (set! (.-href favicon) (color-favicon-data-url color)))
     (catch :default e)))
 
 (defn has-status? [p]
@@ -452,16 +452,18 @@
   (action [{:keys [state]}]
     (swap! state assoc :compile-error false)))
 
-(defmethod wn/push-received `render-tests
-  [{:keys [reconciler]} {test-report :msg}]
+(defonce reconciler (atom nil))
+
+(defmulti push-received (fn [{:keys [topic msg]}] topic))
+
+(defmethod push-received `render-tests
+  [{test-report :msg}]
   (prim/transact! (prim/app-root reconciler)
     `[(clear-compile-error {}) (render-tests ~test-report)]))
 
-(defmethod wn/push-received `show-compile-error
-  [{:keys [reconciler]} {message :msg}]
+(defmethod push-received `show-compile-error
+  [{message :msg}]
   (prim/transact! (prim/app-root reconciler) `[(show-compile-error ~{:error message})]))
-
-(defonce networking (atom nil))
 
 (defrecord TestRenderer [root target with-websockets? runner-atom]
   cp/Lifecycle
@@ -469,17 +471,15 @@
     (try
       (let [app (fc/new-fulcro-client
                   :networking (if with-websockets?
-                                (do
-                                  (reset! networking (wn/make-channel-client "/_fulcro_spec_chsk"))
-                                  @networking)
+                                (ws/make-websocket-networking {:websockets-uri "/_fulcro_spec_chsk"
+                                                               :push-handler   push-received})
                                 (reify fcn/FulcroNetwork
                                   (start [this] this)
                                   (send [this edn ok err]
                                     (ok ((prim/parser @runner-atom) @runner-atom edn)))))
                   :started-callback
                   (fn [app]
-                    (when (and with-websockets? @networking)
-                      (wn/install-push-handlers @networking app))
+                    (reset! fulcro-spec.renderer/reconciler (:reconciler app))
                     (df/load app :selectors SelectorControl
                       {:post-mutation `sel/set-selectors})))]
         (assoc this :app (fc/mount app root target)))

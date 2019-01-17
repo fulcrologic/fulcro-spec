@@ -1,4 +1,4 @@
-(defproject fulcrologic/fulcro-spec "2.1.3"
+(defproject fulcrologic/fulcro-spec "2.2.0"
   :description "A Behavioral specification system for clj and cljs stacked on clojure.test"
   :url "https://github.com/fulcrologic/fulcro-spec"
   :license {:name "MIT Public License"
@@ -7,20 +7,19 @@
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [kibu/pushy "0.3.8"]
                  [lein-doo "0.1.10" :scope "test"]
-                 [fulcrologic/fulcro "2.6.7"]
+                 [fulcrologic/fulcro "2.7.2"]
 
                  [http-kit "2.2.0"]
-                 [ring/ring-core "1.6.3" :exclusions [commons-codec]]
-                 [bk/ring-gzip "0.2.1"]
-                 [bidi "2.1.3"]
-                 [com.taoensso/sente "1.13.1"]
+                 [ring/ring-core "1.7.1" :exclusions [commons-codec]]
+                 [bk/ring-gzip "0.3.0"]
+                 [bidi "2.1.5"]
+                 [com.taoensso/sente "1.14.0-RC1"]
 
                  [org.clojure/core.async "0.4.474"]
                  [org.clojure/clojure "1.9.0" :scope "provided"]
-                 [org.clojure/clojurescript "1.10.339" :scope "provided"]
+                 [org.clojure/clojurescript "1.10.439" :scope "provided"]
                  [org.clojure/tools.namespace "0.3.0-alpha4"]
-                 [org.clojure/tools.reader "1.3.0"]
-                 [clojure-future-spec "1.9.0-beta4"]]
+                 [org.clojure/tools.reader "1.3.0"]]
 
   :plugins [[com.jakemccrary/lein-test-refresh "0.23.0" :exclusions [org.clojure/tools.namespace]]
             [lein-cljsbuild "1.1.7"]
@@ -55,12 +54,7 @@
                                                       :asset-path    "js/test/fulcro-spec-renderer"
                                                       :optimizations :simple}}}}
 
-  :jvm-opts ~(let [version (System/getProperty "java.version")
-                   base-options ["-XX:-OmitStackTraceInFastThrow"]
-                   [major & _] (clojure.string/split version #"\.")]
-               (if (>= (Integer/parseInt major) 9)
-                 (conj base-options "--add-modules" "java.xml.bind")
-                 base-options))
+  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
 
   :figwheel {:nrepl-port  7888
              :server-port 3457}
