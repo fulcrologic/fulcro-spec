@@ -1,3 +1,7 @@
+2.2.1
+-----
+- Nothing changed...backing out bad release
+
 2.1.3
 -----
 - Made fulcro spec events not propagate to clojure test reporter, so

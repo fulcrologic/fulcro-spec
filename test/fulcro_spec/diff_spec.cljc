@@ -2,10 +2,11 @@
   (:require
     [fulcro-spec.diff :as src
      :refer [nf diff diff-elem patch compress decompress]]
+    [nubank.workspaces.core :refer [deftest]]
     [fulcro-spec.core :as fsc :refer
-     [specification behavior assertions]]))
+     [behavior assertions]]))
 
-(specification "the diff function"
+(deftest diff-test
   (assertions
     "returns {} for non collections"
     (diff 0 1) => {})
@@ -156,7 +157,7 @@
             {:current-tab [:settings :tab] :ui/loading-data false})
       => {[:current-tab 0] [:+ :messages :- :settings]})))
 
-(specification "the patch function"
+(deftest patch-test
   (behavior "`patch` an object with a diff"
     (assertions
       (patch '() {[0] (diff-elem 'app/mut nf)})
@@ -175,7 +176,7 @@
       (patch `[(1 2)] (diff `[(3 4)] `[(1 2)])) => `[(3 4)]
       (patch [1 2] (diff ((fn [& args] args) 3 4) [1 2])) => [3 4])))
 
-(specification "[de]compression"
+(deftest compressoiin-test
   (assertions "`compress` a sequence of states"
     (compress [{0 0} {0 1} {0 1 2 3}])
     => [{0 0}

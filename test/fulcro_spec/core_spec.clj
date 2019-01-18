@@ -3,15 +3,16 @@
     [clojure.test :as t :refer [is]]
     [fulcro-spec.contains :refer [*contains?]]
     [fulcro-spec.core
-     :refer [specification behavior when-mocking assertions]
+     :refer [behavior when-mocking assertions]
      :as core]
+    [nubank.workspaces.core :refer [deftest]]
     [fulcro-spec.selectors :as sel]))
 
-(specification "adds methods to clojure.test/assert-expr"
+(deftest assert-expr-test
   (assertions
     (methods t/assert-expr)
     =fn=> (*contains? '[= exec throws?] :keys)))
-(specification "var-name-from-string"
+(deftest var-name-from-string
   (assertions
     "allows the following"
     (core/var-name-from-string "asdfASDF1234!#$%&*|:<>?")
@@ -19,36 +20,3 @@
     "converts the rest to dashes"
     (core/var-name-from-string "\\\"@^()[]{};',/  ∂¨∫øƒ∑Ó‡ﬁ€⁄ª•¶§¡˙√ß")
     =fn=> #(re-matches #"__\-+__" (str %))))
-
-(defmacro test-core
-  ([code-block] `(test-core ~code-block identity))
-  ([code-block test-fn]
-   `(let [test-var# ~code-block
-          reports# (atom [])]
-      (binding [t/report #(swap! reports# conj %)]
-        (with-redefs [sel/selected-for? (constantly true)]
-          (test-var#)))
-      (alter-meta! test-var# dissoc :test)
-      (~test-fn @reports#))))
-
-(specification "uncaught errors are gracefully handled & reported"
-  (let [only-errors (comp
-                      (filter (comp #{:error} :type))
-                      (map #(select-keys % [:type :actual :message :expected]))
-                      (map #(update % :actual str)))]
-    (assertions
-      (test-core (specification "ERROR INTENTIONAL" :should-fail
-                   (assert false))
-        (partial into [] only-errors))
-      => [{:type :error
-           :actual "java.lang.AssertionError: Assert failed: false"
-           :message "ERROR INTENTIONAL"
-           :expected "IT TO NOT THROW!"}]
-      (test-core (specification "EXPECTED ERROR IN BEHAVIOR" :should-fail
-                   (behavior "SHOULD ERROR"
-                     (assert false)))
-        (partial into [] only-errors))
-      => [{:type :error
-           :actual "java.lang.AssertionError: Assert failed: false"
-           :message "SHOULD ERROR"
-           :expected "IT TO NOT THROW!"}])))

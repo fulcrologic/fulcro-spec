@@ -1,9 +1,10 @@
 (ns fulcro-spec.stub-spec
   (:require
+    [nubank.workspaces.core :refer [deftest]]
     [fulcro-spec.stub :as s
      #?@(:cljs [:include-macros true])]
     [fulcro-spec.core #?(:clj :refer :cljs :refer-macros)
-     [specification behavior provided assertions]]
+     [behavior provided assertions]]
     #?(:clj [clojure.test :refer [is]])
     #?(:cljs [cljs.test :refer-macros [is]]))
   #?(:clj
@@ -13,7 +14,7 @@
   (s/make-script "something"
     [(s/make-step 'stub 1 [])]))
 
-(specification "increment-script-call-count"
+(deftest increment-script-call-count
   (behavior "finds and increments the correct step"
     (let [script (make-simple-script)]
 
@@ -21,7 +22,7 @@
 
       (is (= 1 (get-in @script [:steps 0 :times]))))))
 
-(specification "step-complete"
+(deftest step-complete
   (let [script (make-simple-script)]
     (behavior "is false when call count is less than expected count"
       (is (not (s/step-complete script 0))))
@@ -35,7 +36,7 @@
     (s/make-script "something"
       [(s/make-step to-call N literals)])))
 
-(specification "scripted-stub"
+(deftest scripted-stub
   (behavior "calls the stub function"
     (let [detector (atom false)
           sstub (make-call-script (fn [] (reset! detector true)))]
@@ -92,7 +93,7 @@
         (:history @script) => [[1 2] [3 4] [:a :b]]
         (map :history (:steps @script)) => [[[1 2] [3 4]] [[:a :b]]]))))
 
-(specification "validate-target-function-counts"
+(deftest validate-target-function-counts
   (behavior "returns nil if a target function has been called enough times"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 5 :times 5}]})]]
       (assertions

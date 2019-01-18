@@ -2,10 +2,8 @@
   (:require
     [clojure.edn :as edn]
     [clojure.pprint :refer [pprint]]
-    [clojure.stacktrace :as stack]
     [clojure.string :as s]
     [clojure.test :as t]
-    [clojure.walk :as walk]
     [colorize.core :as c]
     [com.stuartsierra.component :as cp]
     [io.aviso.exception :as pretty]

@@ -25,7 +25,6 @@ endif::[]
 The macros in fulcro-spec wrap clojure/cljs test, so that you may use any of the features of the core library.
 The specification DSL makes it much easier to read the tests, and also includes a number of useful features:
 
-- Outline rendering
 - Left-to-right assertions
 - More readable output, such as data structure comparisons on failure (with diff notation as well)
 - Real-time refresh of tests on save (client and server)

@@ -1,8 +1,9 @@
 (ns fulcro-spec.provided-spec
   (:require
     [clojure.spec.alpha :as s]
+    [nubank.workspaces.core :refer [deftest]]
     [fulcro-spec.core #?(:clj :refer :cljs :refer-macros)
-     [specification behavior provided assertions when-mocking provided! when-mocking!]]
+     [behavior provided assertions when-mocking provided! when-mocking!]]
     #?(:clj [fulcro-spec.impl.macros :as im])
     #?(:clj [fulcro-spec.provided :as p])
     [fulcro-spec.stub :as stub]
@@ -12,7 +13,7 @@
      (:import clojure.lang.ExceptionInfo)))
 
 #?(:clj
-   (specification "parse-arrow-count"
+   (deftest parse-arrow-count
      (assertions
        "requires the arrow start with an ="
        (p/parse-arrow-count '->) =throws=> (AssertionError)
@@ -26,7 +27,7 @@
        (p/parse-arrow-count '=234x=>) => 234)))
 
 #?(:clj
-   (specification "parse-mock-triple"
+   (deftest parse-mock-triple
      (let [test-parse (comp (partial p/parse-mock-triple false)
                         (partial fss/conform! :fulcro-spec.provided/triple))]
        (let [result (test-parse '[(f a b) =2x=> (+ a b)])]
@@ -54,7 +55,7 @@
              => true))))))
 
 #?(:clj
-   (specification "provided-macro"
+   (deftest provided-macro
      (behavior "Outputs a syntax-quoted block"
        (let [expanded (p/provided* false "some string"
                         '[(f n) => (+ n 1)
@@ -100,7 +101,7 @@
 
 (defn my-varargs-sum [n & nums] (apply + n nums))
 
-(specification "provided and when-mocking macros"
+(deftest provided-test
   (behavior "cause stubbing to work"
     (provided "that functions are mocked the correct number of times, with the correct output values."
       (my-square n) =1x=> 1
@@ -174,7 +175,7 @@
 (defn call-to-test [a]
   (function-with-spec a))
 
-(specification "provided! and when-mocking!"
+(deftest provided!-test
   (behavior "Force mocks to conform to the specs of the original function"
     (provided! "The stubbed function returns an ok value"
       (function-with-spec n) => 22

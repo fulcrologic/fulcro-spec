@@ -1,7 +1,9 @@
 (ns fulcro-spec.assertions-spec
-  (:require [fulcro-spec.core :refer [specification assertions]]))
+  (:require
+    [nubank.workspaces.core :refer [deftest]]
+    [fulcro-spec.core :refer [specification assertions]]))
 
-(specification "assertions blocks work on cljs"
+(deftest assert-test
   (assertions
     "throws arrow can catch"
     (assert false "foobar") =throws=> (js/Error #"ooba")

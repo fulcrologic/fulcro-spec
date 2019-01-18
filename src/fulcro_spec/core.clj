@@ -7,8 +7,6 @@
     [fulcro-spec.async :as async]
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.provided :as p]
-    [fulcro-spec.runner]                                    ;;side effects
-    [fulcro-spec.selectors :as sel]
     [fulcro-spec.stub]
     [fulcro-spec.spec :as fss]))
 
@@ -32,11 +30,10 @@
                     (with-meta (zipmap selectors (repeat true))))
         prefix    (im/if-cljs &env "cljs.test" "clojure.test")]
     `(~(symbol prefix "deftest") ~test-name
-       (im/when-selected-for ~(fss/conform! ::sel/test-selectors selectors)
-         (im/with-reporting {:type      :specification :string ~name
-                             :form-meta ~(select-keys (meta &form) [:line])}
-           (im/try-report ~name
-             ~@body))))))
+       (im/with-reporting {:type      :specification :string ~name
+                           :form-meta ~(select-keys (meta &form) [:line])}
+         (im/try-report ~name
+           ~@body)))))
 
 (s/def ::behavior (s/cat
                     :name (constantly true)

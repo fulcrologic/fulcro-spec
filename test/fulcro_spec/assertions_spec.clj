@@ -6,7 +6,8 @@
      :refer [check-error check-error* parse-criteria]]
     [fulcro-spec.contains :refer [*contains?]]
     [fulcro-spec.core
-     :refer [specification component behavior assertions]]
+     :refer [component behavior assertions]]
+    [nubank.workspaces.core :refer [deftest]]
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.spec :as fss]
     [fulcro-spec.testing-helpers :as th])
@@ -26,7 +27,7 @@
 
 (def test-regex #"a-simple-test-regex")
 
-(specification "check-error"
+(deftest check-error-test
   (behavior "supports many syntaxes"
     (assertions
       (fss/conform! ::ae/criteria 'ExceptionInfo)
@@ -81,7 +82,7 @@
         =fn=> (*contains? {:type :fail :actual cthulhu-bored
                            :extra "checker function failed"})))))
 
-(specification "triple->assertion"
+(deftest triple->assertion-test
   (behavior "checks equality with the => arrow"
     (assertions
       (test-triple->assertion '(left => right))
@@ -99,7 +100,7 @@
       (test-triple->assertion '(left =bad-arrow=> right))
       =throws=> (ExceptionInfo #"fails spec.*arrow"))))
 
-(specification "throws assertion arrow"
+(deftest throws-assertion-arrow
   (behavior "catches AssertionErrors"
     (let [f (fn [x] {:pre [(even? x)]} (inc x))]
       (is (thrown? AssertionError (f 1)))
@@ -120,7 +121,7 @@
   `(binding [t/report identity]
      (get-exp-act ~(-> x test-triple->assertion) ~opt)))
 
-(specification "running assertions reports the correct data"
+(deftest assertion-data-test
   (component "=>"
     (behavior "literals"
       (is (= [5 3] (test-case (5 => 3)))))
@@ -171,7 +172,7 @@
       (let [asserts (test-block->asserts '("string2" d => e))]
         (is (every? #{`t/is} (map first (drop 2 asserts))))))))
 
-(specification "fix-conform for issue #31"
+(deftest fix-conform-for-issue-31
   (assertions
     (mapv (juxt :behavior (comp count :triples))
       (ae/fix-conform

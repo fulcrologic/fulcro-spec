@@ -1,13 +1,14 @@
 (ns fulcro-spec.timeline-spec
   (:require [fulcro-spec.core #?(:clj :refer :cljs :refer-macros)
-             [specification behavior provided
+             [behavior provided
               with-timeline async tick assertions]]
+            [nubank.workspaces.core :refer [deftest]]
             #?(:clj [clojure.test :refer [is]])
             #?(:cljs [cljs.test :refer-macros [is]])))
 
 
 #?(:cljs
-   (specification "Timeline"
+   (deftest timeline-test
      (behavior "within a timeline"
        (with-timeline
          (let [detector (atom [])]
