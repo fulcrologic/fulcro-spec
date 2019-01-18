@@ -1,9 +1,9 @@
 #kaocha/v1
     {:tests    [{:id           :unit
                  :ns-patterns  ["-test$" "-spec$"]
-                 :test-paths   ["test"]
+                 :test-paths   ["src/test"]
                  :skip-meta    [:integration]
-                 :source-paths ["src"]}]
+                 :source-paths ["src/main"]}]
      :reporter [fulcro-spec.reporters.terminal/fulcro-report]
      :plugins  [:kaocha.plugin/randomize
                 :kaocha.plugin/filter
