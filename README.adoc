@@ -17,17 +17,14 @@ endif::[]
 
 == CHANGE OF SCOPE NOTICE
 
-**BREAKING CHANGES** as of 2.2. Do NOT upgrade without being prepared to port your
+**BREAKING CHANGES** as of 3.0. Do NOT upgrade without being prepared to port your
 test runners.
 
-This library is no longer fully supported. All of the macros for running tests are fully
-functional, but the browser-based rendering will no longer maintained.  It will break
-with Fulcro 2.7, and there is no funding (therefore interest) in fixing it because there
-are good alternatives.
+IMPORTANT: This library no longer contains browser-based runners.
 
 I recommend the following alternatives:
 
-Clojure Tests:: I recommend IntelliJ in-editor testing, or perhaps
+Clojure Tests:: I recommend IntelliJ/Emacs/Vim in-editor testing, or perhaps
 Clojure Tools Deps with kaocha. The latter renders into a terminal, but can use fulcro-spec's
 macros. Here is a sample config file that will use Fulcro spec's terminal reporting:
 
@@ -49,6 +46,8 @@ Clojurescript Tests:: I highly recommend using Nubank's Workspaces.  I've contri
 shadow-cljs target that can auto-scan for tests if you use their deftest macro. Again, things
 like the `provided` macro work within Workspaces.  I recommend using shadow-cljs
 `:karma` target for running CI tests.
+
+See https://github.com/fulcrologic/fulcro-spec/blob/develop/docs/index.adoc[the docs] for more details.
 
 == Description
 
