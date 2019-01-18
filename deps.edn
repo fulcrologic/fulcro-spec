@@ -1,0 +1,11 @@
+{:aliases {:clj-tests {:extra-paths ["src/test"]
+                       :main-opts   ["-m" "kaocha.runner"]
+                       :extra-deps  {lambdaisland/kaocha {:mvn/version "0.0-266"}
+                                     nubank/workspaces   {:mvn/version "1.0.3"}}}
+           :test      {:extra-paths ["src/test"]
+                       :extra-deps  {nubank/workspaces {:mvn/version "1.0.3"}}}}
+ :deps    {colorize                            {:mvn/version "0.1.1" :exclusions [org.clojure/clojure]},
+           com.lucasbradstreet/cljs-uuid-utils {:mvn/version "1.0.2"}
+           org.clojure/clojure                 {:mvn/version "1.10.0"}
+           org.clojure/clojurescript           {:mvn/version "1.10.439"}}
+ :paths   ["src/main"]}

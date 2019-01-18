@@ -1,3 +1,8 @@
+3.0.0
+-----
+- BREAKING: Removed runners
+- See docs for new way to use.
+
 2.1.3
 -----
 - Made fulcro spec events not propagate to clojure test reporter, so

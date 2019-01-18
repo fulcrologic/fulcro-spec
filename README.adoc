@@ -15,6 +15,42 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
+== CHANGE OF SCOPE NOTICE
+
+**BREAKING CHANGES** as of 3.0. Do NOT upgrade without being prepared to port your
+test runners.
+
+IMPORTANT: This library no longer contains browser-based runners.
+
+I recommend the following alternatives:
+
+Clojure Tests:: I recommend IntelliJ/Emacs/Vim in-editor testing, or perhaps
+Clojure Tools Deps with kaocha. The latter renders into a terminal, but can use fulcro-spec's
+macros. Here is a sample config file that will use Fulcro spec's terminal reporting:
+
+[source, clojure]
+-----
+#kaocha/v1
+    {:tests    [{:id           :unit
+                 :ns-patterns  ["-test$" "-spec$"]
+                 :test-paths   ["src/test"]
+                 :skip-meta    [:integration]
+                 :source-paths ["src/main"]}]
+     :reporter [fulcro-spec.reporters.terminal/fulcro-report]
+     :plugins  [:kaocha.plugin/randomize
+                :kaocha.plugin/filter
+                :kaocha.plugin/capture-output]}
+-----
+
+Clojurescript Tests:: I highly recommend using Nubank's Workspaces.  I've contributed a
+shadow-cljs target that can auto-scan for tests if you use their deftest macro. Again, things
+like the `provided` macro work within Workspaces.  I recommend using shadow-cljs
+`:karma` target for running CI tests.
+
+See https://github.com/fulcrologic/fulcro-spec/blob/develop/docs/index.adoc[the docs] for more details.
+
+== Description
+
 A Clojure(scipt) testing library to augment the standard `clojure.test`.
 
 image:https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https://clojars.org/fulcrologic/fulcro-spec"]
@@ -22,591 +58,26 @@ image:https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https:/
 Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master"]
 Snapshot: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop"]
 
-== Why?
-
-The standard `clojure.test` library is "good enough" for many testing tasks, and has great IDE integration (at least
-for Clojure).  Fulcro-spec can help in a few distinct ways:
-
-. As a helper library to add clarity and convenience to certain testing tasks.
-. As a standardized wrapper that allows you to work with Clojure and Clojurescript tests in the same way.
-. As a wrapper library that augments how you write and run your tests.
-
-In the former case you continue to use `deftest`, `is`, `are`, and other `clojure.test` features, but also use things like
-fulcro-spec's `provided` macro to isolate units of code.
-
-In the latter case you adopt more of the macros to get some additional advantages:
-
-- More expressiveness around what your tests are meant to test.
-- More expressive test output.
-- Clearer data diffs on assertion failures (in both clj and cljs).
-- Test output control, rendering, and refresh with a browser interface.
-
 == Usage
 
-* Make sure your link:https://clojure.org/community/downloads[clojure](link:https://github.com/clojure/clojurescript/releases[script]) versions are at or above "1.9.x".
-
-* Add `[fulcrologic/fulcro-spec "x.y.z"]` to your `:dependencies`.
-
-* Make sure you have at least one test file, eg: `test/your-ns/arithmetic_spec.cljc`, that uses `fulcro-spec.core`:
-
-[source]
-----
-(ns your-ns.arithmetic-spec
+[source, clojure]
+-----
+(ns my-test
   (:require
-    [fulcro-spec.core :refer [specification behavior component assertions]]))
-
-(specification "arithmetic"
-  (component "addition"
-    (behavior "is commutative"
-      (assertions
-        "description of the assertion(s). A string can be followed by 1+ arrow triples:"
-        (+ 13 42) => (+ 42 13)
-        (+ 1 5) => 6
-        "Another assertion"
-        (+ 1 1) => 2))))
-----
-
-The `specification` macro is just `deftest`, but it allows you to use a string instead of a symbol (it optionally also
-allows tests to be tagged for filtering). The `component` and `behavior` are roughly an alias for `testing`,
-but will indent within a Fulcro Spec reporter (so you get an outline view).
-
-The `assertions` macro rewrites REPL-like expressions into `clojure.test/is` calls, but supports some shorthands for
-common checks (e.g. `=throws=>` can be used to expression the emission of an exception).  It allows groups of assertions
-to include a description that will also be emitted (in outline form) in the reporter.
-
-The above test is *nearly* equivalent to:
-
-[source]
-----
-(ns your-ns.arithmetic-spec
-  (:require
-    [clojure.test :refer [deftest is testing]]))
-
-(deftest arithmetic
-  (testing "addition"
-    (testing "is commutative"
-      (testing "description of the assertion(s). A string can be followed by 1+ arrow triples:"
-        (is (= (+ 13 42) (+ 42 13)))
-        (is (= (+ 1 5) 6)))
-      (testing "Another assertion"
-        (is (= (+ 1 1) 2))))))
-----
-
-In fact, if you are used to testing with your REPL, you may choose to use `deftest` instead, since editor integration
-often looks for the `deftest` symbol itself:
-
-[source]
-----
-(ns your-ns.arithmetic-spec
-  (:require
+    [fulcro-spec.core :refer [when-mocking provided assertions]
     [clojure.test :refer [deftest]]
-    [fulcro-spec.core :refer [specification behavior component assertions]]))
+    ...))
 
-;; Ok to mix and match. This form is easier to use with REPL integration
-(deftest arithmetic
-  (assertions
-    "description of the assertion(s). A string can be followed by 1+ arrow triples:"
-    (+ 13 42) => (+ 42 13)
-    (+ 1 5) => 6
-    "Another assertion"
-    (+ 1 1) => 2))
-----
+(defn f [x] 900)
+(defn g [y] (f y))
 
-=== Exceptions
+(deftest my-test
+  (when-mocking
+    (f x) => 22
 
-You can check for thrown exceptions with `=throws=>`, which accepts a few different forms on the right-hand side. The
-easiest and most useful is a map with a `:regex` key for checking the message in the exception:
-
-[source]
-----
-(ns your-ns.arithmetic-spec
-  (:require
-    [fulcro-spec.core :refer [specification behavior component assertions]]))
-
-(specification "arithmetic"
-  (assertions
-    (f 22) =throws=> {:regex #"something in exception message"}))
-----
-
-See the https://github.com/fulcrologic/fulcro-spec/blob/develop/docs/index.adoc[main docs] for further details.
-
-=== Mocking
-
-Testing units of code in isolation is a critical aspect of sustainable testing, and is in fact the majority of the
-reason that `fulcro-spec` exists. It is not uncommon to continue to write tests with `clojure.test/deftest` and
-`clojure.test/is` because IDE's like Cursive support them very well (though you lose the usefulness of
-fulcro spec's improved reporter).  However, dealing with isolating your code typically involves a lot of hassle and
-boilerplate.
-
-Isolating a unit of code is where `fulcro-spec` really shines.  Say you wanted to test this bit of code:
-
-[souce]
-----
-(defn save-data! [data]
-  (try
-    (let [derived-data (xform data)]
-      (write! derived-data))
-    (catch Exception e
-      false)))
-----
-
-There are a number of things going on here, some of them out of our control.  We would argue that unit tests for
-this function should *never* cause `xform` or `write!` to actually be called, since they are not the logic
-under test.  Those functions should have their own tests that verify they work. Having dozens of failures
-when a single thing is wrong is the "cascading failure" problem, and it can make your tests much less useful for
-quickly figuring out exactly what got broken.  (Of course, this kind of isolation isn't very useful if you don't
-test the other pieces).
-
-Another issue is that if we actually run `write!` then it is very hard for us to control it...we can't easily force
-it to throw an exception so we can test that part of `save-data!`'s logic.
-
-When we want a true *unit* test for `save-data!` we need to be able to take control of these other functions.
-Fulcro spec includes macros that can help: `provided`, `when-mocking`, `provided!`, and `when-mocking!`.  They all have
-the same basic shape:
-
-[source]
-----
-(deftest save-data!-test
-  (testing "Returns false on internal exceptions"
-    (provided "The write! throws an exception"
-      (write! d) =1x=> (throw (ex-info "" {:data-passed d}))
-
-      (save-data! {}) => false)))
-----
-
-The `provided` macro takes 1 or more "arrow triples", and then any amount of code to run with mocks in place.
-Each "arrow triple" does the following:
-
-. Verifies that the function is called the number of times specified in the arrow (e.g =10x=> means it MUST be called
-exactly 10 times).
-. Captures arguments into the argument symbols (e.g. `d` in the example above)
-. Makes the captured symbols available on the right-hand side (e.g. in this example we send it in the exception)
-. Evaluates the right-hand side (a single expression) as the mock, which *can make further assertions* (e.g. check captured args)
-. Verifies order (and number) of calls (order is only checked for function invocations of the same function)
-
-Thus, you can spell out fairly complicated "scripts":
-
-[source]
-----
-...
-  (provided "f is called 3+ times"
-    (f x) =1x=> (do
-                  (assertions
-                    "arg is even on the first call"
-                    (even? x) => true)
-                  42)
-    (f x) =1x=> (do
-                  (assertions
-                    "arg is odd on the second call"
-                    (odd? x) => true)
-                  44)
-    (f x) => 9
-
-    (g))
-...
-----
-
-runs `(g)` with `f` mocked out.  It implies that during the execution of `g` that `f` will be called *at least* 3 times (an arrow
-without a number means "one or more times" and will capture the remaining calls).  The first call's parameter is checked
-to see if it is even, and that mock then returns `42`.  The second call checks for an odd argument and returns 44.  The
-final call(s) don't check their args, and all return `9`.
-
-The difference between `provided` and `when-mocking` is that the latter *does not* accept a descriptive string and does
-not generate output, whereas the former does.
-
-==== Mocking with Sanity Checks (Highly Recommended)
-
-In Clojure(script) it is easy to fool yourself by making a mock that does impossible things and misleads you with
-passing tests that make no logical sense in the real program.
-
-The `provided!` and `when-mocking!` alternatives add an additional level of sanity checking: They will check that your
-mocks are called with and return values that conform to the original function's Clojure Spec.  This is a very important
-bit of glue.  If your mock returns data that is impossible for the real function to ever return, then it is a clear sign that you
-are forgetting how that function works, and will lead you to write a test that passes for very bad reasons:
-
-[source]
-----
-(def f [a] (+ 1 a))
-
-(def g [a]
-  (str a (f a))
-
-(deftest g-test
-  (testing "g combines args with (f args)"
-    (when-mocking
-      (f a) => "22"
-
-      (g "Hi ") => "Hi 22")))
-----
-
-The above test passes, but it is clearly not right.  `f` Will never ever return a string, and the input of `"Hi "` is
-also an unacceptable thing to pass to `+` inside of `f'.  Now, when your functions are close together you might notice
-this without any aid, but as soon as things get spread out then the chance of you making this kind of error becomes more probable, and
-your tests become less trustworthy and useful.
-
-Using the `!` forms will look for (and enforce) the Clojure specs on the mocked functions (it does not instrument anything,
-it literally checks the args and return values in the stubbed logic by looking up the spec on the original function):
-
-[source]
-----
-;; Add this
-(s/fdef f
-  :args (s/cat :a int?)
-  :ret int?)
-
-(deftest g-test
-  (testing "g combines args with (f args)"
-    ;; Change to using the `!` form
-    (when-mocking!
-      (f a) => "22"
-
-      (g "Hi ") => "Hi 22")))
-----
-
-With the above two changes you now get a failing test, and the error message will tell you when your mock either receives
-an incorrect argument, or returns a non-conforming result.
-
-==== Limitations of Mocking
-
-The mocking system uses `with-redefs` internally.  Thus, anything that cannot be clearly redefined at runtime cannot be mocked.  This
-includes (but is not limited to):
-
-- Macros: Macros expand at compile time. There is no way to "circumvent them" at test runtime.
-- Inlined functions: An inlined function is replaced with it's body at compile time.
-- Java artifacts: Java does not participate in Clojure's dynamism. You must still use something like Mockito (or clojure
-thin wrappers).
-
-A workaround the works well for many things is to just wrap the problem call in a standard function.
-
-=== Testing Macros
-
-This isn't really a feature of the library, but is just a note about how to test macros in Clojure in general.  Macros
-are expanded at compile-time, so testing them in a runtime environment will not work. However, there is a very easy
-workaround: Realize that a macro is nothing more than a special function that picks up unevaluated forms, and returns
-a replacement for them.  The fact that it runs at compile time is the inconvenient part.
-
-The solution is quite simple: Write a true *function* that does the form maniputions, and call *that* from the macro.
-You can then easily test that the macro does what you expect:
-
-[source]
-----
-(defn the-macro* [form]
-  `(do
-     ~form
-     (output-form "hello"))
-
-(defmacro the-macro [form]
-  (the-macro* form))
-
-...
-
-(specification "The macro"
-  (behavior "does some stuff"
     (assertions
-      (the-macro* '(f 2)) => `(clojure.core/do (ns-of-f/f 2) (other-ns/output-form "hello")))))
-----
-
-== Using the Fulcro Spec Runner/Reporter
-
-Fulcro spec includes runners and reporters that can control and output your tests.  They are optional, but often
-quite useful.
-
-=== Clojure In The Terminal
-
-* Add `[com.jakemccrary/lein-test-refresh "x.y.z"]` to your `:plugins`.
-** Check link:https://github.com/jakemcc/lein-test-refresh#usage[lein test refresh itself] for the latest version.
-* Add the following to your `project.clj` configuration:
-
-    :test-refresh {:report fulcro-spec.reporters.terminal/fulcro-report}
-
-[NOTE]
-====
-Other configuration options are available, take a look at:
-
-* link:https://github.com/jakemcc/lein-test-refresh/blob/master/sample.project.clj[].
-* link:https://github.com/jakemcc/lein-test-refresh/blob/master/test-refresh/src/leiningen/test_refresh.clj[].
-====
-
-* Run `lein test-refresh` in your command-line, et voila! You should see something like:
-
-----
-Using reporter: fulcro-spec.reporters.terminal/fulcro-report
-*********************************************
-*************** Running tests ***************
-:reloading (your-ns.arithmetic-spec)
-Running tests for: (your-ns.arithmetic-spec)
-
-Testing your-ns.arithmetic-spec
-   addition
-     is commutative
-
-Ran 1 tests containing 1 assertions.
-0 failures, 0 errors.
-
-Failed 0 of 1 assertions
-Finished at 17:32:43.925 (run time: 0.01s)
-----
-
-TIP: Make sure you make the test fail to check that error reporting is working before moving on to another section.
-
-[WARNING]
-====
-
-    Error refreshing environment: java.io.FileNotFoundException: Could not locate clojure/spec__init.class or clojure/spec.clj on classpath.
-
-Make sure you have link:https://clojure.org/community/downloads[clojure](link:https://github.com/clojure/clojurescript/releases[script]) versions above "1.9.x".
-====
-
-[WARNING]
-====
-
-    Error refreshing environment: java.lang.IllegalAccessError: clj does not exist, compiling:(fulcro_spec/watch.clj:1:1)
-
-Add an `:exclusions [org.clojure/tools.namespace]` for tools.namespace on lein-test-refresh +
-(and any other projects that use it, which you can check using `lein deps :tree` or `boot -pd`), +
-as fulcro-spec requires "0.3.x" for clojurescript support, but lein-test-refresh doesn't need that itself.
-====
-
-=== Clojure In The Browser
-
-* Create a `dev/clj/user.clj` file that contains:
-
-[source]
-----
-(ns clj.user
-  (:require
-    [fulcro-spec.selectors :as sel]
-    [fulcro-spec.suite :as suite])
-
-(suite/def-test-suite my-test-suite
-  {:config {:port 8888} ;;<2>
-   :test-paths ["test"]
-   :source-paths ["src"]}
-  {:available #{:focused :unit :integration}
-   :default #{::sel/none :focused :unit}})
-
-(my-test-suite) ;;<1>
-----
-<1> Starts the test suite, note that it will stop any pre-existing test suite first, so it's safe to call this whenever (eg: hot code reload).
-<2> You can now goto link:localhost:8888/fulcro-spec-server-tests.html[]
-
-//DIVIDER WHY OH WHY
-* Make sure the `"dev"` folder is in your `:source-paths`, if you are using lein that's probably just a `:profiles {:dev {:source-paths ["dev"]}}`.
-* Add `clj.user` to your `:repl-options {:init-ns clj.user}`, which again if using lein probably goes in your `:profiles {:dev #_...}`
-
-=== CLJS In The Browser
-
-* Add `[figwheel-sidecar "x.y.z"]` to your `dev` time dependencies (link:https://clojars.org/lein-figwheel[latest releases]).
-** Add `[com.cemerick/piggieback "x.y.z"]` to your `dev` time dependencies (link:https://clojars.org/com.cemerick/piggieback[latest version]).
-** Add `:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]` to your `:repl-options`.
-* Add `[org.clojure/clojurescript "x.y.z"]` as a normal dependencies (link:https://github.com/clojure/clojurescript/releases[latest releases]).
-
-* Add to your `/dev/clj/user.clj`:
-
-[source]
-----
-(:require
-  [com.stuartsierra.component :as cp]
-  [figwheel-sidecar.system :as fsys]
-  #_...)
-
-(defn start-figwheel [build-ids]
-  (-> (fsys/fetch-config)
-    (assoc-in [:data :build-ids] build-ids)
-    fsys/figwheel-system cp/start fsys/cljs-repl))
-----
-
-* Create a `/dev/cljs/user.cljs`
-
-[source]
-----
-(ns cljs.user
-  (:require
-    your-ns.arithmetic-spec ;;<1>
-    [fulcro-spec.selectors :as sel]
-    [fulcro-spec.suite :as suite]))
-
-(suite/def-test-suite on-load {:ns-regex #"your-ns\..*-spec"} ;;<2>
-  {:default #{::sel/none :focused}
-   :available #{:focused :should-fail}})
-----
-<1> Ensures your tests are loaded so the test suite can find them
-<2> Regex for finding just your tests from all the loaded namespaces.
-
-* (Optional) Create an HTML file for loading your tests in your `resources/public` folder. If you're using
-the standard figwheel config, then you can also choose to load one that is
-provided in the JAR of Fulcro Spec.
-
-[source,html]
-----
-<!DOCTYPE html>
-<html>
-    <head>
-        <link href="css/fulcro-spec-styles.css" rel="stylesheet" type="text/css">
-        <link href="css/fulcro-ui.css" rel="stylesheet" type="text/css">
-        <link id="favicon" rel="shortcut icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAIElEQVQ4T2NMS0v7z0ABYBw1gGE0DBhGwwCYh4ZBOgAAcQUjIUXh8RYAAAAASUVORK5CYII="/>
-        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-    </head>
-    <body>
-        <div id="fulcro-spec-report">Loading "js/test/test.js", if you need to name that something else (conflicts?) make your own test html file</div>
-        <script src="js/test/test.js" type="text/javascript"></script>
-    </body>
-</html>
-----
-
-The HTML above is exactly the content of the built-in file
-`fulcro-spec-client-tests.html`.
-
-//DIVIDER WHY OH WHY
-* Add `[lein-cljsbuild "x.y.z"]` as a `:plugin` (link:https://github.com/emezeske/lein-cljsbuild#latest-version[latest version]).
-* Add a `:cljsbuild` for your tests (link:https://github.com/emezeske/lein-cljsbuild#basic-configuration[basic configuration]), eg:
-
-[source]
-----
-:cljsbuild {:builds [
-
-{:id "test"
- :source-paths ["src" "dev" "test"]
- :figwheel     {:on-jsload cljs.user/on-load}
- :compiler     {:main          cljs.user
-                :output-to     "resources/public/js/test/test.js"
-                :output-dir    "resources/public/js/test/out"
-                :asset-path    "js/test/out"
-                :optimizations :none}}
-
-]}
-----
-
-    lein repl
-    #_=> (start-figwheel ["test"])
-
-[WARNING]
-====
-    java.lang.RuntimeException: No such var: om/dispatch, compiling:(fulcro/client/mutations.cljc:8:1)
-
-Means you have a conflicting org.omcljs/om versions, either resolve them by looking at `lein deps :tree` or `bood -pd`, or pin your version to the link:https://github.com/omcljs/om/releases[latest version] or whatever version fulcro-spec is using.
-====
-
-* Run the tests by loading your HTML file (or the one provided in the Fulcro Spec JAR). The default figwheel
-port is 3449, so the URL that should always work by default if you've named your
-javascript output `js/test/test.js` would be: link:http://localhost:3449/fulcro-spec-client-tests.html[]
-
-== Focusing in on Tests
-
-Fulcro Spec allows you to tag specifications with arbitrary keywords that you define, and allows you to specify which of
-those are in your "default" set. This can allow you to separate integration tests, or simply focus in on the test you're
-working on.
-
-```
-(specification "My Test" :focused
-   ...)
-``` 
-
-The selectors configuration shown earlier (`:default` and `:available`) are where you define which ones you start out
-with. The special keyword `::sel/none` is for tests that have no tag. The browser-based UI will let you choose the 
-selectors to run from the pull out menu in the upper-left corner.
-
-==== For CI
-
-* Add lein-doo as both a test dependency and a plugin
-
-    :dependencies [#_... [lein-doo "0.1.6" :scope "test"] #_...]
-    :plugins [#_... [lein-doo "0.1.6"] #_...]
-
-* Add a `:doo` section to your project.clj
-
-    :doo {:build "automated-tests"
-          :paths {:karma "node_modules/karma/bin/karma"}}
-
-* Add a top level `package.json` containing at least:
-
-    {
-      "devDependencies": {
-        "karma": "^2.0.0",
-        "karma-chrome-launcher": "^2.2.0",
-        "karma-firefox-launcher": "^1.1.0",
-        "karma-cljs-test": "^0.1.0"
-      }
-    }
-
-* Add a `:cljsbuild` for your CI tests, eg:
-
-[source]
-----
-:cljsbuild {:builds [
-
-{:id "automated-tests"
- :source-paths ["src" "test"]
- :compiler     {:output-to     "resources/private/js/unit-tests.js"
-                :output-dir    "resources/private/js/unit-tests"
-                :asset-path    "js/unit-tests"
-                :main          fulcro-spec.all-tests
-                :optimizations :none}}
-
-]}
-----
-
-* Add a file that runs your tests
-
-[source]
-----
-(ns your-ns.all-tests
-  (:require
-    your-ns.arithmetic-spec ;; ensures tests are loaded so doo can find them
-    [doo.runner :refer-macros [doo-all-tests]]))
-
-(doo-all-tests #"fulcro-spec\..*-spec")
-----
-
-* Run `npm install` & then `lein doo chrome automated-tests once`, +
-
-NOTE: If you put the `automated-tests` build in a lein profile (eg: test), +
-you will have to prepend a `with-profile test ...` in your command.
-
-* See link:http://github.com/bensu/doo#doo[doo] itself for further details & as a fallback if this information is somehow out of date.
-
-== Learn More
-* about link:docs/index.adoc#fulcro-spec-docs[Fulcro Spec]
-* interactively with the link:http://fulcrologic.github.io/fulcro/guide.html[Fulcro Guide]
-** http://fulcrologic.github.io/fulcro/guide.html#!/fulcro_devguide.K_Testing[fulcro_devguide.K_Testing]
-
-== Development
-
-NOTE: This section is for the _development_ of *fulcro-spec itself*. +
-If you wanted instructions on how to use fulcro-spec in your app/library, see <<Usage>>
-
-=== CLJS In The Browser
-
-    lein repl
-    #_user=> (start-figwheel ["test"])
-
-& http://localhost:3457/fulcro-spec-client-tests.html[]
-
-=== Clojure In The Terminal
-
-    lein test-refresh
-
-=== Clojure In The Browser
-
-    lein repl
-    #_user=> (start)
-
-& http://localhost:8778/fulcro-spec-server-tests.html[]
-
-=== CI Testing
-
-To run the CLJ and CLJS tests on a CI server, it must have chrome, node, and npm installed. +
-Then you can simply use the Makefile:
-
-    make tests
-
-or manually run:
-
-	npm install
-	lein test-cljs
-	lein test-clj
-
-== License
-
-MIT License
-Copyright © 2015 NAVIS
+      "mocking works"
+      (g 9) => 31)))
+-----
+
+See the full documentation for complete details.
