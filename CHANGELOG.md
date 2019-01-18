@@ -1,6 +1,7 @@
-2.2.1
+3.0.0
 -----
-- Nothing changed...backing out bad release
+- BREAKING: Removed runners
+- See docs for new way to use.
 
 2.1.3
 -----
