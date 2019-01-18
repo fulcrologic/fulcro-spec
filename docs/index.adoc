@@ -27,199 +27,32 @@ The specification DSL makes it much easier to read the tests, and also includes 
 
 - Left-to-right assertions
 - More readable output, such as data structure comparisons on failure (with diff notation as well)
-- Real-time refresh of tests on save (client and server)
-- Seeing test results in any number of browsers at once
 - Mocking of normal functions, including native javascript (but as expected: not macros or inline functions)
     - Mocking verifies call sequence and call count
     - Mocks can easily verify arguments received
     - Mocks can simulate timelines for CSP logic
-- Protocol testing support (helps prove network interactions are correct without running the full stack)
 
-== Client Tests
+== Running Tests
 
-A dev-time only entry point for browser test rendering:
+You define the tests using deftest, so running them is normal.  The recommended setup for full stack testing is as
+is done in the Fulcro Spec repository itself.
 
-[source]
-----
-(ns cljs.user
-  (:require
-    [fulcro-spec.tests-to-run] ;;<1>
-    [fulcro-spec.suite :as suite]
-    [fulcro-spec.selectors :as sel]))
+The following files are of interest:
 
-(suite/def-test-suite on-load ;;<2>
-  {:ns-regex #"fulcro-spec\..*-spec"} ;;<3>
-  {:available #{:focused :should-fail} ;;<4>
-   :default #{::sel/none :focused}}) ;;<5>
-----
-
-<1> link:../test/fulcro_spec/tests_to_run.cljs[tests_to_run.cljs] Just requires all of your tests. This is necessary as all cljs test runners search by looking at the loaded namespaces. Since there are two places cljs tests can run from (browser and CI), it makes sense to keep this list in one file.
-<2> Define a callback for figwheel to call to re run the tests.
-<3> `:ns-regex` is the regex to filter the loaded namespaces down to just your tests.
-<4> Is where you define your `:available` selectors, ie: legal/possible values for selectors on your `specification`.
-<5> `:default` selectors to use when you haven't yet specified any in the browser ui.
-
-A cljsbuild in your project.clj (or if using boot: roughly) as follows:
-
-[source]
-----
-{:source-paths ["src" "dev" "test"]
- :figwheel     {:on-jsload cljs.user/on-load} ;;<1>
- :compiler     {:main          cljs.user ;;<2>
-                :output-to     "resources/public/js/test/test.js" ;;<3>
-                :output-dir    "resources/public/js/test/out"
-                :asset-path    "js/test/out"
-                :optimizations :none}}
-----
-<1> References the earlier defined test suite name so figwheel can re-run the tests when it reloads the js.
-<2> Namespace entrypoint (eg: `:main`) points to the dev user namespace as described above.
-<3> Must compile to a single javascript file at `"resources/public/js/test/test.js"`.
-
-An entrypoint for starting figwheel (or something equivalent if in boot):
-
-[source]
-----
-(:require
-  [com.stuartsierra.component :as cp]
-  [figwheel-sidecar.system :as fsys])
-
-(defn start-figwheel
-  "Start Figwheel on the given builds, or defaults to build-ids in `figwheel-config`."
-  ([]
-   (let [props (System/getProperties) ;;<1>
-         figwheel-config (fsys/fetch-config)
-         all-builds (->> figwheel-config :data :all-builds (mapv :id))]
-     (start-figwheel (keys (select-keys props all-builds)))))
-  ([build-ids]
-   (let [figwheel-config (fsys/fetch-config)
-         target-config (-> figwheel-config
-                         (assoc-in [:data :build-ids]
-                           (or (seq build-ids) ;;<2>
-                               (-> figwheel-config :data :build-ids))))] ;;<2>
-     (-> (cp/system-map
-           :css-watcher (fsys/css-watcher {:watch-paths ["resources/public/css"]}) ;;<3>
-           :figwheel-system (fsys/figwheel-system target-config))
-       cp/start :figwheel-system fsys/cljs-repl)))) ;;<4>
-----
-<1> If no arguments, default to looking at the JVM system properties, +
-eg: if you have a build with id `:test`, it will look for `-Dtest`
-<2> Otherwise it will use the passed in `build-ids`, or the default figwheel ids.
-<3> OPTIONAL, starts a css watcher so you get automatic reloading of css when it changes.
-<4> Starts a cljs repl you can interact with, see https://github.com/bhauman/lein-figwheel/tree/master/sidecar#starting-the-repl[figwheel sidecar] for more information
-
-Open `localhost:PORT/fulcro-spec-client-tests.html`, where `PORT` is defined (with leiningen) by your figwheel configuration in your link:../project.clj[project.clj], eg: `:figwheel {:server-port PORT}`.
-
-== CI Tests
-
-* You should have a top level link:../package.json[package.json] file for installing the following:
-
-[source,json]
-----
-{
-  "devDependencies": {
-    "karma": "^0.13.19",
-    "karma-chrome-launcher": "^0.2.2",
-    "karma-firefox-launcher": "^0.1.7",
-    "karma-cljs-test": "^0.1.0"
-  }
-}
-----
-
-* You have https://github.com/bensu/doo#doo[lein-doo] as a plugin for running tests through karma *via* nodejs.
-* A link:../test/fulcro_spec/all_tests.cljs[all_tests.cljs] file for running your tests.
-
-[source]
-----
-(ns your.all-tests
-  (:require
-    fulcro-spec.tests-to-run ;; <1>
-    [doo.runner :refer-macros [doo-all-tests]]))
-
-(doo-all-tests #"fulcro-spec\..*-spec") ;; <2>
-----
-<1> For loading your test namespaces.
-<2> Takes a regex to run just your test namespaces.
-
-//SEPARATOR - NEEDED WHY?
-* A `:doo` section to configure the CI runner. Chrome is the recommended target js-env.
-
-[source]
-----
-:doo {:build "automated-tests", :paths {:karma "node_modules/karma/bin/karma"}}
-----
-
-* A cljsbuild with id `:automated-tests` is the CI tests output.
-
-[source]
-----
-{:source-paths ["src" "test"]
- :compiler     {:output-to     "resources/private/js/unit-tests.js"
-                :main          fulcro-spec.all-tests
-                :optimizations :none}}
-----
-
-* An html file in your `resources/private/`, eg: link:../resources/private/unit-tests.html[unit-tests.html], for renderering your `automated-tests` build.
-
-See https://github.com/bensu/doo#usage[lein-doo usage] for up to date details on how to use it from the command line and how to setup the all_tests like file, +
-TLDR: `lein doo ${js-env} automated-tests once`, where for ex `${js-env}` is `chrome`.
-
-== Server Tests
-
-=== With reporting in the terminal
-
-* The https://github.com/jakemcc/lein-test-refresh[lein test-refresh plugin], which will re-run server tests on save, and can be configured (see the `:test-refresh` section in the link:../project.clj[project.clj]).
-* link:../dev/clj/user.clj[user.clj] : The entry point for running clojure tests that should be rendered in the browser.
-
-Use `lein test-refresh` at the command line.
-Read https://github.com/jakemcc/lein-test-refresh/blob/master/CHANGES.md#040[this changelog entry]
-for information on using test-selectors. +
-
-A recommended sample configuration is:
-
-[source]
-----
-:test-refresh {:report fulcro-spec.reporters.terminal/fulcro-report <1>
-               :changes-only true <2>
-               :with-repl true} <3>
-----
-<1> REQUIRED, `:report` must point to the correct report function.
-<2> Only re-runs tests that have changed, useful if you have slow and/or many tests.
-<3> Gives you a limited, but handy, repl!
-
-For up to date and comprehensive information, you should treat
-https://github.com/jakemcc/lein-test-refresh[lein-test-refresh]
-itself as the authoritative source.
-
-=== With reporting in the browser
-
-* Create a webserver using `fulcro-spec.suite/def-test-suite` that runs your tests and talks with your browser. +
-See the docstring for further info on the arguments.
-
-[source]
-----
-(:require
-  [fulcro-spec.suite :as suite])
-
-(suite/def-test-suite my-test-suite <1>
-  {:config {:port 8888} <2>
-   :test-paths ["test"] <3><4>
-   :source-paths ["src"]} <4>
-  {:available #{:focused :unit :integration} <5>
-   :default #{:fulcro-spec.selectors/none :focused :unit}}) <6>
-----
-<1> Defines a function you can call to (re-)start the test-suite, should be useful if you are changing the following arguments, ie: config, paths, or selectors.
-<2> `:config` is passed directly to the webserver, only port is required and currently advertised as available.
-<3> `:test-paths` is about finding your test namespaces.
-<4> `:source-paths` is concatenated with `:test-paths` to create a set of paths that the test-suite will watch for any changes, and refresh and namespaces contain therein.
-<5> Is where you define your `:available` selectors, ie: legal/possible values for selectors on your `specification`.
-<6> `:default` selectors to use when you haven't yet specified any in the browser ui.
-
-//SEPARATOR - NEEDED WHY?
-* Call `my-test-suite` and go to `localhost:PORT/fulcro-spec-server-tests.html` to view your test report.
+`src/test`:: The source of some tests (clj and cljs). The cljs cards use Workspaces cards for browser rendering.
+`deps.edn`:: The dependency and alias definitions. Note the kaocha setup.
+`tests.edn`:: Kaocha config, for running tests via tools.deps
+`.circleci/config.yml`:: A CI example
+`karma.conf.js`:: Config for Karma cljs runner
+`shadow-cljs.edn`:: Compile configs for building tests in workspaces
+`package.json`:: For CLJS deps.
+`Makefile`:: A sample UNIX make file for running the tests quickly from a command line with `make`.
 
 == Anatomy of a specification
 
 The main testing macros are `specification`, `behavior`, `component`, and `assertions`:
+
+`specification` is just an alias for `deftest`.
 
 [source]
 ----
