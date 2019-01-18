@@ -1,12 +1,7 @@
 tests:
+	clojure -A:clj-tests
 	npm install
-	lein test-cljs
-	lein test
+	npx shadow-cljs compile ci-tests
+	npx karma start --single-run
 
-deploy:
-	lein with-profile with-cljs deploy clojars
-
-help:
-	@ make -rpn | sed -n -e '/^$$/ { n ; /^[^ ]*:/p; }' | sort | egrep --color '^[^ ]*:'
-
-.PHONY: tests help
+.PHONY: tests
