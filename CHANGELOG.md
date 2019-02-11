@@ -1,3 +1,8 @@
+3.0.1
+-----
+- Added arrow declarations in core
+- Fixed a deps error
+
 3.0.0
 -----
 - BREAKING: Removed runners

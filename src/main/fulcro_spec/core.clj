@@ -10,6 +10,8 @@
     [fulcro-spec.stub]
     [fulcro-spec.spec :as fss]))
 
+(declare => =1x=> =2x=> =3x=> =4x=> =throws=> =fn=>)
+
 (defn var-name-from-string [s]
   (symbol (str "__" (str/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))
 
