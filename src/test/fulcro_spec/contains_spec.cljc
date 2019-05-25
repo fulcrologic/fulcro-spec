@@ -1,9 +1,9 @@
 (ns fulcro-spec.contains-spec
-  (:require [fulcro-spec.core #?(:clj :refer :cljs :refer-macros) [behavior assertions]]
-            [nubank.workspaces.core :refer [deftest]]
+  (:require [fulcro-spec.core #?(:clj :refer :cljs :refer-macros)
+             [specification behavior assertions]]
             [fulcro-spec.contains :refer [*contains?]]))
 
-(deftest fulcro-spec-contains-contains?
+(specification "fulcro-spec.contains *contains?"
   (behavior "can check that a string"
     (behavior "contains a string"
       (assertions
@@ -37,19 +37,4 @@
         [1 2] =fn=> (*contains? [1 2])
         [1 2] =fn=> (comp not (*contains? [2 1]))
         [1 21] =fn=> (comp not (*contains? [1 2]))
-        [12 1] =fn=> (comp not (*contains? [1 2]))
-        ))
-    #_(behavior "contains a subseq with gaps"
-        (assertions
-          [3 7 0 1] =fn=> (*contains? [3 1] :gaps)
-          [3 7 0 1] =fn=> (*contains? [3 7] :gaps)
-          [3 7 0 1] =fn=> (comp not (*contains? [1 0] :gaps))
-          ))
-    #_(behavior "contains a subseq in any order"
-        (assertions
-          [34 7 1 87] =fn=> (*contains? [87 1] :any-order)
-          ))
-    #_(behavior "contains a subseq with gaps & in any order"
-        (assertions
-          [98 32 78 16] =fn=> (*contains? [16 98] :both)
-          ))))
+        [12 1] =fn=> (comp not (*contains? [1 2]))))))

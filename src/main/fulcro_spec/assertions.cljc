@@ -3,11 +3,11 @@
      (:require-macros fulcro-spec.assertions))
   (:require
     #?(:clj [clojure.test])
-            cljs.test                                       ;; contains multimethod in clojure file
-            [clojure.spec.alpha :as s]
+    cljs.test                                               ;; contains multimethod in clojure file
+    [clojure.spec.alpha :as s]
     #?(:clj
-            [fulcro-spec.impl.macros :as im])
-            [fulcro-spec.spec :as fss]))
+       [fulcro-spec.impl.macros :as im])
+    [fulcro-spec.spec :as fss]))
 
 (s/def ::arrow (comp #{"=>" "=fn=>" "=throws=>"} str))
 (s/def ::behavior string?)
@@ -65,7 +65,7 @@
 (defn check-error [msg e criteria & [fn-pr]]
   (apply check-error* msg e
     ((juxt :ex-type :regex :fn :fn-pr)
-      (assoc criteria :fn-pr fn-pr))))
+     (assoc criteria :fn-pr fn-pr))))
 
 (s/def ::ex-type symbol?)
 (s/def ::regex ::fss/regex)
@@ -108,10 +108,12 @@
            ~msg))
 
       =throws=>
-      (let [should-throw actual
-            criteria     expected]
-        `(~is (~'throws? ~cljs? ~should-throw ~criteria)
-           ~msg))
+      (let [cls (if cljs? :default Throwable)]
+        (if (instance? java.util.regex.Pattern expected)
+          `(~is (~'thrown-with-msg? ~cls ~expected ~actual)
+             ~msg)
+          `(~is (~'thrown? ~expected ~actual)
+             ~msg)))
 
       (throw (ex-info "invalid arrow" {:arrow arrow})))))
 
@@ -123,20 +125,16 @@
 
 (defn block->asserts [cljs? {:keys [behavior triples]}]
   (let [asserts (map (partial triple->assertion cljs?) triples)]
-    `(im/with-reporting ~(when behavior {:type :behavior :string behavior})
+    `(im/with-reporting ~{:type :behavior :string (or behavior "Unlabled block")}
        ~@asserts)))
 
 #?(:clj
    (do
      (defmethod cljs.test/assert-expr '= [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
-     (defmethod cljs.test/assert-expr 'throws? [env msg form]
-       `(cljs.test/do-report ~(assert-expr msg form)))
      (defmethod cljs.test/assert-expr 'exec [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr '= [msg form]
-       `(clojure.test/do-report ~(assert-expr msg form)))
-     (defmethod clojure.test/assert-expr 'throws? [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr 'exec [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))))

@@ -148,14 +148,14 @@
                                  expected extra throwable diff]}
                          print-fn print-level]
   (print-fn)
-  (some-> where (print-where status print-fn))
+  (-> (or where "Unknown") (print-where status print-fn))
   (when (and (= status :error)
              (instance? Throwable actual))
     (print-throwable actual))
   (when (and throwable
              (not (instance? Throwable actual)))
     (print-throwable throwable))
-  (some-> message (print-message print-fn))
+  (-> (or message "Unmarked Assertion") (print-message print-fn))
   (when (or (not diff) (empty? diff)
             (not (env :diff?))
             (and (not (env :diff-hl?))
