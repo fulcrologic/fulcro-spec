@@ -67,28 +67,10 @@
     ((juxt :ex-type :regex :fn :fn-pr)
      (assoc criteria :fn-pr fn-pr))))
 
-(s/def ::ex-type symbol?)
-(s/def ::regex ::fss/regex)
-(s/def ::fn ::fss/any)
-(s/def ::criteria
-  (s/or
-    :sym symbol?
-    :list (s/cat :ex-type ::ex-type :regex (s/? ::regex) :fn (s/? ::fn))
-    :map (s/keys :opt-un [::ex-type ::regex ::fn])))
-
-(defn throws-assert-expr [msg [cljs? should-throw criteria]]
-  (let [criteria (parse-criteria (fss/conform! ::criteria criteria))]
-    `(try ~should-throw
-          (throw (ex-info "Expected an error to be thrown!"
-                   {:type ::internal :criteria ~criteria}))
-          (catch ~(if (not cljs?) (symbol "Throwable") (symbol "js" "Object"))
-                 e# (check-error ~msg e# ~criteria)))))
-
 (defn assert-expr [msg [disp-key & form]]
   (cond
     (= '= disp-key) (eq-assert-expr msg form)
     (= 'exec disp-key) (fn-assert-expr msg form)
-    (= 'throws? disp-key) (throws-assert-expr msg form)
     :else {:type     :fail :message msg :actual disp-key
            :expected #{"exec" "eq" "throws?"}}))
 
@@ -108,17 +90,12 @@
            ~msg))
 
       =throws=>
-      (if (map? expected)
-        (let [should-throw actual
-              criteria     expected]
-          `(~is (~'throws? ~cljs? ~should-throw ~criteria)
-             ~msg))
-        (let [cls (if cljs? :default Throwable)]
-          (if (instance? java.util.regex.Pattern expected)
-            `(~is (~'thrown-with-msg? ~cls ~expected ~actual)
-               ~msg)
-            `(~is (~'thrown? ~expected ~actual)
-               ~msg))))
+      (let [cls (if cljs? :default Throwable)]
+        (if (instance? java.util.regex.Pattern expected)
+          `(~is (~'thrown-with-msg? ~cls ~expected ~actual)
+             ~msg)
+          `(~is (~'thrown? ~expected ~actual)
+             ~msg)))
 
       (throw (ex-info "invalid arrow" {:arrow arrow})))))
 
@@ -137,13 +114,9 @@
    (do
      (defmethod cljs.test/assert-expr '= [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
-     (defmethod cljs.test/assert-expr 'throws? [env msg form]
-       `(cljs.test/do-report ~(assert-expr msg form)))
      (defmethod cljs.test/assert-expr 'exec [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr '= [msg form]
-       `(clojure.test/do-report ~(assert-expr msg form)))
-     (defmethod clojure.test/assert-expr 'throws? [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr 'exec [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))))

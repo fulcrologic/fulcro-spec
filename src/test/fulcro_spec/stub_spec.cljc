@@ -49,7 +49,7 @@
                    :N :many)]
       (assertions
         (sstub 41 :foo) => [42 :foo]
-        (sstub 2 :whatever) =throws=> (ExceptionInfo #"called with wrong arguments")
+        (sstub 2 :whatever) =throws=> #"called with wrong arguments"
         (try (sstub 2 :evil)
           (catch ExceptionInfo e (ex-data e)))
         => {:args [2 :evil]
@@ -70,7 +70,7 @@
   (behavior "throws whatever exception the function throws"
     (let [sstub (make-call-script (fn [] (throw (ex-info "BUMMER" {}))))]
       (assertions
-        (sstub) =throws=> (ExceptionInfo))))
+        (sstub) =throws=> ExceptionInfo)))
 
   (behavior "only moves to the next script step if the call count for the current step reaches the programmed amount"
     (let [a-count (atom 0)
@@ -103,7 +103,7 @@
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times 5}]})]]
       (assertions
         (s/validate-target-function-counts script-atoms)
-        =throws=> (ExceptionInfo))))
+        =throws=> ExceptionInfo)))
 
   (behavior "returns nil if a target function has been called enough times with :many specified"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times :many}]})]]
@@ -115,7 +115,7 @@
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times :many}]})]]
       (assertions
         (s/validate-target-function-counts script-atoms)
-        =throws=> (ExceptionInfo))))
+        =throws=> ExceptionInfo)))
 
   (behavior "returns nil all the function have been called the specified number of times"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
@@ -129,14 +129,11 @@
                         (atom {:function "fun2" :steps [{:ncalled 0 :times 1}]})]]
       (assertions
         (s/validate-target-function-counts script-atoms)
-        =throws=> (ExceptionInfo))))
+        =throws=> ExceptionInfo)))
 
   (behavior "stubs record history, will show the script when it fails to validate"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
                         (atom {:function "fun2" :steps [{:ncalled 1 :times 2}]})]]
       (assertions
         (s/validate-target-function-counts script-atoms)
-        =throws=> (ExceptionInfo #""
-                    #(assertions
-                       (ex-data %) => {:function "fun2"
-                                       :steps [{:ncalled 1 :times 2}]}))))))
+        =throws=> ExceptionInfo))))

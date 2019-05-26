@@ -49,17 +49,17 @@
       "handles coll as keys"
       (diff {0 {1 {[2 3] 3
                    {4 4} 4}}}
-            {0 {1 {[2 3] :q}}})
+        {0 {1 {[2 3] :q}}})
       => {[0 1 [2 3]] (diff-elem 3 :q)
           [0 1 {4 4}] (diff-elem 4 nf)}
 
       "differences accumulate over keys in map (github issue #3)"
-      (diff {:current-tab :bookings
+      (diff {:current-tab    :bookings
              :search-results {:global {:es-type "booking"}}}
-            {:current-tab :messages
-             :search-results {:global {:es-type "message"}}})
-      =>  {[:search-results :global :es-type] [:+ "booking" :- "message"]
-           [:current-tab] [:+ :bookings :- :messages]}
+        {:current-tab    :messages
+         :search-results {:global {:es-type "message"}}})
+      => {[:search-results :global :es-type] [:+ "booking" :- "message"]
+          [:current-tab]                     [:+ :bookings :- :messages]}
 
       "empty list as key"
       (diff {[] :foo} {[] :bar})
@@ -122,14 +122,14 @@
 
       "diff is after some equals"
       (diff [0 1 2 3]
-            [0 1 2 :three])
+        [0 1 2 :three])
       => {[3] (diff-elem 3 :three)}
 
       "recursive!"
       (diff [{0 0}] [{0 1}])
       => {[0 0] (diff-elem 0 1)}
       (diff [{:questions {:ui/curr 1}}]
-            [{:questions {}}])
+        [{:questions {}}])
       => {[0 :questions :ui/curr] (diff-elem 1 nf)}))
 
   (behavior "sets"
@@ -142,29 +142,26 @@
       (diff #{2 3 4} #{}) => {[] (diff-elem #{2 3 4} #{})}
 
       "same length"
-      (diff #{1}   #{2})   => {[] (diff-elem #{1}   #{2})}
-      (diff #{1 3} #{2 3}) => {[] (diff-elem #{1}   #{2})}
+      (diff #{1} #{2}) => {[] (diff-elem #{1} #{2})}
+      (diff #{1 3} #{2 3}) => {[] (diff-elem #{1} #{2})}
       (diff #{1 5} #{2 4}) => {[] (diff-elem #{1 5} #{2 4})}
 
       "nested"
       (diff [{:foo [#{1 2}]}]
-            [{:foo [#{3 2}]}])
+        [{:foo [#{3 2}]}])
       => {[0 :foo 0] (diff-elem #{1} #{3})}))
 
   (behavior "github issue #2"
     (assertions
       (diff {:current-tab [:messages :tab] :ui/loading-data false}
-            {:current-tab [:settings :tab] :ui/loading-data false})
+        {:current-tab [:settings :tab] :ui/loading-data false})
       => {[:current-tab 0] [:+ :messages :- :settings]})))
 
 (deftest patch-test
   (behavior "`patch` an object with a diff"
     (assertions
       (patch '() {[0] (diff-elem 'app/mut nf)})
-      => '(app/mut)
-      (patch '() {[1] (diff-elem 'app/mut nf)})
-      =throws=> (#?(:cljs js/Error :clj IndexOutOfBoundsException)
-                          #"(?i)Index.*Out.*Of.*Bounds")))
+      => '(app/mut)))
   (behavior "can patch 2 vectors, where actual is larger"
     (assertions
       (patch [] (diff [1 2] [])) => [1 2]))
