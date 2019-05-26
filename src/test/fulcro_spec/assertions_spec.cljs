@@ -6,6 +6,6 @@
 (deftest assert-test
   (assertions
     "throws arrow can catch"
-    (assert false "foobar") =throws=> (js/Error #"ooba")
+    (assert false "foobar") =throws=> #"ooba"
     "throws arrow can catch js/Objects"
-    (throw #js {}) =throws=> (js/Object)))
+    (throw #js {}) =throws=> :default))
