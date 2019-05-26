@@ -105,15 +105,11 @@ Assertions provides some explict arrows, unlike https://github.com/marick/Midje[
   actual => expected ;;<1>
   actual =fn=> (fn [act] ... ok?) ;;<2>
   actual =throws=> ExceptionType ;; <3><6>
-  actual =throws=> (ExceptionType opt-regex opt-pred) ;;<4><6>
-  actual =throws=> {:ex-type opt-ex-type :regex opt-regex :fn opt-pred}) ;; <5><6>
+  actual =throws=> #"message regex")
 ----
 <1> Checks that actual is equal to expected, either can be anything.
 <2> `expected` is a function takes `actual` and returns a truthy value.
 <3> Expects that actual will throw an Exception and checks that the type is `ExceptionType`.
-<4> Can also optionally that the message matches the `opt-regex` & `opt-pred`.
-<5> An alternative supported syntax is a map with all optional keys `:ex-type` `:regex` `:fn`
-<6> View the clojure.spec.alpha/def `::criteria` link:../src/fulcro_spec/assertions.cljc[assertions.cljc] for the up to date grammar for the `expected` side of a `=throws=>` assertions.
 
 === Mocking
 

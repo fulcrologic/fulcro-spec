@@ -17,6 +17,9 @@ endif::[]
 
 == CHANGE OF SCOPE NOTICE
 
+**BREAKING CHANGES** as of 3.1.  The `=throws=>` clause now just takes either a type
+or a regex. Not maps/lists.
+
 **BREAKING CHANGES** as of 3.0. Do NOT upgrade without being prepared to port your
 test runners.
 
