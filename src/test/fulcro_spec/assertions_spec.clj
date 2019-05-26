@@ -30,14 +30,6 @@
 (deftest check-error-test
   (testing "supports many syntaxes"
     (assertions
-      (fss/conform! ::ae/criteria 'ExceptionInfo)
-      => [:sym 'ExceptionInfo]
-      (fss/conform! ::ae/criteria {:ex-type 'ExceptionInfo
-                                   :fn      even?, :regex test-regex})
-      => [:map {:ex-type 'ExceptionInfo :fn even? :regex test-regex}]
-      (fss/conform! ::ae/criteria ['ExceptionInfo])
-      => [:list {:ex-type 'ExceptionInfo}]
-
       (parse-criteria [:sym 'irr]) => {:ex-type 'irr}
       (parse-criteria [:w/e 'dont-care]) => 'dont-care
 

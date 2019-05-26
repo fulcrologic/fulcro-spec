@@ -74,30 +74,31 @@
     :else {:type     :fail :message msg :actual disp-key
            :expected #{"exec" "eq" "throws?"}}))
 
-(defn triple->assertion [cljs? {:keys [actual arrow expected]}]
-  (let [prefix (if cljs? "cljs.test" "clojure.test")
-        is     (symbol prefix "is")
-        msg    (str actual " " arrow " " expected)]
-    (case arrow
-      =>
-      `(~is (~'= ~expected ~actual)
-         ~msg)
+#?(:clj
+   (defn triple->assertion [cljs? {:keys [actual arrow expected]}]
+     (let [prefix (if cljs? "cljs.test" "clojure.test")
+           is     (symbol prefix "is")
+           msg    (str actual " " arrow " " expected)]
+       (case arrow
+         =>
+         `(~is (~'= ~expected ~actual)
+            ~msg)
 
-      =fn=>
-      (let [checker expected
-            arg     actual]
-        `(~is (~'exec ~checker ~arg)
-           ~msg))
+         =fn=>
+         (let [checker expected
+               arg     actual]
+           `(~is (~'exec ~checker ~arg)
+              ~msg))
 
-      =throws=>
-      (let [cls (if cljs? :default Throwable)]
-        (if (instance? java.util.regex.Pattern expected)
-          `(~is (~'thrown-with-msg? ~cls ~expected ~actual)
-             ~msg)
-          `(~is (~'thrown? ~expected ~actual)
-             ~msg)))
+         =throws=>
+         (let [cls (if cljs? :default Throwable)]
+           (if (instance? java.util.regex.Pattern expected)
+             `(~is (~'thrown-with-msg? ~cls ~expected ~actual)
+                ~msg)
+             `(~is (~'thrown? ~expected ~actual)
+                ~msg)))
 
-      (throw (ex-info "invalid arrow" {:arrow arrow})))))
+         (throw (ex-info "invalid arrow" {:arrow arrow}))))))
 
 (defn fix-conform [conformed-assertions]
   ;;see issue: #31
@@ -105,10 +106,11 @@
     (vec (cons (first conformed-assertions) (second conformed-assertions)))
     conformed-assertions))
 
-(defn block->asserts [cljs? {:keys [behavior triples]}]
-  (let [asserts (map (partial triple->assertion cljs?) triples)]
-    `(im/with-reporting ~{:type :behavior :string (if (empty? behavior) "unmarked" behavior)}
-       ~@asserts)))
+#?(:clj
+   (defn block->asserts [cljs? {:keys [behavior triples]}]
+     (let [asserts (map (partial triple->assertion cljs?) triples)]
+       `(im/with-reporting ~{:type :behavior :string (if (empty? behavior) "unmarked" behavior)}
+          ~@asserts))))
 
 #?(:clj
    (do

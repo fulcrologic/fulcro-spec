@@ -7,11 +7,6 @@
      :as core]
     [nubank.workspaces.core :refer [deftest]]))
 
-(deftest assert-expr-test
-  (assertions
-    (methods t/assert-expr)
-    =fn=> (*contains? '[= exec throws?] :keys)))
-
 (deftest var-name-from-string
   (assertions
     "allows the following"
