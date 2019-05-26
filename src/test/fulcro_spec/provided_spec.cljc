@@ -16,9 +16,9 @@
    (deftest parse-arrow-count
      (assertions
        "requires the arrow start with an ="
-       (p/parse-arrow-count '->) =throws=> (AssertionError)
+       (p/parse-arrow-count '->) =throws=> AssertionError
        "requires the arrow end with =>"
-       (p/parse-arrow-count '=2x>) =throws=> (AssertionError)
+       (p/parse-arrow-count '=2x>) =throws=> AssertionError
        "derives a :many count for general arrows"
        (p/parse-arrow-count '=>) => :many
        "derives a numeric count for numbered arrows"
@@ -119,7 +119,7 @@
           (+ (my-square 1)
             (my-square 1)
             (my-square 1))
-          =throws=> (ExceptionInfo))))
+          =throws=> ExceptionInfo)))
 
     (provided "a mock for 3 calls with 2 different return values"
       (my-square n) =1x=> (+ n 5)
@@ -144,7 +144,7 @@
   (provided "allow stubs to throw exceptions"
     (my-square n) => (throw (ex-info "throw!" {}))
     (assertions
-      (my-square 1) =throws=> (ExceptionInfo)))
+      (my-square 1) =throws=> ExceptionInfo))
 
   (behavior "allows any number of trailing forms"
     (let [detector (volatile! false)]
@@ -182,7 +182,7 @@
 
       (assertions
         "Throws an exception if the arguments to the mock do not conform"
-        (call-to-test "a") =throws=> {:regex #"was sent argument"}
+        (call-to-test "a") =throws=> #"was sent argument"
         "Allows the body to run if args and return are ok"
         (call-to-test 42) => 22))
     (provided! "The stubbed function returns something incorrect for the spec"
@@ -190,4 +190,4 @@
 
       (assertions
         "Throws an exception about the stub's return value"
-        (call-to-test 42) =throws=> {:regex #"returned a value"}))))
+        (call-to-test 42) =throws=> #"returned a value"))))

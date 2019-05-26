@@ -30,14 +30,6 @@
 (deftest check-error-test
   (testing "supports many syntaxes"
     (assertions
-      (fss/conform! ::ae/criteria 'ExceptionInfo)
-      => [:sym 'ExceptionInfo]
-      (fss/conform! ::ae/criteria {:ex-type 'ExceptionInfo
-                                  :fn even?, :regex test-regex})
-      => [:map {:ex-type 'ExceptionInfo :fn even? :regex test-regex}]
-      (fss/conform! ::ae/criteria ['ExceptionInfo])
-      => [:list {:ex-type 'ExceptionInfo}]
-
       (parse-criteria [:sym 'irr]) => {:ex-type 'irr}
       (parse-criteria [:w/e 'dont-care]) => 'dont-care
 
@@ -58,7 +50,7 @@
       =fn=> (*contains? {:type :pass :message "msg1"})
       (check-error* "msg2" (ex-info "foo" {})
         java.lang.Error)
-      =fn=> (*contains? {:type :fail :extra "exception did not match type"
+      =fn=> (*contains? {:type   :fail :extra "exception did not match type"
                          :actual clojure.lang.ExceptionInfo :expected java.lang.Error})))
   (testing "checks the exception's message matches a regex or throws"
     (assertions
@@ -67,7 +59,7 @@
       =fn=> (*contains? {:type :pass})
       (check-error* "msg4" (ex-info "kthxbye" {})
         clojure.lang.ExceptionInfo #"cthulhu")
-      =fn=> (*contains? {:type :fail :extra "exception's message did not match regex"
+      =fn=> (*contains? {:type   :fail :extra "exception's message did not match regex"
                          :actual "kthxbye" :expected "cthulhu"})))
   (testing "checks the exception with the user's function"
     (let [cthulhu-bored (ex-info "Haskell 101" {:cthulhu :snores})]
@@ -79,7 +71,7 @@
         (check-error* "msg6" cthulhu-bored
           clojure.lang.ExceptionInfo #"Haskell"
           #(-> % ex-data :cthulhu (= :rises)))
-        =fn=> (*contains? {:type :fail :actual cthulhu-bored
+        =fn=> (*contains? {:type  :fail :actual cthulhu-bored
                            :extra "checker function failed"})))))
 
 (deftest triple->assertion-test
@@ -91,14 +83,10 @@
     (assertions
       (test-triple->assertion '(left =fn=> right))
       =fn=> (check-assertion '(exec right left))))
-  (behavior "verifies that actual threw an exception with the =throws=> arrow"
-    (assertions
-      (test-triple->assertion '(left =throws=> right))
-      =fn=> (check-assertion '(throws? false left right))))
   (behavior "any other arrow, throws an ex-info"
     (assertions
       (test-triple->assertion '(left =bad-arrow=> right))
-      =throws=> (ExceptionInfo))))
+      =throws=> ExceptionInfo)))
 
 (deftest throws-assertion-arrow
   (behavior "catches AssertionErrors"
@@ -106,7 +94,7 @@
       (is (thrown? AssertionError (f 1)))
       (is (= 3 (f 2)))
       (assertions
-        (f 1) =throws=> (AssertionError #"even\? x")
+        (f 1) =throws=> #"even\? x"
         (f 6) => 7
         (f 2) => 3))))
 
@@ -114,7 +102,7 @@
   (case opt
     :all [act exp msg extra]
     :msg [act exp msg]
-    :ae  [act exp extra]
+    :ae [act exp extra]
     [act exp]))
 
 (defmacro test-case [x & [opt]]
@@ -128,3 +116,8 @@
         (fss/conform! ::ae/assertions
           '("foo" 1 => 2 "bar" 3 => 4, 5 => 6 "qux" 7 => 8, 9 => 10))))
     => '[["foo" 1] ["bar" 2] ["qux" 2]]))
+
+(comment
+  (require 'fulcro-spec.reporters.terminal)
+  (binding [clojure.test/report fulcro-spec.reporters.terminal/fulcro-report]
+    (clojure.test/run-tests)))
