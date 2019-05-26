@@ -108,12 +108,17 @@
            ~msg))
 
       =throws=>
-      (let [cls (if cljs? :default Throwable)]
-        (if (instance? java.util.regex.Pattern expected)
-          `(~is (~'thrown-with-msg? ~cls ~expected ~actual)
-             ~msg)
-          `(~is (~'thrown? ~expected ~actual)
-             ~msg)))
+      (if (map? expected)
+        (let [should-throw actual
+              criteria     expected]
+          `(~is (~'throws? ~cljs? ~should-throw ~criteria)
+             ~msg))
+        (let [cls (if cljs? :default Throwable)]
+          (if (instance? java.util.regex.Pattern expected)
+            `(~is (~'thrown-with-msg? ~cls ~expected ~actual)
+               ~msg)
+            `(~is (~'thrown? ~expected ~actual)
+               ~msg))))
 
       (throw (ex-info "invalid arrow" {:arrow arrow})))))
 
@@ -125,16 +130,20 @@
 
 (defn block->asserts [cljs? {:keys [behavior triples]}]
   (let [asserts (map (partial triple->assertion cljs?) triples)]
-    `(im/with-reporting ~{:type :behavior :string (or behavior "Unlabled block")}
+    `(im/with-reporting ~{:type :behavior :string (if (empty? behavior) "unmarked" behavior)}
        ~@asserts)))
 
 #?(:clj
    (do
      (defmethod cljs.test/assert-expr '= [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
+     (defmethod cljs.test/assert-expr 'throws? [env msg form]
+       `(cljs.test/do-report ~(assert-expr msg form)))
      (defmethod cljs.test/assert-expr 'exec [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr '= [msg form]
+       `(clojure.test/do-report ~(assert-expr msg form)))
+     (defmethod clojure.test/assert-expr 'throws? [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr 'exec [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))))

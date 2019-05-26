@@ -1,3 +1,18 @@
+3.1.0
+-----
+- Fixed terminal reporter. It was failing to show diffs on unlabeled assertions.
+- Mostly fixed `=throws=>`, and simplified the syntax. Use either a simple
+classname, or a regex:
+
+```
+(f) =throws=> ArithmeticException
+(g) =throws=> #"message"
+```
+
+If you use the legacy map notation it does the old stuff, but some of that
+simply didn't work right and I won't be fixing it. Consider it deprecated
+and open to removal in later versions.
+
 3.0.1
 -----
 - Added arrow declarations in core
