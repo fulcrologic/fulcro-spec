@@ -9,6 +9,9 @@ Use either a simple classname, or a regex:
 (g) =throws=> #"message"
 ```
 
+If you want something more, just use the standard clojure test
+`is`.
+
 3.0.1
 -----
 - Added arrow declarations in core
