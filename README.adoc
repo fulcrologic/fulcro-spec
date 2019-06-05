@@ -71,6 +71,7 @@ Run Tests with a `:focus` metadata marker (selector):
 
 ```
 (require 'fulcro-spec.reporters.repl)
+(in-ns '~file-namespace)  ; if using in an IntelliJ REPL Command
 (fulcro-spec.reporters.repl/run-tests #(:focus (meta %)))
 ```
 
@@ -78,10 +79,11 @@ Run all tests:
 
 ```
 (require 'fulcro-spec.reporters.repl)
+(in-ns '~file-namespace)  ; if using in an IntelliJ REPL Command
 (fulcro-spec.reporters.repl/run-tests)
 ```
 
-Be sure to check "Before Executing" to Load File, and be sure you've done `in-ns` on the namespace you want to test.
+NOTE: Be sure to check "Before Executing" -> "Load File" on the REPL command.
 
 == Usage
 
