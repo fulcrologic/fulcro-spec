@@ -1,3 +1,7 @@
+3.1.1
+-----
+- Added REPL runner
+
 3.1.0
 -----
 - Fixed terminal reporter. It was failing to show diffs on unlabeled assertions.

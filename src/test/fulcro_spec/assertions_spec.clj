@@ -27,10 +27,10 @@
 
 (def test-regex #"a-simple-test-regex")
 
-(deftest check-error-test
+(deftest ^:focus check-error-test
   (testing "supports many syntaxes"
     (assertions
-      (parse-criteria [:sym 'irr]) => {:ex-type 'ir}
+      (parse-criteria [:sym 'irr]) => {:ex-type 'irr}
       (parse-criteria [:w/e 'dont-care]) => 'dont-care
 
       (check-error "spec-msg1" (ex-info "foo" {})
