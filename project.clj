@@ -1,4 +1,4 @@
-(defproject fulcrologic/fulcro-spec "3.1.0"
+(defproject fulcrologic/fulcro-spec "3.1.1"
   :description "Helper Macros for clj and cljs test"
   :url "https://github.com/fulcrologic/fulcro-spec"
   :license {:name "MIT Public License"

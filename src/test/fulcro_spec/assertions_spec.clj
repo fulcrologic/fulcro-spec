@@ -27,7 +27,7 @@
 
 (def test-regex #"a-simple-test-regex")
 
-(deftest check-error-test
+(deftest ^:focus check-error-test
   (testing "supports many syntaxes"
     (assertions
       (parse-criteria [:sym 'irr]) => {:ex-type 'irr}

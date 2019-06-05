@@ -61,6 +61,28 @@ image:https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https:/
 Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master"]
 Snapshot: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop"]
 
+== NEW!  REPL Runner
+
+It is common to want to run tests in the REPL, but the output of the default runner leaves a lot to be desired.  If
+you're using IntelliJ you can now add something like this to your REPL commands (and hook it to a keyboard shortcut) for a much
+better testing experience:
+
+Run Tests with a `:focus` metadata marker (selector):
+
+```
+(require 'fulcro-spec.reporters.repl)
+(fulcro-spec.reporters.repl/run-tests #(:focus (meta %)))
+```
+
+Run all tests:
+
+```
+(require 'fulcro-spec.reporters.repl)
+(fulcro-spec.reporters.repl/run-tests)
+```
+
+Be sure to check "Before Executing" to Load File, and be sure you've done `in-ns` on the namespace you want to test.
+
 == Usage
 
 [source, clojure]
