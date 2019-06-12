@@ -4,4 +4,7 @@ tests:
 	npx karma start --single-run
 	clojure -A:clj-tests
 
-.PHONY: tests
+deploy: tests
+	mvn deploy
+
+.PHONY: tests deploy

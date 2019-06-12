@@ -6,7 +6,7 @@
     <groupId>fulcrologic</groupId>
     <artifactId>fulcro-spec</artifactId>
     <packaging>jar</packaging>
-    <version>3.1.1</version>
+    <version>3.1.2-SNAPSHOT</version>
     <name>fulcro-spec</name>
 
     <description>Helper Macros for clj and cljs test</description>
@@ -26,6 +26,16 @@
             <url>https://clojars.org/repo</url>
         </repository>
     </distributionManagement>
+
+    <build>
+        <sourceDirectory>src/main</sourceDirectory>
+
+        <resources>
+            <resource>
+                <directory>src/main</directory>
+            </resource>
+        </resources>
+    </build>
 
     <scm>
         <url>https://github.com/fulcrologic/fulcro-spec</url>
