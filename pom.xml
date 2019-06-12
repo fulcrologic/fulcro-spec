@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>fulcrologic</groupId>
+    <artifactId>fulcro-spec</artifactId>
+    <packaging>jar</packaging>
+    <version>3.1.1</version>
+    <name>fulcro-spec</name>
+
+    <description>Helper Macros for clj and cljs test</description>
+    <url>https://github.com/fulcrologic/fulcro-spec</url>
+
+    <licenses>
+        <license>
+            <name>MIT Public License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+
+    <distributionManagement>
+        <repository>
+            <id>clojars</id>
+            <name>Clojars repository</name>
+            <url>https://clojars.org/repo</url>
+        </repository>
+    </distributionManagement>
+
+    <scm>
+        <url>https://github.com/fulcrologic/fulcro-spec</url>
+        <connection>scm:git:git://github.com/fulcrologic/fulcro-spec.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/fulcrologic/fulcro-spec.git</developerConnection>
+        <tag>ccc2e4aa22793e0c625ba0fdd11715abeab933e5</tag>
+    </scm>
+
+    <repositories>
+        <repository>
+            <id>clojars</id>
+            <url>https://repo.clojars.org/</url>
+        </repository>
+        <repository>
+            <id>sonatype</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.clojure</groupId>
+            <artifactId>clojure</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>colorize</groupId>
+            <artifactId>colorize</artifactId>
+            <version>0.1.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.clojure</groupId>
+                    <artifactId>clojure</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.aviso</groupId>
+            <artifactId>pretty</artifactId>
+            <version>0.1.37</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lucasbradstreet</groupId>
+            <artifactId>cljs-uuid-utils</artifactId>
+            <version>1.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.clojure</groupId>
+            <artifactId>clojurescript</artifactId>
+            <version>1.10.520</version>
+        </dependency>
+    </dependencies>
+</project>

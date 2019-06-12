@@ -1,11 +1,10 @@
 (ns fulcro-spec.core-spec
   (:require
-    [clojure.test :as t :refer [is]]
+    [clojure.test :as t :refer [is deftest]]
     [fulcro-spec.contains :refer [*contains?]]
     [fulcro-spec.core
      :refer [behavior when-mocking assertions]
-     :as core]
-    [nubank.workspaces.core :refer [deftest]]))
+     :as core]))
 
 (deftest var-name-from-string
   (assertions

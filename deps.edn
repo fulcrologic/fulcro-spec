@@ -1,12 +1,12 @@
-{:aliases {:clj-tests {:extra-paths ["src/test"]
-                       :main-opts   ["-m" "kaocha.runner"]
-                       :extra-deps  {lambdaisland/kaocha {:mvn/version "0.0-266"}
-                                     nubank/workspaces   {:mvn/version "1.0.3"}}}
-           :test      {:extra-paths ["src/test"]
-                       :extra-deps  {nubank/workspaces {:mvn/version "1.0.3"}}}}
+{:paths   ["src/main"]
+
  :deps    {colorize                            {:mvn/version "0.1.1" :exclusions [org.clojure/clojure]},
            io.aviso/pretty                     {:mvn/version "0.1.37"}
            com.lucasbradstreet/cljs-uuid-utils {:mvn/version "1.0.2"}
            org.clojure/clojure                 {:mvn/version "1.10.0"}
-           org.clojure/clojurescript           {:mvn/version "1.10.439"}}
- :paths   ["src/main"]}
+           org.clojure/clojurescript           {:mvn/version "1.10.520"}}
+
+ :aliases {:clj-tests {:extra-paths ["src/test"]
+                       :main-opts   ["-m" "kaocha.runner"]
+                       :extra-deps  {lambdaisland/kaocha {:mvn/version "0.0-418"}}}
+           :test      {:extra-paths ["src/test"]}}}

@@ -1,16 +1,6 @@
 {:deps     {:aliases [:test]}
  :jvm-opts ["-Xmx2G"]
- :builds   {:cards    {:target           nubank.workspaces.shadow-cljs.target
-                       :ns-regexp        "-(spec|ws)$"
-                       :output-dir       "resources/public/js/cards"
-                       :asset-path       "/js/cards"
-                       :compiler-options {:static-fns false} ; required for mocking to work
-                       :devtools         {:preloads           [fulcro.inspect.preload]
-                                          :http-port          8023
-                                          :http-resource-root "public"
-                                          :http-root          "resources/public"}}
-
-            :ci-tests {:target           :karma
+ :builds   {:ci-tests {:target           :karma
                        :js-options       {:js-provider :shadow}
                        :compiler-options {:static-fns false} ; required for mocking to work
                        :output-to        "target/ci.js"

@@ -1,10 +1,7 @@
 (ns fulcro-spec.timeline-spec
-  (:require [fulcro-spec.core #?(:clj :refer :cljs :refer-macros)
-             [behavior provided
-              with-timeline async tick assertions]]
-            [nubank.workspaces.core :refer [deftest]]
-            #?(:clj [clojure.test :refer [is]])
-            #?(:cljs [cljs.test :refer-macros [is]])))
+  (:require
+    [fulcro-spec.core :refer [behavior provided with-timeline async tick assertions]]
+    [clojure.test :refer [is deftest]]))
 
 
 #?(:cljs

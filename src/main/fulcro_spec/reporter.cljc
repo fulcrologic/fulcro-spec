@@ -3,9 +3,7 @@
   (:require
     #?@(:cljs ([cljs-uuid-utils.core :as uuid]
                [cljs.stacktrace :refer [parse-stacktrace]]))
-    [clojure.set :as set]
     [clojure.test :as t]
-    [com.stuartsierra.component :as cp]
     [fulcro-spec.diff :refer [diff]])
   #?(:clj
      (:import
@@ -16,7 +14,7 @@
        (goog.date Date))))
 
 (defn new-uuid []
-  #?(:clj (UUID/randomUUID)
+  #?(:clj  (UUID/randomUUID)
      :cljs (uuid/uuid-string (uuid/make-random-uuid))))
 
 (defn fix-str [s]
@@ -31,18 +29,18 @@
 (defn make-testreport
   ([] (make-testreport []))
   ([initial-items]
-   {:id (new-uuid)
+   {:id         (new-uuid)
     :namespaces []
     :start-time (now-time)
-    :test 0 :pass 0
-    :fail 0 :error 0}))
+    :test       0 :pass 0
+    :fail       0 :error 0}))
 
 (defn make-testitem
   [{:keys [string form-meta]}]
-  (cond-> {:id (new-uuid)
-           :name string
-           :status {}
-           :test-items []
+  (cond-> {:id           (new-uuid)
+           :name         string
+           :status       {}
+           :test-items   []
            :test-results []}
     form-meta (assoc :form-meta form-meta)))
 
@@ -58,23 +56,23 @@
 (defn make-test-result
   [status t]
   (-> t
-    (merge {:id (new-uuid)
+    (merge {:id     (new-uuid)
             :status status
-            :where (t/testing-vars-str t)})
-      (merge-in-diff-results)
+            :where  (t/testing-vars-str t)})
+    (merge-in-diff-results)
     #?(:clj  (#(if (some->> % :actual (instance? Throwable))
                  (assoc % :stack (with-out-str
                                    (-> % :actual (.printStackTrace (new java.io.PrintWriter *out*)))))
                  %))
        :cljs (#(if (some-> % :actual .-stack)
-                   (assoc % :stack (-> % :actual .-stack stack->trace))
-                   %)))
-      (update :actual fix-str)
-      (update :expected fix-str)))
+                 (assoc % :stack (-> % :actual .-stack stack->trace))
+                 %)))
+    (update :actual fix-str)
+    (update :expected fix-str)))
 
 (defn make-tests-by-namespace
   [test-name]
-  {:id (new-uuid)
+  {:id         (new-uuid)
    :name       test-name
    :test-items []
    :status     {}})
@@ -92,8 +90,8 @@
           state all-paths)))))
 
 (defn begin* [{:keys [state path]} t]
-  (let [path @path
-        test-item (make-testitem t)
+  (let [path             @path
+        test-item        (make-testitem t)
         test-items-count (count (get-in @state (conj path :test-items)))]
     (swap! state assoc-in
       (conj path :test-items test-items-count)
@@ -114,7 +112,7 @@
 
 (defn failure* [{:as this :keys [state path]} t failure-type]
   (inc-report-counter failure-type)
-  (let [path @path
+  (let [path       @path
         {:keys [test-results]} (get-in @state path)
         new-result (make-test-result failure-type t)]
     (set-test-result this failure-type)
@@ -139,8 +137,8 @@
   (swap! path (comp pop pop)))
 
 (defn begin-namespace [{:keys [state path]} t]
-  (let [test-name (ns-name (:ns t))
-        namespaces (get-in @state (conj @path :namespaces))
+  (let [test-name           (ns-name (:ns t))
+        namespaces          (get-in @state (conj @path :namespaces))
         name-space-location (get-namespace-location namespaces test-name)]
     (swap! path conj :namespaces name-space-location)
     (swap! state assoc-in @path
@@ -188,19 +186,14 @@
   (reset! state (make-testreport))
   (reset! path []))
 
-(defrecord TestReporter [state path]
-  cp/Lifecycle
-  (start [this] this)
-  (stop [this]
-    (reset-test-report! this)
-    this))
+(defrecord TestReporter [state path])
 
 (defn make-test-reporter
   "Just a shell to contain minimum state necessary for reporting"
   []
   (map->TestReporter
     {:state (atom (make-testreport))
-     :path (atom [])}))
+     :path  (atom [])}))
 
 (defn get-test-report [reporter]
   @(:state reporter))
