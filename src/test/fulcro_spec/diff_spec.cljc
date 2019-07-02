@@ -2,7 +2,7 @@
   (:require
     [fulcro-spec.diff :as src
      :refer [nf diff diff-elem patch compress decompress]]
-    [nubank.workspaces.core :refer [deftest]]
+    [clojure.test :refer [deftest]]
     [fulcro-spec.core :as fsc :refer
      [behavior assertions]]))
 

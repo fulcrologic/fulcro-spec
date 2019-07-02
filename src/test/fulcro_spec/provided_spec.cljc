@@ -1,13 +1,12 @@
 (ns fulcro-spec.provided-spec
   (:require
     [clojure.spec.alpha :as s]
-    [nubank.workspaces.core :refer [deftest]]
-    [fulcro-spec.core #?(:clj :refer :cljs :refer-macros)
-     [behavior provided assertions when-mocking provided! when-mocking!]]
+    [fulcro-spec.core :refer [behavior provided assertions when-mocking provided! when-mocking!]]
     #?(:clj [fulcro-spec.impl.macros :as im])
     #?(:clj [fulcro-spec.provided :as p])
     [fulcro-spec.stub :as stub]
     [fulcro-spec.spec :as fss]
+    [clojure.test :refer [deftest]]
     [fulcro-spec.testing-helpers :as th])
   #?(:clj
      (:import clojure.lang.ExceptionInfo)))

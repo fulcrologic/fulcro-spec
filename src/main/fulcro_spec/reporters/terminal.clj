@@ -5,7 +5,6 @@
     [clojure.string :as s]
     [clojure.test :as t]
     [colorize.core :as c]
-    [com.stuartsierra.component :as cp]
     [io.aviso.exception :as pretty]
     [fulcro-spec.diff :as diff]
     [fulcro-spec.reporter :as base]))
@@ -222,8 +221,7 @@
     (remove-method print-method Throwable)
     reporter))
 
-(def this
-  (cp/start (base/make-test-reporter)))
+(def this (base/make-test-reporter))
 
 (def fulcro-report
   (base/fulcro-report {:test/reporter this}

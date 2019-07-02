@@ -1,13 +1,12 @@
 (ns fulcro-spec.assertions-spec
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.test :as t :refer [is testing]]
+    [clojure.test :as t :refer [is testing deftest]]
     [fulcro-spec.assertions :as ae
      :refer [check-error check-error* parse-criteria]]
     [fulcro-spec.contains :refer [*contains?]]
     [fulcro-spec.core
      :refer [component behavior assertions]]
-    [nubank.workspaces.core :refer [deftest]]
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.spec :as fss]
     [fulcro-spec.testing-helpers :as th])

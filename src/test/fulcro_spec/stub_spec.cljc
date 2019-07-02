@@ -1,12 +1,8 @@
 (ns fulcro-spec.stub-spec
   (:require
-    [nubank.workspaces.core :refer [deftest]]
-    [fulcro-spec.stub :as s
-     #?@(:cljs [:include-macros true])]
-    [fulcro-spec.core #?(:clj :refer :cljs :refer-macros)
-     [behavior provided assertions]]
-    #?(:clj [clojure.test :refer [is]])
-    #?(:cljs [cljs.test :refer-macros [is]]))
+    [clojure.test :refer [is deftest]]
+    [fulcro-spec.stub :as s #?@(:cljs [:include-macros true])]
+    [fulcro-spec.core :refer [behavior provided assertions]])
   #?(:clj
      (:import clojure.lang.ExceptionInfo)))
 
@@ -31,7 +27,7 @@
       (is (s/step-complete script 0)))))
 
 (defn make-call-script [to-call & {:keys [literals N]
-                                   :or {N 1, literals []}}]
+                                   :or   {N 1, literals []}}]
   (s/scripted-stub
     (s/make-script "something"
       [(s/make-step to-call N literals)])))
@@ -39,20 +35,20 @@
 (deftest scripted-stub
   (behavior "calls the stub function"
     (let [detector (atom false)
-          sstub (make-call-script (fn [] (reset! detector true)))]
+          sstub    (make-call-script (fn [] (reset! detector true)))]
       (sstub), (is (= true @detector))))
 
   (behavior "verifies the stub fn is called with the correct literals"
     (let [sstub (make-call-script
-                   (fn [n x] [(inc n) x])
-                   :literals [41 ::s/any]
-                   :N :many)]
+                  (fn [n x] [(inc n) x])
+                  :literals [41 ::s/any]
+                  :N :many)]
       (assertions
         (sstub 41 :foo) => [42 :foo]
         (sstub 2 :whatever) =throws=> #"called with wrong arguments"
         (try (sstub 2 :evil)
-          (catch ExceptionInfo e (ex-data e)))
-        => {:args [2 :evil]
+             (catch ExceptionInfo e (ex-data e)))
+        => {:args              [2 :evil]
             :expected-literals [41 ::s/any]})))
 
   (behavior "returns whatever the stub function returns"
@@ -61,11 +57,11 @@
 
   (behavior "throws an exception if the function is invoked more than programmed"
     (let [sstub (make-call-script (fn [] 42))]
-      (sstub) ; first call
+      (sstub)                                               ; first call
       (assertions
         (try (sstub 1 2 3) (catch ExceptionInfo e (ex-data e)))
         => {:max-calls 1
-            :args '(1 2 3)})))
+            :args      '(1 2 3)})))
 
   (behavior "throws whatever exception the function throws"
     (let [sstub (make-call-script (fn [] (throw (ex-info "BUMMER" {}))))]
@@ -75,10 +71,10 @@
   (behavior "only moves to the next script step if the call count for the current step reaches the programmed amount"
     (let [a-count (atom 0)
           b-count (atom 0)
-          script (s/make-script "something"
-                   [(s/make-step (fn [] (swap! a-count inc)) 2 [])
-                    (s/make-step (fn [] (swap! b-count inc)) 1 nil)])
-          sstub (s/scripted-stub script)]
+          script  (s/make-script "something"
+                    [(s/make-step (fn [] (swap! a-count inc)) 2 [])
+                     (s/make-step (fn [] (swap! b-count inc)) 1 nil)])
+          sstub   (s/scripted-stub script)]
       (assertions
         (repeatedly 3 (fn [] (sstub) [@a-count @b-count]))
         => [[1 0] [2 0] [2 1]])))
@@ -87,7 +83,7 @@
     (let [script (s/make-script "something"
                    [(s/make-step (fn [& args] args) 2 nil)
                     (s/make-step (fn [& args] args) 1 nil)])
-          sstub (s/scripted-stub script)]
+          sstub  (s/scripted-stub script)]
       (sstub 1 2) (sstub 3 4), (sstub :a :b)
       (assertions
         (:history @script) => [[1 2] [3 4] [:a :b]]
