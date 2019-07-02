@@ -1,3 +1,9 @@
+3.1.2
+-----
+- Removed lein project file
+- reduced deps
+- updated README
+
 3.1.1
 -----
 - Added REPL runner
