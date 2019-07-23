@@ -1,3 +1,7 @@
+3.1.3
+-----
+- Fixed arity exceptions on mocking to give a more understandable error
+
 3.1.2
 -----
 - Removed lein project file
