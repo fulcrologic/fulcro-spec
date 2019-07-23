@@ -4,7 +4,7 @@
   #?(:cljs (:require-macros [cljs.test :refer (is)])))
 
 (defn make-step [stub times literals]
-  {:stub stub :times times
+  {:stub    stub :times times
    :ncalled 0 :literals literals
    :history []})
 (defn make-script [function steps]
@@ -28,14 +28,14 @@
 
 (defn valid-args? [literals args]
   (or (not literals)
-      (let [reduced-if (fn [p x] (cond-> x p reduced))]
-        (reduce (fn [_ [lit arg]]
-                  (reduced-if false?
-                    (case lit
-                      ::&_ (reduced true)
-                      ::any true
-                      (= lit arg))))
-          true (zip-pad gensym literals args)))))
+    (let [reduced-if (fn [p x] (cond-> x p reduced))]
+      (reduce (fn [_ [lit arg]]
+                (reduced-if false?
+                  (case lit
+                    ::&_ (reduced true)
+                    ::any true
+                    (= lit arg))))
+        true (zip-pad gensym literals args)))))
 
 (defn scripted-stub [script-atom]
   (let [step (atom 0)]
@@ -46,7 +46,7 @@
         (if (>= curr-step max-calls)
           (throw (ex-info (str function " was called too many times!")
                    {:max-calls max-calls
-                    :args args}))
+                    :args      args}))
           (let [{:keys [stub literals]} (nth steps curr-step)]
             (when-not (valid-args? literals args)
               (throw (ex-info (str function " was called with wrong arguments")
@@ -55,11 +55,18 @@
               #(-> % (update :history conj args)
                  (update-in [:steps curr-step :history] conj args)))
             (try (apply stub args)
-              (catch #?(:clj Exception :cljs js/Object) e (throw e))
-              (finally
-                (increment-script-call-count script-atom curr-step)
-                (when (step-complete script-atom curr-step)
-                  (swap! step inc))))))))))
+                 ;; NOTE: In cljs this is not really meant to catch anything
+
+                 #?(:clj
+                    (catch clojure.lang.ArityException ae
+                      (throw (ex-info (str "The MOCKED version of " function " was called with " (.-actual ae)
+                                        " argument(s), but the mock did not support that number of arguments.")
+                               {}))))
+                 (catch #?(:clj Exception :cljs :default) e (throw e))
+                 (finally
+                   (increment-script-call-count script-atom curr-step)
+                   (when (step-complete script-atom curr-step)
+                     (swap! step inc))))))))))
 
 (defn validate-step-counts
   "argument step contains keys:
@@ -67,16 +74,16 @@
    - :times, expected number of times called"
   [errors {:as step :keys [ncalled times]}]
   (conj errors
-        (if (or (= ncalled times)
-                (and (= times :many)
-                  (> ncalled 0)))
-          :ok :error)))
+    (if (or (= ncalled times)
+          (and (= times :many)
+            (> ncalled 0)))
+      :ok :error)))
 
 (defn validate-target-function-counts [script-atoms]
   (mapv (fn [script]
           (let [{:keys [function steps history]} @script
                 count-results (reduce validate-step-counts [] steps)
-                errors? (some #(= :error %) count-results)]
+                errors?       (some #(= :error %) count-results)]
             (when errors?
               (throw (ex-info (str function " was not called as many times as specified")
                        @script)))))
