@@ -20,27 +20,52 @@
 (defmethod t/report :end-provided [_])
 
 (def cfg
+  "Terminal reporter configuration. You may swap against this atom to set configuration parameters to modify how
+   reports are generated.
+
+   Options (defaults are shown) are:
+
+   ```
+   {:fail-only?     false ; do not show passing tests
+    :color?         true  ; highlight things using terminal colors
+    :diff-hl?       false ; print the (unexpected) actual
+    :diff?          true  ; Show a diff?
+
+    :diff-list?     false ; print a list of all of the data diffs
+    :num-diffs      1     ; max number of diffs if using diff-list?
+
+    :full-diff?     true  ; always show full expected and actual?
+    :frame-limit    100   ; Max stack frames on an exception
+    :quick-fail?    true  ; stop on the first failure
+
+    ;; Affects output of original assertions
+    :*print-level*  3   ; See clojure *print-level*.
+    :*print-length* 3}  ; See clojure *print-length*
+   ```
+
+   Typically you'd do something like this to change an option:
+
+   ```
+   (swap! fulcro-spec.reporters.terminal/cfg assoc :color? false)
+   ```
+   "
   (atom
-    (let [COLOR        (System/getenv "US_DIFF_HL")
-          DIFF_MODE    (System/getenv "US_DIFF_MODE")
-          DIFF         (System/getenv "US_DIFF")
-          NUM_DIFFS    (System/getenv "US_NUM_DIFFS")
-          FRAME_LIMIT  (System/getenv "US_FRAME_LIMIT")
-          QUICK_FAIL   (System/getenv "US_QUICK_FAIL")
-          FAIL_ONLY    (System/getenv "US_FAIL_ONLY")
-          PRINT_LEVEL  (System/getenv "US_PRINT_LEVEL")
-          PRINT_LENGTH (System/getenv "US_PRINT_LENGTH")]
-      {:fail-only?     (#{"1" "true"} FAIL_ONLY)
-       :color?         (#{"1" "true"} COLOR)
-       :diff-hl?       (#{"hl" "all"} DIFF_MODE)
-       :diff-list?     (not (#{"hl"} DIFF_MODE))
-       :diff?          (not (#{"0" "false"} DIFF))
-       :frame-limit    (edn/read-string (or FRAME_LIMIT "10"))
-       :num-diffs      (edn/read-string (or NUM_DIFFS "1"))
-       :quick-fail?    (not (#{"0" "false"} QUICK_FAIL))
-       :*print-level*  (edn/read-string (or PRINT_LEVEL "3"))
-       :*print-length* (edn/read-string (or PRINT_LENGTH "2"))})))
+    {:fail-only?     false
+     :color?         true
+     :diff-hl?       false
+     :diff?          true
+
+     :diff-list?     false
+     :num-diffs      1
+
+     :full-diff?     true
+     :frame-limit    100
+     :quick-fail?    true
+     :*print-level*  3
+     :*print-length* nil}))
+
 (defn env [k] (get @cfg k))
+
 (defn merge-cfg!
   "For use in the test-refresh repl to change configuration on the fly.
   Single arity will show you the possible keys you can use.
@@ -125,12 +150,16 @@
        (catch Error _ {:message m})))
 
 (defn print-message [m print-fn]
-  (print-fn (color-str :normal "ASSERTION:")
-    (let [{:keys [arrow actual expected message]} (parse-message m)]
-      (or message
-        (str (-> actual ?ellipses)
-          " " arrow
-          " " (-> expected ?ellipses))))))
+  (print-fn (color-str :normal "ASSERTION:"))
+  (let [{:keys [arrow actual expected message]} (parse-message m)]
+    (print-fn)
+    (if message
+      (print-fn message)
+      (do
+        (print-fn (color-str :normal (str (?ellipses actual))))
+        (print-fn (color-str :normal (str arrow)))
+        (print-fn (color-str :normal (str (?ellipses expected))))))
+    (print-fn)))
 
 (defn print-extra [e print-fn]
   (print-fn (color-str :normal "    extra:") e))
@@ -155,10 +184,7 @@
           (not (instance? Throwable actual)))
     (print-throwable throwable))
   (-> (or message "Unmarked Assertion") (print-message print-fn))
-  (when (or (not diff) (empty? diff)
-          (not (env :diff?))
-          (and (not (env :diff-hl?))
-            (not (env :diff-list?))))
+  (when (env :full-diff?)
     (print-fn "   Actual:" (pretty-str actual (+ 5 print-level)))
     (print-fn " Expected:" (pretty-str expected (+ 5 print-level))))
   (some-> extra (print-extra print-fn))
