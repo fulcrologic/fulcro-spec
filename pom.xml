@@ -6,7 +6,7 @@
     <groupId>fulcrologic</groupId>
     <artifactId>fulcro-spec</artifactId>
     <packaging>jar</packaging>
-    <version>3.1.3</version>
+    <version>3.1.4</version>
     <name>fulcro-spec</name>
 
     <description>Helper Macros for clj and cljs test</description>
@@ -35,6 +35,21 @@
                 <directory>src/main</directory>
             </resource>
         </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <scm>

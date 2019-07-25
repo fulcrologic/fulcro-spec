@@ -1,6 +1,5 @@
 (ns fulcro-spec.core
   (:require
-    [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [clojure.test]
     [fulcro-spec.assertions :as ae]
@@ -8,7 +7,9 @@
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.provided :as p]
     [fulcro-spec.stub]
-    [fulcro-spec.spec :as fss]))
+    [fulcro-spec.spec :as fss]
+    [clojure.spec.alpha :as s]
+    [clojure.spec.gen.alpha :as gen]))
 
 (declare => =1x=> =2x=> =3x=> =4x=> =throws=> =fn=>)
 
@@ -113,3 +114,11 @@
    Must be wrapped by with-timeline."
   [tm]
   `(async/advance-clock ~'*async-queue* ~tm))
+
+(defmacro generated-stub
+  "Returns a function that can behave just like `f` (which must be a symbol), but that will simply verify
+  arguments according to its `:args` spec and then return a value that conforms to that function's `:ret` spec."
+  [f]
+  (let [generate (im/if-cljs &env 'cljs.spec.gen.alpha/generate 'clojure.spec.gen.alpha/generate)
+        gen      (im/if-cljs &env 'cljs.spec.alpha/gen 'clojure.spec.alpha/gen)]
+    `(-> ~f ~gen ~generate)))
