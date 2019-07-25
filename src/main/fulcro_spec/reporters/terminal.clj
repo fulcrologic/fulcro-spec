@@ -141,7 +141,7 @@
   (binding [*print-level*  (env :*print-level*)
             *print-length* (env :*print-length*)]
     (try (apply str (drop-last (with-out-str (pprint (read-string s)))))
-         (catch Error _ s))))
+         (catch Throwable _ s))))
 
 (defn parse-message [m]
   (try (->> (read-string (str "[" m "]"))
@@ -200,10 +200,16 @@
 
 (defn print-test-item [test-item print-level]
   (t/with-test-out
-    (when-not (= "unmarked" (:name test-item))
-      (println (space-level print-level)
-        (color-str (:status test-item)
-          (:name test-item))))
+    (let [status  (:status test-item)
+          failed? (and (map? status) (or (pos-int? (:fail status)) (pos-int? (:error status))))]
+      (if (= "unmarked" (:name test-item))
+        (when failed?
+          (println (space-level print-level)
+            (color-str (:status test-item)
+              "UNMARKED ASSERTION/TEST")))
+        (println (space-level print-level)
+          (color-str (:status test-item)
+            (:name test-item)))))
     (into []
       (comp (filter (comp #{:fail :error} :status))
         (map #(print-test-result % (->> print-level inc space-level
