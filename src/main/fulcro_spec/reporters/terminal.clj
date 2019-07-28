@@ -7,7 +7,8 @@
     [colorize.core :as c]
     [io.aviso.exception :as pretty]
     [fulcro-spec.diff :as diff]
-    [fulcro-spec.reporter :as base]))
+    [fulcro-spec.reporter :as base]
+    [clojure.string :as str]))
 
 ;; ensure test runners don't see fulcro-spec's extended events
 (defmethod t/report :begin-specification [_])
@@ -102,7 +103,9 @@
 
 (defn print-throwable [e]
   (print (pretty/format-exception e {:frame-limit (env :frame-limit)}))
-  (some-> (.getCause e) print-throwable))
+  (some-> (.getCause e) print-throwable)
+  (when-let [message (and (instance? Exception e) (.getMessage e))]
+    (print message)))
 
 (defn pretty-str [s n]
   (as-> (with-out-str (pprint s)) s
@@ -185,7 +188,9 @@
     (print-throwable throwable))
   (-> (or message "Unmarked Assertion") (print-message print-fn))
   (when (env :full-diff?)
-    (print-fn "   Actual:" (pretty-str actual (+ 5 print-level)))
+    (print-fn "   Actual:" (if (instance? Exception actual)
+                             (type actual)
+                             (pretty-str actual (+ 5 print-level))))
     (print-fn " Expected:" (pretty-str expected (+ 5 print-level))))
   (some-> extra (print-extra print-fn))
   (some-> diff (print-diff actual print-fn))
