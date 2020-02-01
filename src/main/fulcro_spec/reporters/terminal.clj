@@ -150,7 +150,7 @@
   (try (->> (read-string (str "[" m "]"))
          (sequence (comp (map str) (map base/fix-str)))
          (zipmap [:actual :arrow :expected]))
-       (catch Error _ {:message m})))
+       (catch Throwable _ {:message m})))
 
 (defn print-message [m print-fn]
   (print-fn (color-str :normal "ASSERTION:"))
