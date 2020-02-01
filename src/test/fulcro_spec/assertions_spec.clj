@@ -2,14 +2,14 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :as t :refer [is testing deftest]]
-    [fulcro-spec.assertions :as ae
-     :refer [check-error check-error* parse-criteria]]
+    [fulcro-spec.assertions :as ae]
     [fulcro-spec.contains :refer [*contains?]]
     [fulcro-spec.core
      :refer [component behavior assertions]]
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.spec :as fss]
-    [fulcro-spec.testing-helpers :as th])
+    [fulcro-spec.testing-helpers :as th]
+    [clojure.string :as str])
   (:import clojure.lang.ExceptionInfo))
 
 (defn check-assertion [expected]
@@ -20,58 +20,6 @@
 
 (defn test-triple->assertion [form]
   (ae/triple->assertion false (fss/conform! ::ae/triple form)))
-
-(defn test-block->asserts [form]
-  (ae/block->asserts false (fss/conform! ::ae/block form)))
-
-(def test-regex #"a-simple-test-regex")
-
-(deftest ^:focus check-error-test
-  (testing "supports many syntaxes"
-    (assertions
-      (parse-criteria [:sym 'irr]) => {:ex-type 'irr}
-      (parse-criteria [:w/e 'dont-care]) => 'dont-care
-
-      (check-error "spec-msg1" (ex-info "foo" {})
-        {:ex-type ExceptionInfo})
-      =fn=> (*contains? {:type :pass})
-      (let [check #(-> % ex-data :ok)]
-        (check-error "spec-msg2" (ex-info "foo" {:ok false})
-          {:fn check} '#(some fn)))
-      =fn=> (*contains? {:type :fail :expected '#(some fn)})
-      (check-error "spec-msg3" (ex-info "foo" {})
-        {:regex #"oo"})
-      =fn=> (*contains? {:type :pass})))
-  (testing "checks the exception is of the specified type or throws"
-    (assertions
-      (check-error* "msg1" (ex-info "foo" {})
-        clojure.lang.ExceptionInfo)
-      =fn=> (*contains? {:type :pass :message "msg1"})
-      (check-error* "msg2" (ex-info "foo" {})
-        java.lang.Error)
-      =fn=> (*contains? {:type   :fail :extra "exception did not match type"
-                         :actual clojure.lang.ExceptionInfo :expected java.lang.Error})))
-  (testing "checks the exception's message matches a regex or throws"
-    (assertions
-      (check-error* "msg3" (ex-info "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn" {})
-        clojure.lang.ExceptionInfo #"(?i)cthulhu")
-      =fn=> (*contains? {:type :pass})
-      (check-error* "msg4" (ex-info "kthxbye" {})
-        clojure.lang.ExceptionInfo #"cthulhu")
-      =fn=> (*contains? {:type   :fail :extra "exception's message did not match regex"
-                         :actual "kthxbye" :expected "cthulhu"})))
-  (testing "checks the exception with the user's function"
-    (let [cthulhu-bored (ex-info "Haskell 101" {:cthulhu :snores})]
-      (assertions
-        (check-error* "msg5" (ex-info "H.P. Lovecraft" {:cthulhu :rises})
-          clojure.lang.ExceptionInfo #"(?i)lovecraft"
-          #(-> % ex-data :cthulhu (= :rises)))
-        =fn=> (*contains? {:type :pass})
-        (check-error* "msg6" cthulhu-bored
-          clojure.lang.ExceptionInfo #"Haskell"
-          #(-> % ex-data :cthulhu (= :rises)))
-        =fn=> (*contains? {:type  :fail :actual cthulhu-bored
-                           :extra "checker function failed"})))))
 
 (deftest triple->assertion-test
   (behavior "checks equality with the => arrow"
@@ -97,17 +45,6 @@
         (f 6) => 7
         (f 2) => 3))))
 
-(defn get-exp-act [{exp :expected act :actual msg :message extra :extra} & [opt]]
-  (case opt
-    :all [act exp msg extra]
-    :msg [act exp msg]
-    :ae [act exp extra]
-    [act exp]))
-
-(defmacro test-case [x & [opt]]
-  `(binding [t/report identity]
-     (get-exp-act ~(-> x test-triple->assertion) ~opt)))
-
 (deftest fix-conform-for-issue-31
   (assertions
     (mapv (juxt :behavior (comp count :triples))
@@ -115,6 +52,36 @@
         (fss/conform! ::ae/assertions
           '("foo" 1 => 2 "bar" 3 => 4, 5 => 6 "qux" 7 => 8, 9 => 10))))
     => '[["foo" 1] ["bar" 2] ["qux" 2]]))
+
+(def reports (atom []))
+(defn recording-reporter [t]
+  (swap! reports conj t))
+(binding [t/report recording-reporter]
+  (t/deftest deftest-var
+    (t/testing "testing: string"
+      (t/is (= 2 (+ 1 1)) "msg: addition")
+      (t/is (even? 64) "msg: even 64")))
+  (deftest-var))
+
+(deftest fix-assertions-reporting-for-issue-13
+  (let [addition-report {:type :pass :expected 2 :actual 2 :message "msg: addition" :assert-type 'eq}
+        even-report {:type :pass :expected '(even? 64) :actual (list even? 64) :message "msg: even 64"}]
+    (assertions
+      "capturing clojure.test reports for comparison"
+      (into []
+        (comp
+          (filter #(-> % :type (#{:fail :error :pass})))
+          (map #(select-keys % [:type :expected :actual :assert-type :message])))
+        @reports)
+      => [addition-report even-report]
+
+      "checking generated assertions against clojure.test reports"
+      (eval (ae/eq-assert-expr "msg: addition" (list 2 (+ 1 1))))
+      => addition-report
+
+      (eval (ae/fn-assert-expr "msg: even 64" (list 'even? 64)))
+      => (merge even-report
+           {::ae/actual 64 ::ae/expected even? :assert-type 'exec}))))
 
 (comment
   (require 'fulcro-spec.reporters.terminal)

@@ -21,8 +21,7 @@
             (throw (ex-info (str "Mock of " `f " returned a value that does not conform to spec: " (with-out-str (s/explain ret result))) {})))))
       result))
 
-  (generated-stub 11)
-  )
+  (generated-stub 11))
 
 (defn todo []
   (throw (ex-info "todo / not-implemented" {})))
