@@ -5,7 +5,7 @@
     [fulcro-spec.assertions :as ae]
     [fulcro-spec.contains :refer [*contains?]]
     [fulcro-spec.core
-     :refer [component behavior assertions]]
+     :refer [specification component behavior assertions]]
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.spec :as fss]
     [fulcro-spec.testing-helpers :as th]
@@ -78,6 +78,9 @@
       "checking generated assertions against clojure.test reports"
       (eval (ae/eq-assert-expr "msg: addition" (list 2 (+ 1 1))))
       => addition-report
+
+      ((juxt ::ae/actual ::ae/expected) (eval (ae/eq-assert-expr "msg: addition" (list 2 (+ 1 1)))))
+      => [nil nil]
 
       (eval (ae/fn-assert-expr "msg: even 64" (list 'even? 64)))
       => (merge even-report

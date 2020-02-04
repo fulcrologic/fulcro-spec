@@ -67,9 +67,7 @@
                  %))
        :cljs (#(if (some-> % ::ae/actual .-stack)
                  (assoc % :stack (-> % ::ae/actual .-stack stack->trace))
-                 %)))
-    (update ::ae/actual fix-str)
-    (update ::ae/expected fix-str)))
+                 %)))))
 
 (defn make-tests-by-namespace
   [test-name]

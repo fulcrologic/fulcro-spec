@@ -201,57 +201,56 @@
              (pos? (:error (:status %) 0)))))
 
 (defn print-test-item [test-item print-level]
-  (t/with-test-out
-    (let [status  (:status test-item)
-          failed? (and (map? status) (or (pos-int? (:fail status)) (pos-int? (:error status))))]
-      (if (= "unmarked" (:name test-item))
-        (when failed?
-          (println (space-level print-level)
-            (color-str (:status test-item)
-              "UNMARKED ASSERTION/TEST")))
+  (let [status  (:status test-item)
+        failed? (and (map? status) (or (pos-int? (:fail status)) (pos-int? (:error status))))]
+    (if (= "unmarked" (:name test-item))
+      (when failed?
         (println (space-level print-level)
           (color-str (:status test-item)
-            (:name test-item)))))
-    (into []
-      (comp (filter (comp #{:fail :error} :status))
-        (map #(print-test-result % (->> print-level inc space-level
-                                     (partial println))
-                (inc print-level))))
-      (:test-results test-item))
-    (into []
-      (comp when-fail-only-keep-failed
-        (map #(print-test-item % (inc print-level))))
-      (:test-items test-item))))
+            "UNMARKED ASSERTION/TEST")))
+      (println (space-level print-level)
+        (color-str (:status test-item)
+          (:name test-item)))))
+  (into []
+    (comp (filter (comp #{:fail :error} :status))
+      (map #(print-test-result % (->> print-level inc space-level
+                                   (partial println))
+              (inc print-level))))
+    (:test-results test-item))
+  (into []
+    (comp when-fail-only-keep-failed
+      (map #(print-test-item % (inc print-level))))
+    (:test-items test-item)))
 
 (defn print-namespace [make-tests-by-namespace]
-  (t/with-test-out
-    (println)
-    (println (color-str (:status make-tests-by-namespace)
-               "Testing " (:name make-tests-by-namespace)))
-    (into []
-      (comp when-fail-only-keep-failed
-        (map #(print-test-item % 1)))
-      (:test-items make-tests-by-namespace))))
+  (println)
+  (println (color-str (:status make-tests-by-namespace)
+             "Testing " (:name make-tests-by-namespace)))
+  (into []
+    (comp when-fail-only-keep-failed
+      (map #(print-test-item % 1)))
+    (:test-items make-tests-by-namespace)))
 
-(defn print-report-data
+(defn print-test-report [{:keys [namespaces test pass fail error]}]
+  (println "Running tests for:" (map :name namespaces))
+  (try (->> namespaces
+         (into [] when-fail-only-keep-failed)
+         (sort-by :name)
+         (mapv print-namespace))
+    (catch Exception e
+      (when-not (->> e ex-data ::stop?)
+        (print-throwable e))))
+  (println "\nRan" test "tests containing"
+    (+ pass fail error) "assertions.")
+  (println fail "failures," error "errors."))
+
+(defn print-reporter
   "Prints the current report data from the report data state and applies colors based on test results"
   [reporter]
   (do
     (defmethod print-method Throwable [e w]
       (print-method (c/red e) w))
-    (t/with-test-out
-      (let [{:keys [namespaces test pass fail error]} (base/get-test-report reporter)]
-        (println "Running tests for:" (map :name namespaces))
-        (try (->> namespaces
-               (into [] when-fail-only-keep-failed)
-               (sort-by :name)
-               (mapv print-namespace))
-             (catch Exception e
-               (when-not (->> e ex-data ::stop?)
-                 (print-throwable e))))
-        (println "\nRan" test "tests containing"
-          (+ pass fail error) "assertions.")
-        (println fail "failures," error "errors.")))
+    (t/with-test-out (print-test-report (base/get-test-report reporter)))
     (remove-method print-method Throwable)
     reporter))
 
@@ -259,4 +258,4 @@
 
 (def fulcro-report
   (base/fulcro-report {:test/reporter this}
-    (comp base/reset-test-report! print-report-data :test/reporter)))
+    (comp base/reset-test-report! print-reporter :test/reporter)))

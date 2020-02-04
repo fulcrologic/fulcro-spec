@@ -52,7 +52,7 @@
    (defn triple->assertion [cljs? {:keys [actual arrow expected]}]
      (let [prefix (if cljs? "cljs.test" "clojure.test")
            is     (symbol prefix "is")
-           msg    (str actual " " arrow " " expected)]
+           msg    (str (pr-str actual) " " arrow " " (pr-str expected))]
        (case arrow
          =>
          `(~is (~'= ~expected ~actual)
