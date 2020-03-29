@@ -196,12 +196,8 @@
 (defn get-test-report [reporter]
   @(:state reporter))
 
-(defmulti fulcro-reporter :type)
-
-(defn fulcro-report [{:keys [test/reporter] :as system} on-complete]
-  (remove-method fulcro-reporter :default)
-  (defmethod fulcro-reporter :default [t]
-    (case (:type t)
+(defn handle-test [{:keys [test/reporter] :as system} on-complete t]
+  (case (:type t)
       :pass (pass reporter t)
       :error (error reporter t)
       :fail (fail reporter t)
@@ -218,8 +214,15 @@
       :summary (do (summary reporter t) #?(:clj (on-complete system)))
       #?@(:cljs [:end-run-tests (on-complete system)])
       nil))
+
+(defmulti fulcro-reporter :type)
+
+(defn fulcro-report [system on-complete]
+  (remove-method fulcro-reporter :default)
+  (defmethod fulcro-reporter :default [t]
+    (handle-test system on-complete t))
   fulcro-reporter)
 
 #?(:clj
    (defmacro with-fulcro-reporting [system on-complete & body]
-     `(binding [t/report (fulcro-report ~system ~on-complete)] ~@body)))
+     `(binding [t/report (fn [t#] (handle-test ~system ~on-complete t#))] ~@body)))
