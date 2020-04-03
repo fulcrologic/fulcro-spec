@@ -4,6 +4,7 @@
     #?@(:cljs ([cljs-uuid-utils.core :as uuid]
                [cljs.stacktrace :refer [parse-stacktrace]]))
     [clojure.test :as t]
+    [fulcro-spec.assertions :as ae]
     [fulcro-spec.diff :refer [diff]])
   #?(:clj
      (:import
@@ -26,8 +27,8 @@
 (defn now-time []
   #?(:clj (System/currentTimeMillis) :cljs (js/Date.now)))
 
-(defn make-testreport
-  ([] (make-testreport []))
+(defn make-test-report
+  ([] (make-test-report []))
   ([initial-items]
    {:id         (new-uuid)
     :namespaces []
@@ -35,7 +36,7 @@
     :test       0 :pass 0
     :fail       0 :error 0}))
 
-(defn make-testitem
+(defn make-test-item
   [{:keys [string form-meta]}]
   (cond-> {:id           (new-uuid)
            :name         string
@@ -44,7 +45,7 @@
            :test-results []}
     form-meta (assoc :form-meta form-meta)))
 
-(defn make-manual [test-name] (make-testitem {:string (str test-name " (MANUAL TEST)")}))
+(defn make-manual [test-name] (make-test-item {:string (str test-name " (MANUAL TEST)")}))
 
 #?(:cljs (defn- stack->trace [st] (parse-stacktrace {} st {} {})))
 
@@ -60,15 +61,13 @@
             :status status
             :where  (t/testing-vars-str t)})
     (merge-in-diff-results)
-    #?(:clj  (#(if (some->> % :actual (instance? Throwable))
+    #?(:clj  (#(if (some->> % ::ae/actual (instance? Throwable))
                  (assoc % :stack (with-out-str
-                                   (-> % :actual (.printStackTrace (new java.io.PrintWriter *out*)))))
+                                   (-> % ::ae/actual (.printStackTrace (new java.io.PrintWriter *out*)))))
                  %))
-       :cljs (#(if (some-> % :actual .-stack)
-                 (assoc % :stack (-> % :actual .-stack stack->trace))
-                 %)))
-    (update :actual fix-str)
-    (update :expected fix-str)))
+       :cljs (#(if (some-> % ::ae/actual .-stack)
+                 (assoc % :stack (-> % ::ae/actual .-stack stack->trace))
+                 %)))))
 
 (defn make-tests-by-namespace
   [test-name]
@@ -91,7 +90,7 @@
 
 (defn begin* [{:keys [state path]} t]
   (let [path             @path
-        test-item        (make-testitem t)
+        test-item        (make-test-item t)
         test-items-count (count (get-in @state (conj path :test-items)))]
     (swap! state assoc-in
       (conj path :test-items test-items-count)
@@ -113,7 +112,6 @@
 (defn failure* [{:as this :keys [state path]} t failure-type]
   (inc-report-counter failure-type)
   (let [path       @path
-        {:keys [test-results]} (get-in @state path)
         new-result (make-test-result failure-type t)]
     (set-test-result this failure-type)
     (swap! state update-in (conj path :test-results)
@@ -183,7 +181,7 @@
   (swap! state merge t))
 
 (defn reset-test-report! [{:keys [state path]}]
-  (reset! state (make-testreport))
+  (reset! state (make-test-report))
   (reset! path []))
 
 (defrecord TestReporter [state path])
@@ -192,18 +190,14 @@
   "Just a shell to contain minimum state necessary for reporting"
   []
   (map->TestReporter
-    {:state (atom (make-testreport))
+    {:state (atom (make-test-report))
      :path  (atom [])}))
 
 (defn get-test-report [reporter]
   @(:state reporter))
 
-(defmulti fulcro-reporter :type)
-
-(defn fulcro-report [{:keys [test/reporter] :as system} on-complete]
-  (remove-method fulcro-reporter :default)
-  (defmethod fulcro-reporter :default [t]
-    (case (:type t)
+(defn handle-test [{:keys [test/reporter] :as system} on-complete t]
+  (case (:type t)
       :pass (pass reporter t)
       :error (error reporter t)
       :fail (fail reporter t)
@@ -220,8 +214,15 @@
       :summary (do (summary reporter t) #?(:clj (on-complete system)))
       #?@(:cljs [:end-run-tests (on-complete system)])
       nil))
+
+(defmulti fulcro-reporter :type)
+
+(defn fulcro-report [system on-complete]
+  (remove-method fulcro-reporter :default)
+  (defmethod fulcro-reporter :default [t]
+    (handle-test system on-complete t))
   fulcro-reporter)
 
 #?(:clj
    (defmacro with-fulcro-reporting [system on-complete & body]
-     `(binding [t/report (fulcro-report ~system ~on-complete)] ~@body)))
+     `(binding [t/report (fn [t#] (handle-test ~system ~on-complete t#))] ~@body)))

@@ -23,9 +23,13 @@
 (defn fn-assert-expr [msg [f arg :as form]]
   `(let [arg#    ~arg
          result# (~f arg#)]
-     {:type    (if result# :pass :fail)
-      :message ~msg :assert-type '~'exec
-      :actual  arg# :expected '~f}))
+     {:type        (if result# :pass :fail)
+      :message     ~msg
+      :assert-type '~'exec
+      ::actual     arg#
+      ::expected   ~f
+      :actual      (list ~f arg#)
+      :expected    '~form}))
 
 (defn eq-assert-expr [msg [exp act :as form]]
   `(let [act#    ~act
@@ -35,50 +39,20 @@
       :message ~msg :assert-type '~'eq
       :actual  act# :expected exp#}))
 
-(defn parse-criteria [[tag x]]
-  (case tag :sym {:ex-type x} x))
-
-(defn check-error* [msg e & [ex-type regex fn fn-pr]]
-  (let [e-msg (or #?(:clj (.getMessage e) :cljs (.-message e)) (str e))]
-    (->> (cond
-           (some-> (ex-data e) :type (= ::internal))
-           {:type   :error :extra e-msg
-            :actual e :expected "it to throw"}
-
-           (and ex-type (not= ex-type (type e)))
-           {:type  :fail :actual (type e) :expected ex-type
-            :extra "exception did not match type"}
-
-           (and regex (not (re-find regex e-msg)))
-           {:type  :fail :actual e-msg :expected (str regex)
-            :extra "exception's message did not match regex"}
-
-           (and fn (not (fn e)))
-           {:type  :fail :actual e :expected fn-pr
-            :extra "checker function failed"}
-
-           :else {:type :pass :actual "act" :expected "exp"})
-      (merge {:message     msg
-              :assert-type 'throws?
-              :throwable   e}))))
-
-(defn check-error [msg e criteria & [fn-pr]]
-  (apply check-error* msg e
-    ((juxt :ex-type :regex :fn :fn-pr)
-     (assoc criteria :fn-pr fn-pr))))
-
 (defn assert-expr [msg [disp-key & form]]
   (cond
     (= '= disp-key) (eq-assert-expr msg form)
     (= 'exec disp-key) (fn-assert-expr msg form)
-    :else {:type     :fail :message msg :actual disp-key
-           :expected #{"exec" "eq" "throws?"}}))
+    :else {:type     :fail
+           :message  msg
+           :actual   (cons disp-key form)
+           :expected (list #{"exec" "eq"} disp-key)}))
 
 #?(:clj
    (defn triple->assertion [cljs? {:keys [actual arrow expected]}]
      (let [prefix (if cljs? "cljs.test" "clojure.test")
            is     (symbol prefix "is")
-           msg    (str actual " " arrow " " expected)]
+           msg    (str (pr-str actual) " " arrow " " (pr-str expected))]
        (case arrow
          =>
          `(~is (~'= ~expected ~actual)

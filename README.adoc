@@ -70,16 +70,16 @@ better testing experience:
 Run Tests with a `:focus` metadata marker (selector):
 
 ```
+(in-ns (.getName *ns*))
 (require 'fulcro-spec.reporters.repl)
-(in-ns '~file-namespace)  ; if using in an IntelliJ REPL Command
 (fulcro-spec.reporters.repl/run-tests #(:focus (meta %)))
 ```
 
 Run all tests:
 
 ```
+(in-ns (.getName *ns*))
 (require 'fulcro-spec.reporters.repl)
-(in-ns '~file-namespace)  ; if using in an IntelliJ REPL Command
 (fulcro-spec.reporters.repl/run-tests)
 ```
 

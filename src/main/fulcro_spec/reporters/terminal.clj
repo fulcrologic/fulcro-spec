@@ -7,7 +7,9 @@
     [colorize.core :as c]
     [io.aviso.exception :as pretty]
     [fulcro-spec.diff :as diff]
-    [fulcro-spec.reporter :as base]))
+    [fulcro-spec.reporter :as base]
+    [clojure.string :as str]
+    [fulcro-spec.assertions :as ae]))
 
 ;; ensure test runners don't see fulcro-spec's extended events
 (defmethod t/report :begin-specification [_])
@@ -102,14 +104,16 @@
 
 (defn print-throwable [e]
   (print (pretty/format-exception e {:frame-limit (env :frame-limit)}))
-  (some-> (.getCause e) print-throwable))
+  (some-> (.getCause e) print-throwable)
+  (when-let [message (and (instance? Exception e) (.getMessage e))]
+    (print message)))
 
 (defn pretty-str [s n]
   (as-> (with-out-str (pprint s)) s
     (clojure.string/split s #"\n")
     (apply str (interpose (str "\n" (pad " " (inc (* 2 n)))) s))))
 
-(defn print-highligted-diff [diff actual]
+(defn print-highlighted-diff [diff actual]
   (let [process-diff-elem (fn [d]
                             (let [{:keys [got exp]} (diff/extract d)]
                               (color-str :diff/impl [got exp])))
@@ -135,31 +139,15 @@
         (when (< num-diffs (count diff))
           (println "&" (- (count diff) num-diffs) "more..."))))
     (when (and (env :diff-hl?) (coll? actual))
-      (print-highligted-diff diff actual))))
+      (print-highlighted-diff diff actual))))
 
-(defn ?ellipses [s]
-  (binding [*print-level*  (env :*print-level*)
-            *print-length* (env :*print-length*)]
-    (try (apply str (drop-last (with-out-str (pprint (read-string s)))))
-         (catch Throwable _ s))))
-
-(defn parse-message [m]
-  (try (->> (read-string (str "[" m "]"))
-         (sequence (comp (map str) (map base/fix-str)))
-         (zipmap [:actual :arrow :expected]))
-       (catch Error _ {:message m})))
-
-(defn print-message [m print-fn]
+(defn print-message [{:keys [expected message]} print-fn]
   (print-fn (color-str :normal "ASSERTION:"))
-  (let [{:keys [arrow actual expected message]} (parse-message m)]
-    (print-fn)
-    (if message
-      (print-fn message)
-      (do
-        (print-fn (color-str :normal (str (?ellipses actual))))
-        (print-fn (color-str :normal (str arrow)))
-        (print-fn (color-str :normal (str (?ellipses expected))))))
-    (print-fn)))
+  (print-fn)
+  (if message
+    (print-fn (color-str :normal message))
+    (print-fn (color-str :normal expected)))
+  (print-fn))
 
 (defn print-extra [e print-fn]
   (print-fn (color-str :normal "    extra:") e))
@@ -172,84 +160,97 @@
       (color-str :where)
       print-fn)))
 
-(defn print-test-result [{:keys [message where status actual
-                                 expected extra throwable diff]}
+(defn pr-str-actual [test-result print-level]
+  (str "  Actual:\t"
+    (let [actual (or
+                   (::ae/actual test-result)
+                   (:actual test-result))]
+      (if (instance? Exception actual)
+        (type actual)
+        (pretty-str actual (+ 5 print-level))))))
+
+(defn pr-str-expected [test-result print-level]
+  (str "Expected:\t"
+    (let [expected (or
+                     (::ae/expected test-result)
+                     (:expected test-result))]
+      (pretty-str expected (+ 5 print-level)))))
+
+(defn print-test-result [{:keys     [where status extra throwable diff]
+                          ::ae/keys [actual] :as test-result}
                          print-fn print-level]
   (print-fn)
   (-> (or where "Unknown") (print-where status print-fn))
-  (when (and (= status :error)
-          (instance? Throwable actual))
+  (when (and (= status :error) (instance? Throwable actual))
     (print-throwable actual))
-  (when (and throwable
-          (not (instance? Throwable actual)))
+  (when (and throwable (not (instance? Throwable actual)))
     (print-throwable throwable))
-  (-> (or message "Unmarked Assertion") (print-message print-fn))
+  (print-message test-result print-fn)
   (when (env :full-diff?)
-    (print-fn "   Actual:" (pretty-str actual (+ 5 print-level)))
-    (print-fn " Expected:" (pretty-str expected (+ 5 print-level))))
+    (print-fn (pr-str-actual test-result print-level))
+    (print-fn (pr-str-expected test-result print-level)))
   (some-> extra (print-extra print-fn))
   (some-> diff (print-diff actual print-fn))
   (when (env :quick-fail?)
     (throw (ex-info "" {::stop? true}))))
 
 (def when-fail-only-keep-failed
-  (filter #(if-not (env :fail-only?)
-             true
-             (or (pos? (:fail (:status %) 0))
-               (pos? (:error (:status %) 0))))))
+  (filter #(or
+             (not (env :fail-only?))
+             (pos? (:fail (:status %) 0))
+             (pos? (:error (:status %) 0)))))
 
 (defn print-test-item [test-item print-level]
-  (t/with-test-out
-    (let [status  (:status test-item)
-          failed? (and (map? status) (or (pos-int? (:fail status)) (pos-int? (:error status))))]
-      (if (= "unmarked" (:name test-item))
-        (when failed?
-          (println (space-level print-level)
-            (color-str (:status test-item)
-              "UNMARKED ASSERTION/TEST")))
+  (let [status  (:status test-item)
+        failed? (and (map? status) (or (pos-int? (:fail status)) (pos-int? (:error status))))]
+    (if (= "unmarked" (:name test-item))
+      (when failed?
         (println (space-level print-level)
           (color-str (:status test-item)
-            (:name test-item)))))
-    (into []
-      (comp (filter (comp #{:fail :error} :status))
-        (map #(print-test-result % (->> print-level inc space-level
-                                     (partial println))
-                (inc print-level))))
-      (:test-results test-item))
-    (into []
-      (comp when-fail-only-keep-failed
-        (map #(print-test-item % (inc print-level))))
-      (:test-items test-item))))
+            "UNMARKED ASSERTION/TEST")))
+      (println (space-level print-level)
+        (color-str (:status test-item)
+          (:name test-item)))))
+  (into []
+    (comp (filter (comp #{:fail :error} :status))
+      (map #(print-test-result % (->> print-level inc space-level
+                                   (partial println))
+              (inc print-level))))
+    (:test-results test-item))
+  (into []
+    (comp when-fail-only-keep-failed
+      (map #(print-test-item % (inc print-level))))
+    (:test-items test-item)))
 
 (defn print-namespace [make-tests-by-namespace]
-  (t/with-test-out
-    (println)
-    (println (color-str (:status make-tests-by-namespace)
-               "Testing " (:name make-tests-by-namespace)))
-    (into []
-      (comp when-fail-only-keep-failed
-        (map #(print-test-item % 1)))
-      (:test-items make-tests-by-namespace))))
+  (println)
+  (println (color-str (:status make-tests-by-namespace)
+             "Testing " (:name make-tests-by-namespace)))
+  (into []
+    (comp when-fail-only-keep-failed
+      (map #(print-test-item % 1)))
+    (:test-items make-tests-by-namespace)))
 
-(defn print-report-data
+(defn print-test-report [{:keys [namespaces test pass fail error]}]
+  (println "Running tests for:" (map :name namespaces))
+  (try (->> namespaces
+         (into [] when-fail-only-keep-failed)
+         (sort-by :name)
+         (mapv print-namespace))
+    (catch Exception e
+      (when-not (->> e ex-data ::stop?)
+        (print-throwable e))))
+  (println "\nRan" test "tests containing"
+    (+ pass fail error) "assertions.")
+  (println fail "failures," error "errors."))
+
+(defn print-reporter
   "Prints the current report data from the report data state and applies colors based on test results"
   [reporter]
   (do
     (defmethod print-method Throwable [e w]
       (print-method (c/red e) w))
-    (t/with-test-out
-      (let [{:keys [namespaces test pass fail error]} (base/get-test-report reporter)]
-        (println "Running tests for:" (map :name namespaces))
-        (try (->> namespaces
-               (into [] when-fail-only-keep-failed)
-               (sort-by :name)
-               (mapv print-namespace))
-             (catch Exception e
-               (when-not (->> e ex-data ::stop?)
-                 (print-throwable e))))
-        (println "\nRan" test "tests containing"
-          (+ pass fail error) "assertions.")
-        (println fail "failures," error "errors.")))
+    (t/with-test-out (print-test-report (base/get-test-report reporter)))
     (remove-method print-method Throwable)
     reporter))
 
@@ -257,4 +258,4 @@
 
 (def fulcro-report
   (base/fulcro-report {:test/reporter this}
-    (comp base/reset-test-report! print-report-data :test/reporter)))
+    (comp base/reset-test-report! print-reporter :test/reporter)))
