@@ -71,24 +71,24 @@
    See the clojure.spec for `::p/mocks`.
    See the doc string for `p/parse-arrow-count`."
   [string & forms]
-  (p/provided* false string forms))
+  (p/provided* &env false string forms))
 
 (defmacro when-mocking
   "A macro that works just like 'provided', but requires no string and outputs no extra text in the test output.
    See the clojure.spec for `::p/mocks`.
    See the doc string for `p/parse-arrow-count`."
   [& forms]
-  (p/provided* false :skip-output forms))
+  (p/provided* &env false :skip-output forms))
 
 (defmacro provided!
   "Just like `provided`, but forces mocked functions to conform to the spec of the original function (if available)."
   [description & forms]
-  (p/provided* true description forms))
+  (p/provided* &env true description forms))
 
 (defmacro when-mocking!
   "Just like when-mocking, but forces mocked functions to conform to the spec of the original function (if available)."
   [& forms]
-  (p/provided* true :skip-output forms))
+  (p/provided* &env true :skip-output forms))
 
 (s/fdef assertions :args ::ae/assertions)
 (defmacro assertions [& forms]

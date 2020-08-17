@@ -77,14 +77,15 @@
     (if (or (= ncalled times)
           (and (= times :many)
             (> ncalled 0)))
-      :ok :error)))
+      :ok [ncalled times])))
 
 (defn validate-target-function-counts [script-atoms]
   (mapv (fn [script]
           (let [{:keys [function steps history]} @script
                 count-results (reduce validate-step-counts [] steps)
-                errors?       (some #(= :error %) count-results)]
-            (when errors?
-              (throw (ex-info (str function " was not called as many times as specified")
-                       @script)))))
+                first-error   (first (filter #(not= :ok %) count-results))]
+            (when first-error
+              (throw (ex-info (str function " was not called as many times as specified.\n"
+                                "Expected " (second first-error) ", actual " (first first-error))
+                       (merge {:mock? true} @script))))))
     script-atoms))

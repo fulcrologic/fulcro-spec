@@ -1,5 +1,6 @@
 (ns fulcro-spec.reporters.terminal
   (:require
+    [clojure.stacktrace :refer [print-stack-trace]]
     [clojure.edn :as edn]
     [clojure.pprint :refer [pprint]]
     [clojure.string :as s]
@@ -9,7 +10,8 @@
     [fulcro-spec.diff :as diff]
     [fulcro-spec.reporter :as base]
     [clojure.string :as str]
-    [fulcro-spec.assertions :as ae]))
+    [fulcro-spec.assertions :as ae])
+  (:import (clojure.lang ExceptionInfo)))
 
 ;; ensure test runners don't see fulcro-spec's extended events
 (defmethod t/report :begin-specification [_])
@@ -160,13 +162,33 @@
       (color-str :where)
       print-fn)))
 
+(def ^:dynamic *stack-frames* 10)
+(def ^:dynamic *exclude-files* #{"core.clj" "stub.cljc"})
+
+(defn- excluded-trace-line? [line]
+  (boolean (some #(str/includes? line (str "(" % ":")) *exclude-files*)))
+
+(defn no-core-trace [ex]
+  (let [lines       (str/split
+                      (with-out-str
+                        (print-stack-trace ex))
+                      #"\n")
+        interesting (take *stack-frames* (remove #(excluded-trace-line? %) lines))]
+    (str/join "\n" interesting)))
+
 (defn pr-str-actual [test-result print-level]
   (str "  Actual:\t"
     (let [actual (or
                    (::ae/actual test-result)
                    (:actual test-result))]
-      (if (instance? Exception actual)
-        (type actual)
+      (cond
+        (and (instance? ExceptionInfo actual) (:mock? (ex-data actual)))
+        (str "Mocking failure: " (ex-message actual))
+
+        (instance? Exception actual)
+        (no-core-trace actual)
+
+        :else
         (pretty-str actual (+ 5 print-level))))))
 
 (defn pr-str-expected [test-result print-level]
@@ -237,9 +259,9 @@
          (into [] when-fail-only-keep-failed)
          (sort-by :name)
          (mapv print-namespace))
-    (catch Exception e
-      (when-not (->> e ex-data ::stop?)
-        (print-throwable e))))
+       (catch Exception e
+         (when-not (->> e ex-data ::stop?)
+           (print-throwable e))))
   (println "\nRan" test "tests containing"
     (+ pass fail error) "assertions.")
   (println fail "failures," error "errors."))

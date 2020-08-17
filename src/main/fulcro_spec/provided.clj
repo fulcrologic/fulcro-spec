@@ -35,28 +35,31 @@
 (defn literal->gensym [l]
   (if (symbol? l) l (gensym "arg")))
 
-(defn conformed-stub [sym arglist result]
-  `(fn [~@arglist]
-     (let [result# ~result]
-       (when-let [spec# (s/get-spec (var ~sym))]
-         (let [{:keys [~'args ~'ret]} spec#]
-           (when (and ~'args (not (s/valid? ~'args [~@arglist])))
-             (throw (ex-info (str "Mock of " ~(str sym) " was sent arguments that do not conform to spec: " (with-out-str (s/explain ~'args [~@arglist]))) {})))
-           (when (and ~'ret (not (s/valid? ~'ret result#)))
-             (throw (ex-info (str "Mock of " ~(str sym) " returned a value that does not conform to spec: " (with-out-str (s/explain ~'ret result#))) {})))))
-       result#)))
+(defn conformed-stub [env sym arglist result]
+  (let [valid?   (if (im/cljs-env? env) `cljs.spec.alpha/valid? `clojure.spec.alpha/valid?)
+        get-spec (if (im/cljs-env? env) `cljs.spec.alpha/get-spec `clojure.spec.alpha/get-spec)
+        explain  (if (im/cljs-env? env) `cljs.spec.alpha/explain `clojure.spec.alpha/explain)]
+    `(fn [~@arglist]
+       (let [result# ~result]
+         (when-let [spec# (~get-spec (var ~sym))]
+           (let [{:keys [~'args ~'ret]} spec#]
+             (when (and ~'args (not (~valid? ~'args [~@arglist])))
+               (throw (ex-info (str "Mock of " ~(str sym) " was sent arguments that do not conform to spec: " (with-out-str (~explain ~'args [~@arglist]))) {:mock? true})))
+             (when (and ~'ret (not (~valid? ~'ret result#)))
+               (throw (ex-info (str "Mock of " ~(str sym) " returned a value that does not conform to spec: " (with-out-str (~explain ~'ret result#))) {:mock? true})))))
+         result#))))
 
-(defn parse-mock-triple [conform? {:as triple :keys [under-mock arrow result]}]
+(defn parse-mock-triple [env conform? {:as triple :keys [under-mock arrow result]}]
   (merge under-mock
     (let [{:keys [params mock-name]} under-mock
           arglist (map literal->gensym params)]
       {:ntimes        (parse-arrow-count arrow)
        :literals      (mapv symbol->any params)
        :stub-function (if conform?
-                        (conformed-stub mock-name arglist result)
+                        (conformed-stub env mock-name arglist result)
                         `(fn [~@arglist] ~result))})))
 
-(defn parse-mocks [conform? mocks]
+(defn parse-mocks [env conform? mocks]
   (let [parse-steps
         (fn parse-steps [[mock-name steps :as group]]
           (let [symgen (gensym "script")]
@@ -68,7 +71,7 @@
              :mock-name mock-name
              :symgen    symgen}))]
     (->> mocks
-      (map (partial parse-mock-triple conform?))
+      (map (partial parse-mock-triple env conform?))
       (group-by :mock-name)
       (map parse-steps))))
 
@@ -94,9 +97,9 @@
     :body (s/+ ::ffs/any)))
 
 (defn provided*
-  [conform-mocks? string forms]
+  [env conform-mocks? string forms]
   (let [{:keys [mocks body]} (ffs/conform! ::mocks forms)
-        scripts      (parse-mocks conform-mocks? mocks)
+        scripts      (parse-mocks env conform-mocks? mocks)
         skip-output? (= :skip-output string)]
     `(im/with-reporting ~(when-not skip-output? {:type :provided :string (str "PROVIDED: " string)})
        (im/try-report "Unexpected"

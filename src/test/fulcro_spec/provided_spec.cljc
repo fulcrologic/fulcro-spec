@@ -27,7 +27,7 @@
 
 #?(:clj
    (deftest parse-mock-triple
-     (let [test-parse (comp (partial p/parse-mock-triple false)
+     (let [test-parse (comp (partial p/parse-mock-triple {} false)
                         (partial fss/conform! :fulcro-spec.provided/triple))]
        (let [result (test-parse '[(f a b) =2x=> (+ a b)])]
          (behavior "includes a call count"
@@ -56,7 +56,7 @@
 #?(:clj
    (deftest provided-macro
      (behavior "Outputs a syntax-quoted block"
-       (let [expanded (p/provided* false "some string"
+       (let [expanded (p/provided* {} false "some string"
                         '[(f n) => (+ n 1)
                           (f n) =2x=> (* 3 n)
                           (under-test)])]
@@ -84,7 +84,7 @@
                    {:type :provided :string "PROVIDED: some string"})))))
 
      (behavior "Can do mocking without output"
-       (let [expanded    (p/provided* false :skip-output
+       (let [expanded    (p/provided* {} false :skip-output
                            '[(f n) => (+ n 1)
                              (f n) =2x=> (* 3 n)
                              (under-test)])
