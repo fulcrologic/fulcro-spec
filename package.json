@@ -4,19 +4,19 @@
   "description": "",
   "private": true,
   "dependencies": {
-    "highlight.js": "^9.13.1",
-    "react-grid-layout": "^0.16.6",
-    "react-icons": "^2.2.7",
-    "reakit": "^0.11.2"
+    "highlight.js": "^10.1.2",
+    "react-grid-layout": "^1.0.0",
+    "react-icons": "^3.10.0",
+    "reakit": "^1.2.2"
   },
   "devDependencies": {
-    "karma": "3.1.4",
-    "karma-chrome-launcher": "2.2.0",
+    "karma": "5.1.1",
+    "karma-chrome-launcher": "3.1.0",
     "karma-cljs-test": "0.1.0",
-    "shadow-cljs": "2.8.83",
-    "showdown": "1.9.0",
-    "react": "^16.7.0",
-    "react-dom": "^16.7.0"
+    "shadow-cljs": "2.10.21",
+    "showdown": "1.9.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
   },
   "author": "",
   "license": "MIT"

@@ -60,9 +60,9 @@
         (let [[test-5, test-6, test-7]
               (map #(with-out-str (term/print-test-result % println 0))
                 (:test-results fn-arrow-tests))]
-          (is (= "class java.lang.ClassCastException" (find-actual-str test-5)))
+          (is (str/starts-with? (find-actual-str test-5) "java.lang.ClassCastException: class"))
           (is (= "(exec 5 even?)" (find-expected-str test-5)))
           (is (= "6" (find-actual-str test-6)))
           (is (re-find #"odd_QMARK" (find-expected-str test-6)))
-          (is (= "class java.lang.NullPointerException" (find-actual-str test-7)))
+          (is (= "java.lang.NullPointerException: null" (find-actual-str test-7)))
           (is (= "(exec (some-> nil :fn) 7)" (find-expected-str test-7))))))))
