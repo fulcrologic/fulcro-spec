@@ -4,10 +4,15 @@
   <groupId>fulcrologic</groupId>
   <artifactId>fulcro-spec</artifactId>
   <packaging>jar</packaging>
-  <version>3.1.5</version>
+  <version>3.1.6-SNAPSHOT</version>
   <name>fulcro-spec</name>
   <description>Helper Macros for clj and cljs test</description>
   <url>https://github.com/fulcrologic/fulcro-spec</url>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
   <licenses>
     <license>
       <name>MIT Public License</name>
@@ -54,10 +59,6 @@
     <repository>
       <id>clojars</id>
       <url>https://repo.clojars.org/</url>
-    </repository>
-    <repository>
-      <id>sonatype</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
     </repository>
   </repositories>
   <dependencies>
