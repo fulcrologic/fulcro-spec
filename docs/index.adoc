@@ -312,3 +312,27 @@ Note that you can schedule multiple things, and still return a value from the mo
 
 the above indicates that when `f` is called it will schedule `(g)` to run 200ms from \"now\" and `(h)` to run
 300ms from \"now\". Then `f` will return `true`.
+
+== REPL Usage (Clojure)
+
+The terminal reporter is quite easy and useful to use at the REPL for Clojure. Simply start a REPL, and define a keyboard shortcut to run something like this:
+
+[source]
+-----
+;; make sure you put the REPL in the (possibly reloaded) ns (your REPL might be closing over an old version)
+(in-ns (.getName *ns*))
+;; Make sure the REPL runner is loaded
+(require 'fulcro-spec.reporters.repl)
+;; Run all tests in current ns
+(fulcro-spec.reporters.repl/run-tests)
+-----
+
+=== Controlling Stack Trace Output
+
+There are two dynamic vars that can be used to filter/limit stack traces in the outline output:
+
+`fulcro-spec.reporters.terminal/*exclude-files*`:: What (simple) filenames to ignore stack frames from. (default `#{"core.clj" "stub.cljc"}`)
+`fulcro-spec.reporters.terminal/*stack-frames*`:: How many non-filtered frames to print (default 10)
+
+Use `alter-var-root` to reset the value of these globally.
+
