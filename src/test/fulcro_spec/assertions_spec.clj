@@ -9,7 +9,8 @@
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.spec :as fss]
     [fulcro-spec.testing-helpers :as th]
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [fulcro-spec.check :as check])
   (:import clojure.lang.ExceptionInfo))
 
 (defn check-assertion [expected]

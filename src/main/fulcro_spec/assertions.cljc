@@ -7,9 +7,10 @@
     [clojure.spec.alpha :as s]
     #?(:clj
        [fulcro-spec.impl.macros :as im])
-    [fulcro-spec.spec :as fss]))
+    [fulcro-spec.spec :as fss]
+    [fulcro-spec.check :as fs.check]))
 
-(s/def ::arrow (comp #{"=>" "=fn=>" "=throws=>"} str))
+(s/def ::arrow (comp #{"=>" "=fn=>" "=throws=>" "=check=>"} str))
 (s/def ::behavior string?)
 (s/def ::triple (s/cat
                   :actual ::fss/any
@@ -46,7 +47,7 @@
     :else {:type     :fail
            :message  msg
            :actual   (cons disp-key form)
-           :expected (list #{"exec" "eq"} disp-key)}))
+           :expected (list #{"exec" "check" "eq"} disp-key)}))
 
 #?(:clj
    (defn triple->assertion [cljs? {:keys [actual arrow expected]}]
@@ -63,6 +64,10 @@
                arg     actual]
            `(~is (~'exec ~checker ~arg)
               ~msg))
+
+         =check=>
+         `(~is (~'check ~expected ~actual)
+            ~msg)
 
          =throws=>
          (let [cls (if cljs? :default Throwable)]
@@ -92,8 +97,12 @@
        `(cljs.test/do-report ~(assert-expr msg form)))
      (defmethod cljs.test/assert-expr 'exec [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
+     (defmethod cljs.test/assert-expr 'check [env msg form]
+       (fs.check/check-expr msg form))
      (defmethod clojure.test/assert-expr '= [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr 'exec [msg form]
-       `(clojure.test/do-report ~(assert-expr msg form)))))
+       `(clojure.test/do-report ~(assert-expr msg form)))
+     (defmethod clojure.test/assert-expr 'check [msg form]
+       (fs.check/check-expr msg form))))
 

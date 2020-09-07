@@ -60,7 +60,7 @@
         (let [[test-5, test-6, test-7]
               (map #(with-out-str (term/print-test-result % println 0))
                 (:test-results fn-arrow-tests))]
-          (is (str/starts-with? (find-actual-str test-5) "java.lang.ClassCastException: class"))
+          (is (str/starts-with? (find-actual-str test-5) "java.lang.ClassCastException"))
           (is (= "(exec 5 even?)" (find-expected-str test-5)))
           (is (= "6" (find-actual-str test-6)))
           (is (re-find #"odd_QMARK" (find-expected-str test-6)))
