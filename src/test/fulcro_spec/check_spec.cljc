@@ -1,18 +1,18 @@
 (ns fulcro-spec.check-spec
   (:require
     [clojure.test :as t]
-    [fulcro-spec.check :as check]
+    [fulcro-spec.check :as check :refer [checker]]
     [fulcro-spec.core :refer [assertions]]))
 
 (;do
  comment
   (t/deftest checkers-smoke-test
-    (let [x-double? (fn [actual]
+    (let [x-double? (checker [actual]
                       (when-not (double? (get-in actual [:x]))
                         {:actual actual
                          :expected `double?
                          :message "x was not a double"}))
-          failing-checker (fn [actual]
+          failing-checker (checker [actual]
                             (vector
                               (let [v (get-in actual [:FAKE/int])]
                                 (when-not (int? v)
@@ -31,4 +31,7 @@
         data =check=> failing-checker
         data =check=> (check/all*
                         (check/embeds?* {:a "A"})
-                        (check/embeds?* {:b {:c "C"}}))))))
+                        (check/embeds?* {:b {:c "C"}}))
+        data =check=> (check/embeds?*
+                        {:a (check/is?* even?)
+                         :b {:c (check/equals?* 7)}})))))
