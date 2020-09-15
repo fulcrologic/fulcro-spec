@@ -1,21 +1,23 @@
 (ns fulcro-spec.check
+  #?(:cljs (:require-macros [fulcro-spec.check :refer [checker]]))
   (:require
+    #?@(:cljs [[goog.string.format]
+               [goog.string :refer [format]]])
     [clojure.spec.alpha :as s]
     [clojure.test :as t]))
 
 (defn checker? [x] (and (fn? x) (::checker (meta x))))
 
 (defn check-expr [msg [_ checker actual]]
-  `(let [checker# ~checker, actual# ~actual
+  `(let [checker# ~checker, actual# ~actual, msg# ~msg
          location# ~(select-keys (meta checker) [:line])]
      (when-not (checker? checker#)
-       (throw (ex-info "checker should be annotated with ^::checker or created with checker macro" {:checker checker# :meta (meta checker#)})))
-     (when-let [failures# ((all* checker#) actual#)]
+       (throw (ex-info "checker should be created with `checker` macro"
+                {:checker checker# :meta (meta checker#)})))
+     (if-let [failures# ((all* checker#) actual#)]
        (doseq [f# failures#]
-         (t/do-report
-           (merge {:message ~msg} f#
-             {:type :fail}
-             location#))))))
+         (t/do-report (merge {:message msg#} f# {:type :fail} location#)))
+       (t/do-report (merge {:type :pass :message msg#} location#)))))
 
 (defmacro checker [arglist & args]
   (assert (= 1 (count arglist))
@@ -31,9 +33,11 @@
 
 (defn all* [& checkers]
   (checker [actual]
-    (filter check-failure?
-      (flatten
-        (map #(% actual) checkers)))))
+    (->> checkers
+      (map #(% actual))
+      (flatten)
+      (filter check-failure?)
+      seq)))
 
 (defn is?* [predicate]
   (checker [actual]
@@ -63,29 +67,53 @@
 
 (defn every?* [& checkers]
   (checker [actual]
-    (conj (mapcat (apply all* checkers) actual)
-      ((is?* seq) actual))))
+    (if (seqable? actual)
+      (mapcat (apply all* checkers) actual)
+      ((is?* seqable?) actual))))
+
+(defn- path-to-get-in-failure [value path]
+  (->> path
+    (reduce
+      (fn [{:as acc :keys [path value]} path-segment]
+        (if-not (some? value)
+          (reduced {:path path})
+          (-> acc
+            (update :path conj path-segment)
+            (update :value get path-segment))))
+      {:path [] :value value})
+    :path))
 
 (defn in* [path & checkers]
   (checker [actual]
-    ((apply all*
-       (exists?* (str "expected " path " to exist in " actual))
-       checkers)
-     (get-in actual path))))
+    (if-let [nested (get-in actual path)]
+      ((apply all* checkers) nested)
+      (let [missing-path (path-to-get-in-failure actual path)
+            failing-path-segment (last missing-path)
+            failing-path (vec (drop-last missing-path))]
+        {:actual actual
+         :expected `(in* ~missing-path)
+         :message (format "expected `%s` to contain `%s` at path %s"
+                     (pr-str (get-in actual failing-path))
+                     failing-path-segment
+                     (pr-str failing-path))}))))
 
-(defn embeds?*
-  ([expected] (embeds?* expected []))
-  ([expected path]
-   (checker [actual]
-     (seq
-       (for [[k v] expected]
-         (let [actual-value (get actual k)
-               path (conj path k)]
-           (cond
-             (map? v) #_=> ((embeds?* v path) actual-value)
-             (checker? v) #_=> (v actual-value)
-             (fn? v) (throw (ex-info "function found, should be annotated with ^::checker or created with checker macro" {:function v :meta (meta v)}))
-             (not= actual-value v)
-             #_=> {:actual actual-value
-                   :expected v
-                   :message (str "at path " path ":")})))))))
+(defn embeds?* [expected]
+  (letfn [(-embeds?* [expected path]
+            (checker [actual]
+              (for [[k v] expected]
+                (let [actual-value (get actual k ::not-found)
+                      path (conj path k)]
+                  (cond
+                    (map? v) #_=> ((-embeds?* v path) actual-value)
+                    (checker? v) #_=> (v actual-value)
+                    (fn? v) (throw (ex-info "function found, should be created with `checker` macro"
+                                     {:function v :meta (meta v)}))
+                    (= actual-value ::not-found)
+                    #_=> {:actual actual
+                          :expected v
+                          :message (str "at path " (vec (drop-last path)) ":")}
+                    (not= actual-value v)
+                    #_=> {:actual actual
+                          :expected v
+                          :message (str "at path " path ":")})))))]
+    (-embeds?* expected [])))
