@@ -6,19 +6,30 @@
     [clojure.spec.alpha :as s]
     [clojure.test :as t]))
 
-(defn checker? [x] (and (fn? x) (::checker (meta x))))
+(defn checker?
+  "Checks if passed in argument was a function created by the `checker` macro.
+   NOTE: the fact that a checker is just a fn with metadata is an internal detail, do not rely on that fact, and prefer usage of the `checker` macro."
+  [x] (and (fn? x) (::checker (meta x))))
+
+(defn prepend-message
+  "WARNING: INTERNAL HELPER, DO NOT USE!"
+  [msg fail]
+  (if-not (:message fail)
+    (assoc fail :message msg)
+    (update fail :message (partial str msg "\n"))))
 
 (defn check-expr [msg [_ checker actual]]
   `(let [checker# ~checker, actual# ~actual, msg# ~msg
          location# ~(select-keys (meta checker) [:line])]
      (if-let [failures# ((all* checker#) actual#)]
        (doseq [f# failures#]
-         (t/do-report (merge {:message msg#} f# {:type :fail} location#)))
+         (t/do-report (merge (prepend-message msg# f#) {:type :fail} location#)))
        (t/do-report (merge {:type :pass :message msg#} location#)))))
 
 (defmacro checker
   "Creates a function that takes only one argument (usually named `actual`).
-   For use in =check=> assertions."
+   For use in =check=> assertions.
+   NOTE: the fact that a checker is just a fn with metadata is an internal detail, do not rely on that fact, and prefer usage of this `checker` macro."
   [arglist & args]
   (assert (= 1 (count arglist))
     "A checker arglist should only have one argument.")
@@ -148,6 +159,15 @@
                      failing-path-segment
                      (pr-str failing-path))}))))
 
+(defn append-message
+  "WARNING: INTERNAL HELPER, DO NOT USE!"
+  [message failures]
+  (some->> failures
+    (map #(update % :message
+            (fn [msg]
+              (if-not msg message
+                (str msg "\n" message)))))))
+
 (defn embeds?*
   "Takes a map and returns a checker that checks if the values at the keys match (using `=`) .
    The map values can be `checker`s, but will throw an error if passed a raw function.
@@ -161,19 +181,20 @@
   (letfn [(-embeds?* [expected path]
             (checker [actual]
               (for [[k v] expected]
-                (let [actual-value (get actual k ::not-found)
+                (let [value-at-key (get actual k ::not-found)
                       path (conj path k)]
                   (cond
-                    (map? v) #_=> ((-embeds?* v path) actual-value)
-                    (checker? v) #_=> (v actual-value)
+                    (map? v) #_=> ((-embeds?* v path) value-at-key)
+                    (checker? v) #_=> (append-message (format "at path %s:" path)
+                                        ((all* v) value-at-key))
                     (fn? v) (throw (ex-info "function found, should be created with `checker` macro"
                                      {:function v :meta (meta v)}))
-                    (= actual-value ::not-found)
+                    (= value-at-key ::not-found)
                     #_=> {:actual actual
                           :expected v
                           :message (str "at path " (vec (drop-last path)) ":")}
-                    (not= actual-value v)
-                    #_=> {:actual actual
+                    (not= value-at-key v)
+                    #_=> {:actual (get actual k)
                           :expected v
                           :message (str "at path " path ":")})))))]
     (-embeds?* expected [])))

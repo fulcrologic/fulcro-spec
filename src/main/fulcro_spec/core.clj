@@ -11,7 +11,7 @@
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]))
 
-(declare => =1x=> =2x=> =3x=> =4x=> =throws=> =fn=>)
+(declare => =1x=> =2x=> =3x=> =4x=> =throws=> =fn=> =check=>)
 
 (defn var-name-from-string [s]
   (symbol (str "__" (str/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))

@@ -132,19 +132,21 @@
       ((check/embeds?* {:a :X}) {:a "not :X"})
       => [{:message "at path [:a]:"
            :expected :X
-           :actual {:a "not :X"}}]
+           :actual "not :X"}]
       "checks nested hashmap recursively"
       ((check/embeds?* {:a {:b :X}}) {:a {:b "not :X"}})
       => [[{:message "at path [:a :b]:"
             :expected :X
-            :actual {:b "not :X"}}]]
+            :actual "not :X"}]]
       ((check/embeds?* {:a {:b :X}}) {:a "not a map"})
       => [[{:message "at path [:a]:"
             :expected :X
             :actual "not a map"}]]
       "can take checkers as map values"
       ((check/embeds?* {:a (check/equals?* :X)}) {:a "not x"})
-      => [{:actual "not x" :expected :X}]
+      => [[{:message "at path [:a]:"
+            :actual "not x"
+            :expected :X}]]
       "does not take functions as map values"
       (seq ((check/embeds?* {:a even?}) {:a 111}))
       =throws=> #"function found, should be created with `checker` macro")))
@@ -168,6 +170,24 @@
     "refuses to take non-checker functions"
     (check/all* even?)
     =throws=> #"checker should be created with `checker`"))
+
+(specification "prepend-message"
+  (assertions
+    (check/prepend-message "TST:MSG" {})
+    => {:message "TST:MSG"}
+    (check/prepend-message "TST:MSG" {:message "message"})
+    => {:message "TST:MSG\nmessage"}))
+
+(specification "append-message"
+  (assertions
+    (check/append-message "TST:MSG" nil)
+    => nil
+    (check/append-message "TST:MSG" [])
+    => []
+    (check/append-message "TST:MSG" [{}])
+    => [{:message "TST:MSG"}]
+    (check/append-message "TST:MSG" [{:message "message"}])
+    => [{:message "message\nTST:MSG"}]))
 
 #?(:clj
    (defn test-check-expr [checker actual & [message]]
