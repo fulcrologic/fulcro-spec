@@ -109,15 +109,15 @@
           {:actual 13 :expected even?}]))
   (component "in*"
     (assertions
-      ((check/in* [:a]) {:x 1})
+      ((check/in* [:a] nil) {:x 1})
       => {:actual {:x 1}
           :expected `(check/in* [:a])
           :message "expected `{:x 1}` to contain `:a` at path []"}
-      ((check/in* [:a :b :c]) {:a {:x 2}})
+      ((check/in* [:a :b :c] nil) {:a {:x 2}})
       => {:actual {:a {:x 2}}
           :expected `(check/in* [:a :b])
           :message "expected `{:x 2}` to contain `:b` at path [:a]"}
-      ((check/in* [:a :b :c]) {:a {:b {:x 3}}})
+      ((check/in* [:a :b :c] nil) {:a {:b {:x 3}}})
       => {:actual {:a {:b {:x 3}}}
           :expected `(check/in* [:a :b :c])
           :message "expected `{:x 3}` to contain `:c` at path [:a :b]"}

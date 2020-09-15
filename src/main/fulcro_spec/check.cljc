@@ -28,45 +28,63 @@
       (contains? x :actual)
       (contains? x :message))))
 
-(defn all* [& checkers]
-  (doseq [c checkers]
+(defn all*
+  "Takes one or more `checker`s, and returns a new `checker`.
+   That checker takes an `actual` argument, and calls every checker with it as the first and only argument.
+   Returns nil or a sequence of maps matching `check-failure?`."
+  [c & cs]
+  (doseq [c (cons c cs)]
     (when-not (checker? c)
       (throw (ex-info "checker should be created with `checker` macro"
                {:checker c :meta (meta c)}))))
   (checker [actual]
-    (->> checkers
+    (->> (cons c cs)
       (map #(% actual))
       (flatten)
       (filter check-failure?)
       seq)))
 
-(defn is?* [predicate]
+(defn is?*
+  "Takes any truthy predicate function and returns a checker that checks with said predicate."
+  [predicate]
   (checker [actual]
     (when-not (predicate actual)
       {:actual actual
        :expected predicate})))
 
-(defn equals?* [expected]
+(defn equals?*
+  "Takes any value and returns a checker that checks for equality."
+  [expected]
   (checker [actual]
     (when-not (= expected actual)
       {:actual actual
        :expected expected})))
 
-(defn valid?* [spec]
+(defn valid?*
+  "Takes any valid clojure.spec.alpha/spec and returns a checker.
+   The checker checks with `s/valid?` and calls `s/explain-str` for the `:message`."
+  [spec]
   (checker [actual]
     (when-not (s/valid? spec actual)
       {:message (s/explain-str spec actual)
        :actual actual
        :expected spec})))
 
-(defn re-find?* [regex]
+(defn re-find?*
+  "Takes a regex (or string) and returns a checker that checks using `re-find`."
+  [regex]
   (checker [actual]
     (when-not (re-find regex actual)
       {:message (format "Failed to find `%s` in '%s'" regex actual)
        :actual actual
        :expected `(re-pattern ~(str regex))})))
 
-(defn seq-matches?* [coll]
+(defn seq-matches?*
+  "Takes a `sequential?` collection, and returns a checker that checks its argument in a sequential manner, ie:
+   `(seq-matches?* [1 2]) =check=> [1 2]`
+   Can also take checkers as values, eg:
+   `(seq-matches?* [(is?* pos?)]) =check=> [42]`"
+  [coll]
   (assert (sequential? coll)
     "seq-matches?* can only take `sequential?` collections, eg: lists & vectors")
   (all*
@@ -81,14 +99,18 @@
           (not= act exp) {:actual act :expected exp
                           :message (format "at index `%s` failed to match:" idx)})))))
 
-(defn exists?* [msg]
+(defn exists?*
+  "Takes a failure message and returns a checker that checks for non-nil values."
+  [msg]
   (checker [actual]
     (when-not (some? actual)
       {:message msg
        :expected `some?
        :actual actual})))
 
-(defn every?* [c & cs]
+(defn every?*
+  "Takes one or more checkers, and returns a checker that runs all checker arguments on each element of the checker argument sequence."
+  [c & cs]
   (checker [actual]
     (assert (seqable? actual)
       "every?* can only take `seqable?` collections, ie: responds to `seq`")
@@ -106,10 +128,13 @@
       {:path [] :value value})
     :path))
 
-(defn in* [path & checkers]
+(defn in*
+  "Takes a path and one or more checkers, and returns a checker that focuses the checker argument on the result of running `(get-in actual path)`.
+   If the call to `get-in` failed it returns a `check-failure?`."
+  [path c & cs]
   (checker [actual]
     (if-let [nested (get-in actual path)]
-      ((apply all* checkers) nested)
+      ((apply all* c cs) nested)
       (let [missing-path (path-to-get-in-failure actual path)
             failing-path-segment (last missing-path)
             failing-path (vec (drop-last missing-path))]
@@ -120,7 +145,16 @@
                      failing-path-segment
                      (pr-str failing-path))}))))
 
-(defn embeds?* [expected]
+(defn embeds?*
+  "Takes a map and returns a checker that checks if the values at the keys match (using `=`) .
+   The map values can be `checker`s, but will throw an error if passed a raw function.
+   The map can be arbitrarily nested with further maps, eg:
+   ```
+   (embeds?* {:a 1, :b {:c (is?* even?)}}) =check=> {:a 1, :b {:c 2}}
+   ```"
+  [expected]
+  (assert (map? expected)
+    "embeds?* can only take `map?`s.")
   (letfn [(-embeds?* [expected path]
             (checker [actual]
               (for [[k v] expected]
