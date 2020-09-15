@@ -16,7 +16,10 @@
          (t/do-report (merge {:message msg#} f# {:type :fail} location#)))
        (t/do-report (merge {:type :pass :message msg#} location#)))))
 
-(defmacro checker [arglist & args]
+(defmacro checker
+  "Creates a function that takes only one argument (usually named `actual`).
+   For use in =check=> assertions."
+  [arglist & args]
   (assert (= 1 (count arglist))
     "A checker arglist should only have one argument.")
   `(with-meta (fn ~arglist ~@args) {::checker true}))
