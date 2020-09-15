@@ -87,11 +87,11 @@
        :expected `some?
        :actual actual})))
 
-(defn every?* [& checkers]
+(defn every?* [c & cs]
   (checker [actual]
-    (if (seqable? actual)
-      (mapcat (apply all* checkers) actual)
-      ((is?* seqable?) actual))))
+    (assert (seqable? actual)
+      "every?* can only take `seqable?` collections, ie: responds to `seq`")
+    (mapcat (apply all* c cs) actual)))
 
 (defn- path-to-get-in-failure [value path]
   (->> path

@@ -84,10 +84,8 @@
           :expected `some?}))
   (component "every?*"
     (assertions
-      (map (check/every?* (check/is?* number?))
-        [:kw 123])
-      => [{:actual :kw :expected seqable?}
-          {:actual 123 :expected seqable?}]
+      ((check/every?* (check/is?* number?)) :kw)
+      =throws=> #"can only take `seqable\?`"
       ((check/every?* (check/is?* number?))
        "str")
       => [{:actual \s :expected number?}
