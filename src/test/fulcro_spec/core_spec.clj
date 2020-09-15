@@ -1,7 +1,6 @@
 (ns fulcro-spec.core-spec
   (:require
     [clojure.test :as t :refer [is deftest]]
-    [fulcro-spec.contains :refer [*contains?]]
     [fulcro-spec.core
      :refer [behavior when-mocking assertions]
      :as core]))

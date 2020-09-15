@@ -3,7 +3,6 @@
     [clojure.spec.alpha :as s]
     [clojure.test :as t :refer [is testing deftest]]
     [fulcro-spec.assertions :as ae]
-    [fulcro-spec.contains :refer [*contains?]]
     [fulcro-spec.core
      :refer [specification component behavior assertions]]
     [fulcro-spec.impl.macros :as im]
