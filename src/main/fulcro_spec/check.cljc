@@ -58,6 +58,28 @@
        :actual actual
        :expected spec})))
 
+(defn re-find?* [regex]
+  (checker [actual]
+    (when-not (re-find regex actual)
+      {:message (format "Failed to find `%s` in '%s'" regex actual)
+       :actual actual
+       :expected `(re-pattern ~(str regex))})))
+
+(defn seq-matches?* [coll]
+  (assert (sequential? coll)
+    "seq-matches?* can only take `sequential?` collections, eg: lists & vectors")
+  (all*
+    (checker [actual]
+      (assert (sequential? actual)
+        "seq-matches?* can only compare against `sequential?` collections, eg: lists & vectors")
+      (for [[idx act exp] (map vector (range) actual coll)]
+        (cond
+          (checker? exp) (exp act)
+          (fn? exp) (throw (ex-info "function found, should be created with `checker` macro"
+                             {:function exp :meta (meta exp)}))
+          (not= act exp) {:actual act :expected exp
+                          :message (format "at index `%s` failed to match:" idx)})))))
+
 (defn exists?* [msg]
   (checker [actual]
     (when-not (some? actual)

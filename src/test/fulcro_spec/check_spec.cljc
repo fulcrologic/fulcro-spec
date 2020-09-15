@@ -46,6 +46,36 @@
         => {:actual "string"
             :expected int?
             :message ::MOCK_EXPLAIN_STR})))
+  (component "re-find?*"
+    (assertions
+      ((check/re-find?* #"-123-") "foo-123-bar")
+      => nil
+      ((check/re-find?* #"test regex") "foo-123-bar")
+      => {:message "Failed to find `test regex` in 'foo-123-bar'"
+          :actual "foo-123-bar"
+          :expected `(re-pattern "test regex")}))
+  (component "seq-matches?*"
+    (assertions
+      "compares expected with actual in a sequential manner"
+      ((check/seq-matches?* [0 1 2]) (range 5))
+      => nil
+      ((check/seq-matches?* [1 1]) (range 5))
+      => [{:message "at index `0` failed to match:"
+           :actual 0 :expected 1}]
+      "accepts checkers as values in collection"
+      ((check/seq-matches?*
+         [(check/is?* odd?) (check/equals?* 42)])
+       [22 33])
+      => [{:actual 22 :expected odd?}
+          {:actual 33 :expected 42}]
+      "refuses non-checker functions"
+      ((check/seq-matches?* [odd?]) [1])
+      =throws=> #"function found, should be created with `checker`"
+      "only takes `sequential?` collections"
+      (check/seq-matches?* #{:a})
+      =throws=> #"can only take `sequential\?`"
+      ((check/seq-matches?* [:a]) #{:b})
+      =throws=> #"can only compare against `sequential\?`"))
   (component "exists?*"
     (assertions
       ((check/exists?* "DID NOT EXIST") nil)
