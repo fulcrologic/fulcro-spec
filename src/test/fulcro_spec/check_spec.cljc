@@ -51,9 +51,12 @@
       ((check/re-find?* #"-123-") "foo-123-bar")
       => nil
       ((check/re-find?* #"test regex") "foo-123-bar")
-      => {:message "Failed to find `test regex` in 'foo-123-bar'"
-          :actual "foo-123-bar"
-          :expected `(re-pattern "test regex")}))
+      => #?(:clj  {:message "Failed to find `test regex` in 'foo-123-bar'"
+                   :actual "foo-123-bar"
+                   :expected `(re-pattern "test regex")}
+            :cljs {:message "Failed to find `/test regex/` in 'foo-123-bar'"
+                   :actual "foo-123-bar"
+                   :expected `(re-pattern "/test regex/")})))
   (component "seq-matches?*"
     (assertions
       "compares expected with actual in a sequential manner"
