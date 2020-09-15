@@ -11,9 +11,6 @@
 (defn check-expr [msg [_ checker actual]]
   `(let [checker# ~checker, actual# ~actual, msg# ~msg
          location# ~(select-keys (meta checker) [:line])]
-     (when-not (checker? checker#)
-       (throw (ex-info "checker should be created with `checker` macro"
-                {:checker checker# :meta (meta checker#)})))
      (if-let [failures# ((all* checker#) actual#)]
        (doseq [f# failures#]
          (t/do-report (merge {:message msg#} f# {:type :fail} location#)))
@@ -32,6 +29,10 @@
       (contains? x :message))))
 
 (defn all* [& checkers]
+  (doseq [c checkers]
+    (when-not (checker? c)
+      (throw (ex-info "checker should be created with `checker` macro"
+               {:checker c :meta (meta c)}))))
   (checker [actual]
     (->> checkers
       (map #(% actual))

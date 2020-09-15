@@ -1,7 +1,7 @@
 (ns fulcro-spec.check-spec
   (:require
+    #?(:clj [clojure.test :as t])
     [clojure.spec.alpha :as s]
-    [clojure.test :as t]
     [fulcro-spec.check :as check :refer [checker]]
     [fulcro-spec.core :refer [specification component assertions when-mocking]]))
 
@@ -161,7 +161,10 @@
        (check/all* (check/equals?* 9.99)))
      {:x 3})
     => [{:actual {:x 3} :expected double?}
-        {:actual {:x 3} :expected 9.99}]))
+        {:actual {:x 3} :expected 9.99}]
+    "refuses to take non-checker functions"
+    (check/all* even?)
+    =throws=> #"checker should be created with `checker`"))
 
 #?(:clj
    (defn test-check-expr [checker actual & [message]]
@@ -182,4 +185,4 @@
        => [{:type :pass :message nil}]
        "the checker must be a valid `checker?`"
        (test-check-expr even? 2)
-       =throws=> #"checker should be created with `checker` macro")))
+       =throws=> #"checker should be created with `checker`")))
