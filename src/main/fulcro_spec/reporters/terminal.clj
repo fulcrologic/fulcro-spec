@@ -83,9 +83,9 @@
 
 (defn color-str [status & strings]
   (let [color?        (env :color?)
-        status->color {:normal (comp c/bold c/yellow)
+        status->color {:normal (comp c/bold c/blue)
                        :diff   (comp c/bold c/cyan)
-                       :where  (comp c/bold c/white)}
+                       :where  (comp c/bold c/yellow)}
         color-fn      (or (and color? (status->color status))
                         (case status
                           :diff/impl (fn [[got exp]]
