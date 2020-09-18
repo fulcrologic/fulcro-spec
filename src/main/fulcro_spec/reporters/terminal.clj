@@ -272,7 +272,11 @@
   (do
     (defmethod print-method Throwable [e w]
       (print-method (c/red e) w))
-    (t/with-test-out (print-test-report (base/get-test-report reporter)))
+    (t/with-test-out
+      (let [test-report (base/get-test-report reporter)]
+        (if-let [kaocha-error (some-> test-report :kaocha/test-plan :kaocha.watch/error)]
+          (println "\n" (pretty/format-exception kaocha-error {:frame-limit 0}))
+          (print-test-report test-report))))
     (remove-method print-method Throwable)
     reporter))
 
