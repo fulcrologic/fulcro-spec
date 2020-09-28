@@ -2,7 +2,7 @@
   (:require
     #?(:clj [clojure.test :as t])
     [clojure.spec.alpha :as s]
-    [fulcro-spec.check :as check :refer [checker]]
+    [fulcro-spec.check :as _ :refer [checker]]
     [fulcro-spec.core :refer [specification component assertions when-mocking]]))
 
 (def x-double?
@@ -17,7 +17,7 @@
      (component "creates a function"
        (assertions
          "that is a `checker?`"
-         (check/checker? x-double?) => true
+         (_/checker? x-double?) => true
          "that takes only one argument"
          (x-double? :x :y) =throws=> clojure.lang.ArityException
          (x-double? {:x 1 :y 2})
@@ -32,25 +32,25 @@
 (specification "default checkers"
   (component "equals?*"
     (assertions
-      ((check/equals?* 456) 111)
+      ((_/equals?* 456) 111)
       => {:actual 111, :expected 456}))
   (component "is?*"
     (assertions
-      ((check/is?* even?) 111)
+      ((_/is?* even?) 111)
       => {:actual 111, :expected even?}))
   (component "valid?*"
     (when-mocking
       (s/explain-str _ _) => ::MOCK_EXPLAIN_STR
       (assertions
-        ((check/valid?* int?) "string")
+        ((_/valid?* int?) "string")
         => {:actual "string"
             :expected int?
             :message ::MOCK_EXPLAIN_STR})))
   (component "re-find?*"
     (assertions
-      ((check/re-find?* #"-123-") "foo-123-bar")
+      ((_/re-find?* #"-123-") "foo-123-bar")
       => nil
-      ((check/re-find?* #"test regex") "foo-123-bar")
+      ((_/re-find?* #"test regex") "foo-123-bar")
       => #?(:clj  {:message "Failed to find `test regex` in 'foo-123-bar'"
                    :actual "foo-123-bar"
                    :expected `(re-pattern "test regex")}
@@ -60,151 +60,167 @@
   (component "seq-matches?*"
     (assertions
       "compares expected with actual in a sequential manner"
-      ((check/seq-matches?* [0 1 2]) (range 5))
+      ((_/seq-matches?* [0 1 2]) (range 5))
       => nil
-      ((check/seq-matches?* [1 1]) (range 5))
+      ((_/seq-matches?* [1 1]) (range 5))
       => [{:message "at index `0` failed to match:"
            :actual 0 :expected 1}]
       "accepts checkers as values in collection"
-      ((check/seq-matches?*
-         [(check/is?* odd?) (check/equals?* 42)])
+      ((_/seq-matches?*
+         [(_/is?* odd?) (_/equals?* 42)])
        [22 33])
       => [{:actual 22 :expected odd?}
           {:actual 33 :expected 42}]
+      "will pad actual collection with ::not-found"
+      ((_/seq-matches?*
+         [(_/equals?* 0) (_/equals?* 1)]) [0])
+      => [{:actual ::_/not-found :expected 1}]
       "refuses non-checker functions"
-      ((check/seq-matches?* [odd?]) [1])
+      ((_/seq-matches?* [odd?]) [1])
       =throws=> #"function found, should be created with `checker`"
       "only takes `sequential?` collections"
-      (check/seq-matches?* #{:a})
+      (_/seq-matches?* #{:a})
       =throws=> #"can only take `sequential\?`"
-      ((check/seq-matches?* [:a]) #{:b})
+      ((_/seq-matches?* [:a]) #{:b})
       =throws=> #"can only compare against `sequential\?`"))
   (component "exists?*"
     (assertions
-      ((check/exists?* "DID NOT EXIST") nil)
+      ((_/exists?* "DID NOT EXIST") nil)
       => {:message "DID NOT EXIST"
           :actual nil
           :expected `some?}))
   (component "every?*"
     (assertions
-      ((check/every?* (check/is?* number?)) :kw)
+      ((_/every?* (_/is?* number?)) :kw)
       =throws=> #"can only take `seqable\?`"
-      ((check/every?* (check/is?* number?))
+      ((_/every?* (_/is?* number?))
        "str")
       => [{:actual \s :expected number?}
           {:actual \t :expected number?}
           {:actual \r :expected number?}]
-      ((check/every?* (check/is?* number?))
+      ((_/every?* (_/is?* number?))
        {:key :value})
       => [{:actual [:key :value] :expected number?}]
-      ((check/every?* (check/is?* map-entry?))
+      ((_/every?* (_/is?* map-entry?))
        {:key :value})
       => []
-      (set ((check/every?* (check/is?* number?))
+      (set ((_/every?* (_/is?* number?))
             #{:a :b}))
       => #{{:actual :a :expected number?}
            {:actual :b :expected number?}}
-      ((check/every?*
-         (check/is?* even?)
-         (check/is?* pos?))
+      ((_/every?*
+         (_/is?* even?)
+         (_/is?* pos?))
        [-42 13])
       => [{:actual -42 :expected pos?}
           {:actual 13 :expected even?}]))
   (component "in*"
     (assertions
-      ((check/in* [:a] nil) {:x 1})
+      ((_/in* [:a] nil) {:x 1})
       => {:actual {:x 1}
-          :expected `(check/in* [:a])
+          :expected `(_/in* [:a])
           :message "expected `{:x 1}` to contain `:a` at path []"}
-      ((check/in* [:a :b :c] nil) {:a {:x 2}})
+      ((_/in* [:a :b :c] nil) {:a {:x 2}})
       => {:actual {:a {:x 2}}
-          :expected `(check/in* [:a :b])
+          :expected `(_/in* [:a :b])
           :message "expected `{:x 2}` to contain `:b` at path [:a]"}
-      ((check/in* [:a :b :c] nil) {:a {:b {:x 3}}})
+      ((_/in* [:a :b :c] nil) {:a {:b {:x 3}}})
       => {:actual {:a {:b {:x 3}}}
-          :expected `(check/in* [:a :b :c])
+          :expected `(_/in* [:a :b :c])
           :message "expected `{:x 3}` to contain `:c` at path [:a :b]"}
-      ((check/in* [:a] (check/is?* even?)) {:a 1})
+      ((_/in* [:a] (_/is?* even?)) {:a 1})
       => [{:actual 1 :expected even?}]))
   (component "embeds?*"
     (assertions
       "checks simple map values for equality"
-      ((check/embeds?* {:a :X}) {:a "not :X"})
+      ((_/embeds?* {:a :X}) {:a "not :X"})
       => [{:message "at path [:a]:"
            :expected :X
            :actual "not :X"}]
       "checks nested hashmap recursively"
-      ((check/embeds?* {:a {:b :X}}) {:a {:b "not :X"}})
+      ((_/embeds?* {:a {:b :X}}) {:a {:b "not :X"}})
       => [[{:message "at path [:a :b]:"
             :expected :X
             :actual "not :X"}]]
-      ((check/embeds?* {:a {:b :X}}) {:a "not a map"})
-      => [[{:message "at path [:a]:"
-            :expected :X
-            :actual "not a map"}]]
+      ((_/embeds?* {:a {:b :X}}) {:a "not a map"})
+      => [{:message "at path [:a]:"
+           :expected {:b :X}
+           :actual "not a map"}]
+      "checking for nil values that dont exist"
+      ((_/embeds?* {:a nil}) {})
+      => [{:actual ::_/not-found
+           :expected nil
+           :message "at path [:a]:"}]
       "can take checkers as map values"
-      ((check/embeds?* {:a (check/equals?* :X)}) {:a "not x"})
+      ((_/embeds?* {:a (_/equals?* :X)}) {:a "not x"})
       => [[{:message "at path [:a]:"
             :actual "not x"
             :expected :X}]]
       "does not take functions as map values"
-      (seq ((check/embeds?* {:a even?}) {:a 111}))
-      =throws=> #"function found, should be created with `checker` macro")))
+      (seq ((_/embeds?* {:a even?}) {:a 111}))
+      =throws=> #"function found, should be created with `checker` macro"
+      "can check that key value pair was not found by checking for equality with ::not-found"
+      ((_/embeds?* {:a (_/equals?* ::_/not-found)}) {})
+      => [nil]
+      ((_/embeds?* {:a (_/equals?* ::_/not-found)}) {:a "FAIL"})
+      => [[{:actual "FAIL"
+            :expected ::_/not-found
+            :message "at path [:a]:"}]])))
 
 (specification "all* combiner checker"
   (assertions
-    ((check/all* (check/is?* double?)) {:x 3})
+    ((_/all* (_/is?* double?)) {:x 3})
     => [{:actual {:x 3} :expected double?}]
-    ((check/all*
-       (check/is?* double?)
-       (check/equals?* 9.99))
+    ((_/all*
+       (_/is?* double?)
+       (_/equals?* 9.99))
      {:x 3})
     => [{:actual {:x 3} :expected double?}
         {:actual {:x 3} :expected 9.99}]
-    ((check/all*
-       (check/is?* double?)
-       (check/all* (check/equals?* 9.99)))
+    ((_/all*
+       (_/is?* double?)
+       (_/all* (_/equals?* 9.99)))
      {:x 3})
     => [{:actual {:x 3} :expected double?}
         {:actual {:x 3} :expected 9.99}]
     "refuses to take non-checker functions"
-    (check/all* even?)
+    (_/all* even?)
     =throws=> #"checker should be created with `checker`"))
 
 (specification "prepend-message"
   (assertions
-    (check/prepend-message "TST:MSG" {})
+    (_/prepend-message "TST:MSG" {})
     => {:message "TST:MSG"}
-    (check/prepend-message "TST:MSG" {:message "message"})
+    (_/prepend-message "TST:MSG" {:message "message"})
     => {:message "TST:MSG\nmessage"}))
 
 (specification "append-message"
   (assertions
-    (check/append-message "TST:MSG" nil)
+    (_/append-message "TST:MSG" nil)
     => nil
-    (check/append-message "TST:MSG" [])
+    (_/append-message "TST:MSG" [])
     => []
-    (check/append-message "TST:MSG" [{}])
+    (_/append-message "TST:MSG" [{}])
     => [{:message "TST:MSG"}]
-    (check/append-message "TST:MSG" [{:message "message"}])
+    (_/append-message "TST:MSG" [{:message "message"}])
     => [{:message "message\nTST:MSG"}]))
 
 #?(:clj
    (defn test-check-expr [checker actual & [message]]
      (let [reports (atom [])]
        (with-redefs [t/do-report (fn [m] (swap! reports conj m))]
-         (eval (check/check-expr message (list '_ checker actual)))
+         (eval (_/check-expr message (list '_ checker actual)))
          @reports))))
 
 #?(:clj
    (specification "check-expr"
      (assertions
        "called by assertions macro"
-       (test-check-expr `(check/is?* even?) 333)
+       (test-check-expr `(_/is?* even?) 333)
        => [{:type :fail :message nil
             :actual 333 :expected even?}]
        "reports a :pass if there were no checker failures"
-       (test-check-expr `(check/is?* even?) 2)
+       (test-check-expr `(_/is?* even?) 2)
        => [{:type :pass :message nil}]
        "the checker must be a valid `checker?`"
        (test-check-expr even? 2)

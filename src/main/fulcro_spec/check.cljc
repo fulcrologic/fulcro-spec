@@ -105,7 +105,7 @@
     (checker [actual]
       (assert (sequential? actual)
         "seq-matches?* can only compare against `sequential?` collections, eg: lists & vectors")
-      (for [[idx act exp] (map vector (range) actual coll)]
+      (for [[idx act exp] (map vector (range) (concat actual (repeat ::not-found)) coll)]
         (cond
           (checker? exp) (exp act)
           (fn? exp) (throw (ex-info "function found, should be created with `checker` macro"
@@ -114,16 +114,18 @@
                           :message (format "at index `%s` failed to match:" idx)})))))
 
 (defn exists?*
-  "Takes a failure message and returns a checker that checks for non-nil values."
-  [msg]
+  "Takes an optional failure message and returns a checker that checks for non-nil values."
+  [& [msg]]
   (checker [actual]
     (when-not (some? actual)
-      {:message msg
-       :expected `some?
-       :actual actual})))
+      (cond-> {:expected `some?
+               :actual actual}
+        msg (assoc :message msg)))))
 
 (defn every?*
-  "Takes one or more checkers, and returns a checker that runs all checker arguments on each element of the checker argument sequence."
+  "Takes one or more checkers, and returns a checker that runs all checker arguments on each element of the checker argument sequence.
+   WARNING: has the same semantics as `every?`, ie: will pass if given an empty collection.
+   If not desireable, use `(is?* seq)` before this checker."
   [c & cs]
   (checker [actual]
     (assert (seqable? actual)
@@ -174,6 +176,10 @@
    The map can be arbitrarily nested with further maps, eg:
    ```
    (embeds?* {:a 1, :b {:c (is?* even?)}}) =check=> {:a 1, :b {:c 2}}
+   ```
+   Can also check that a key value pair was not found by checking for equality with ::not-found, eg:
+   ```
+   (embeds?* {:a (equals?* ::not-found)}) =check=> {}
    ```"
   [expected]
   (assert (map? expected)
@@ -184,17 +190,22 @@
                 (let [value-at-key (get actual k ::not-found)
                       path (conj path k)]
                   (cond
-                    (map? v) #_=> ((-embeds?* v path) value-at-key)
+                    (map? v)
+                    #_=> (if-not (map? value-at-key)
+                           {:actual value-at-key
+                            :expected v
+                            :message (str "at path " path ":")}
+                           ((-embeds?* v path) value-at-key))
                     (checker? v) #_=> (append-message (format "at path %s:" path)
                                         ((all* v) value-at-key))
                     (fn? v) (throw (ex-info "function found, should be created with `checker` macro"
                                      {:function v :meta (meta v)}))
                     (= value-at-key ::not-found)
-                    #_=> {:actual actual
+                    #_=> {:actual ::not-found
                           :expected v
-                          :message (str "at path " (vec (drop-last path)) ":")}
+                          :message (str "at path " path ":")}
                     (not= value-at-key v)
-                    #_=> {:actual (get actual k)
+                    #_=> {:actual value-at-key
                           :expected v
                           :message (str "at path " path ":")})))))]
     (-embeds?* expected [])))
