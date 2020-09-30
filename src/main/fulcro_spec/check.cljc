@@ -179,7 +179,7 @@
    ```
    Can also check that a key value pair was not found by checking for equality with ::not-found, eg:
    ```
-   (embeds?* {:a (equals?* ::not-found)}) =check=> {}
+   (embeds?* {:a ::not-found}) =check=> {}
    ```"
   [expected]
   (assert (map? expected)
@@ -200,7 +200,8 @@
                                         ((all* v) value-at-key))
                     (fn? v) (throw (ex-info "function found, should be created with `checker` macro"
                                      {:function v :meta (meta v)}))
-                    (= value-at-key ::not-found)
+                    (and (= value-at-key ::not-found)
+                      (not= v ::not-found))
                     #_=> {:actual ::not-found
                           :expected v
                           :message (str "at path " path ":")}

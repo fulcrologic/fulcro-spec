@@ -160,12 +160,12 @@
       (seq ((_/embeds?* {:a even?}) {:a 111}))
       =throws=> #"function found, should be created with `checker` macro"
       "can check that key value pair was not found by checking for equality with ::not-found"
-      ((_/embeds?* {:a (_/equals?* ::_/not-found)}) {})
+      ((_/embeds?* {:a ::_/not-found}) {})
       => [nil]
-      ((_/embeds?* {:a (_/equals?* ::_/not-found)}) {:a "FAIL"})
-      => [[{:actual "FAIL"
-            :expected ::_/not-found
-            :message "at path [:a]:"}]])))
+      ((_/embeds?* {:a ::_/not-found}) {:a "FAIL"})
+      => [{:actual "FAIL"
+           :expected ::_/not-found
+           :message "at path [:a]:"}])))
 
 (specification "all* combiner checker"
   (assertions
