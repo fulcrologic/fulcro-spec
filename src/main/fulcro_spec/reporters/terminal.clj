@@ -177,7 +177,7 @@
     (str/join "\n" interesting)))
 
 (defn pr-str-actual [test-result print-level]
-  (str "  Actual:\t"
+  (str "  Actual: "
     (let [actual (or
                    (::ae/actual test-result)
                    (:actual test-result))]
@@ -192,29 +192,35 @@
         (pretty-str actual (+ 5 print-level))))))
 
 (defn pr-str-expected [test-result print-level]
-  (str "Expected:\t"
+  (str "Expected: "
     (let [expected (or
                      (::ae/expected test-result)
                      (:expected test-result))]
       (pretty-str expected (+ 5 print-level)))))
+
+(defn format-compiler-error [error]
+  (pretty/format-exception error {:frame-limit 0}))
 
 (defn print-test-result [{:keys     [where status extra throwable diff]
                           ::ae/keys [actual] :as test-result}
                          print-fn print-level]
   (print-fn)
   (-> (or where "Unknown") (print-where status print-fn))
-  (when (and (= status :error) (instance? Throwable actual))
-    (print-throwable actual))
-  (when (and throwable (not (instance? Throwable actual)))
-    (print-throwable throwable))
-  (print-message test-result print-fn)
-  (when (env :full-diff?)
-    (print-fn (pr-str-actual test-result print-level))
-    (print-fn (pr-str-expected test-result print-level)))
-  (some-> extra (print-extra print-fn))
-  (some-> diff (print-diff actual print-fn))
-  (when (env :quick-fail?)
-    (throw (ex-info "" {::stop? true}))))
+  (if-let [load-error (:kaocha.testable/load-error (:kaocha/testable test-result))]
+    (print-fn (format-compiler-error load-error))
+    (do
+      (when (and (= status :error) (instance? Throwable actual))
+        (print-throwable actual))
+      (when (and throwable (not (instance? Throwable actual)))
+        (print-throwable throwable))
+      (print-message test-result print-fn)
+      (when (env :full-diff?)
+        (print-fn (pr-str-actual test-result print-level))
+        (print-fn (pr-str-expected test-result print-level)))
+      (some-> extra (print-extra print-fn))
+      (some-> diff (print-diff actual print-fn))
+      (when (env :quick-fail?)
+        (throw (ex-info "" {::stop? true}))))))
 
 (def when-fail-only-keep-failed
   (filter #(or
@@ -253,15 +259,18 @@
       (map #(print-test-item % 1)))
     (:test-items make-tests-by-namespace)))
 
-(defn print-test-report [{:keys [namespaces test pass fail error]}]
+(defn print-test-report [{:keys [test-results namespaces test pass fail error]}]
   (println "Running tests for:" (map :name namespaces))
-  (try (->> namespaces
-         (into [] when-fail-only-keep-failed)
-         (sort-by :name)
-         (mapv print-namespace))
-       (catch Exception e
-         (when-not (->> e ex-data ::stop?)
-           (print-throwable e))))
+  (try
+    (->> test-results
+      (mapv #(print-test-result % println 1)))
+    (->> namespaces
+      (into [] when-fail-only-keep-failed)
+      (sort-by :name)
+      (mapv print-namespace))
+    (catch Exception e
+      (when-not (->> e ex-data ::stop?)
+        (print-throwable e))))
   (println "\nRan" test "tests containing"
     (+ pass fail error) "assertions.")
   (println fail "failures," error "errors."))
@@ -269,16 +278,15 @@
 (defn print-reporter
   "Prints the current report data from the report data state and applies colors based on test results"
   [reporter]
-  (do
-    (defmethod print-method Throwable [e w]
-      (print-method (c/red e) w))
-    (t/with-test-out
-      (let [test-report (base/get-test-report reporter)]
-        (if-let [kaocha-error (some-> test-report :kaocha/test-plan :kaocha.watch/error)]
-          (println "\n" (pretty/format-exception kaocha-error {:frame-limit 0}))
-          (print-test-report test-report))))
-    (remove-method print-method Throwable)
-    reporter))
+  (defmethod print-method Throwable [e w]
+    (print-method (c/red e) w))
+  (t/with-test-out
+    (let [test-report (base/get-test-report reporter)]
+      (if-let [kaocha-error (some-> test-report :kaocha/test-plan :kaocha.watch/error)]
+        (println "\n" (format-compiler-error kaocha-error))
+        (print-test-report test-report))))
+  (remove-method print-method Throwable)
+  reporter)
 
 (def this (base/make-test-reporter))
 

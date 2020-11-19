@@ -105,4 +105,3 @@
        `(clojure.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr 'check [msg form]
        (fs.check/check-expr msg form))))
-

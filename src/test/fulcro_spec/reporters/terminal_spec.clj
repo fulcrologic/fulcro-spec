@@ -1,6 +1,6 @@
 (ns fulcro-spec.reporters.terminal-spec
   (:require
-    [clojure.test :as t :refer [deftest testing is]]
+    [clojure.test :as t :refer [deftest is]]
     [clojure.string :as str]
     [fulcro-spec.core :as core]
     [fulcro-spec.reporter :as base]
@@ -49,8 +49,8 @@
       (let [report-ns (first (:namespaces (base/get-test-report reporter)))
             report-behavior (first (:test-items report-ns))
             [eq-arrow-tests fn-arrow-tests] (:test-items report-behavior)
-            find-actual-str #(second (re-find #"\s+Actual:\t([^\n]*)" %))
-            find-expected-str #(second (re-find #"\s+Expected:\t([^\n]*)" %))]
+            find-actual-str #(second (re-find #"\s+Actual: ([^\n]*)" %))
+            find-expected-str #(second (re-find #"\s+Expected: ([^\n]*)" %))]
         (is (= "terminal reporting prints good results" (:name report-behavior)))
         (is (= "for => arrow" (:name eq-arrow-tests)))
         (is (= [["nil" "1"], ["2" "nil"], ["nil" "3"], ["4" "nil"]]

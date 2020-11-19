@@ -1,6 +1,6 @@
 {:paths   ["src/main"]
 
- :deps    {colorize                            {:mvn/version "0.1.1" :exclusions [org.clojure/clojure]},
+ :deps    {colorize/colorize                   {:mvn/version "0.1.1" :exclusions [org.clojure/clojure]}
            io.aviso/pretty                     {:mvn/version "0.1.37"}
            com.lucasbradstreet/cljs-uuid-utils {:mvn/version "1.0.2"}
            org.clojure/clojure                 {:mvn/version "1.10.0"}
@@ -10,4 +10,4 @@
                        :main-opts   ["-m" "kaocha.runner"]
                        :extra-deps  {lambdaisland/kaocha {:mvn/version "1.0.632"}}}
            :test      {:extra-paths ["src/test"]
-                       :extra-deps {thheller/shadow-cljs {:mvn/version "2.10.21"}}}}}
+                       :extra-deps  {thheller/shadow-cljs {:mvn/version "2.10.21"}}}}}

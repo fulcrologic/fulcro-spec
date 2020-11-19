@@ -1,13 +1,13 @@
 #kaocha/v1
-    {:tests    [{:id           :unit
-                 :ns-patterns  ["-test$" "-spec$"]
-                 :test-paths   ["src/test"]
-                 :skip-meta    [:integration]
-                 :source-paths ["src/main"]}]
-     ;:reporter [fulcro-spec.reporters.terminal/fulcro-report]
-     :plugins  [:kaocha.plugin/randomize
-                :kaocha.plugin/filter]
-     :bindings {kaocha.stacktrace/*stacktrace-filters*
-                ["java.lang." "java.util.concurrent."
-                 "clojure.test$" "clojure.lang." "clojure.core" "clojure.main"
-                 "orchestra." "kaocha."]}}
+{:tests    [{:id           :unit
+             :ns-patterns  ["-test$" "-spec$"]
+             :test-paths   ["src/test"]
+             :skip-meta    [:integration]
+             :source-paths ["src/main"]}]
+ ;:reporter [fulcro-spec.reporters.terminal/fulcro-report]
+ :plugins  [:kaocha.plugin/randomize
+            :kaocha.plugin/filter]
+ :bindings {kaocha.stacktrace/*stacktrace-filters*
+            ["java.lang." "java.util.concurrent."
+             "clojure.test$" "clojure.lang." "clojure.core" "clojure.main"
+             "orchestra." "kaocha."]}}
