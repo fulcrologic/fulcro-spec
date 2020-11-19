@@ -35,6 +35,14 @@
     "A checker arglist should only have one argument.")
   `(with-meta (fn ~arglist ~@args) {::checker true}))
 
+(defn fmap*
+  "Creates a new checker that is the result of applying the function to the checker arguments before passing it to the wrapped checker.
+   Eg: `0 =check=> (fmap* inc (equals?* 1))`"
+  [f c]
+  {:pre [(ifn? f) (checker? c)]}
+  (checker [actual]
+    (c (f actual))))
+
 (defn check-failure? [x]
   (and (map? x)
     (or

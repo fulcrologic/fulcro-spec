@@ -167,6 +167,11 @@
            :expected ::_/not-found
            :message "at path [:a]:"}])))
 
+(specification "fmap*"
+  (assertions
+    ((_/fmap* inc (_/is?* even?)) 0)
+    => {:actual 1 :expected even?}))
+
 (specification "all* combiner checker"
   (assertions
     ((_/all* (_/is?* double?)) {:x 3})
