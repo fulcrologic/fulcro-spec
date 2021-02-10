@@ -71,10 +71,17 @@
 
          =throws=>
          (let [cls (if cljs? :default Throwable)]
-           (if (instance? java.util.regex.Pattern expected)
+           (cond
+             (or (symbol? expected) (= :default expected))
+             `(~is (~'thrown? ~expected ~actual)
+                ~msg)
+             (instance? java.util.regex.Pattern expected)
              `(~is (~'thrown-with-msg? ~cls ~expected ~actual)
                 ~msg)
-             `(~is (~'thrown? ~expected ~actual)
+             :else
+             `(~is (~'check (fs.check/throwable* ~expected)
+                     (try ~actual
+                       (catch ~cls e# e#)))
                 ~msg)))
 
          (throw (ex-info "invalid arrow" {:arrow arrow}))))))
@@ -98,10 +105,10 @@
      (defmethod cljs.test/assert-expr 'exec [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
      (defmethod cljs.test/assert-expr 'check [env msg form]
-       (fs.check/check-expr msg form))
+       (fs.check/check-expr true msg form))
      (defmethod clojure.test/assert-expr '= [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr 'exec [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr 'check [msg form]
-       (fs.check/check-expr msg form))))
+       (fs.check/check-expr false msg form))))

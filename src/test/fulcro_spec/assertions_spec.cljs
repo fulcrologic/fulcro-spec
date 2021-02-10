@@ -1,7 +1,7 @@
 (ns fulcro-spec.assertions-spec
   (:require
     [clojure.test :refer [deftest]]
-    [fulcro-spec.core :refer [specification assertions]]))
+    [fulcro-spec.core :refer [assertions]]))
 
 (deftest assert-test
   (assertions
