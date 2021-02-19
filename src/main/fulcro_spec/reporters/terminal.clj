@@ -162,7 +162,7 @@
       (color-str :where)
       print-fn)))
 
-(def ^:dynamic *stack-frames* 10)
+(def ^:dynamic *stack-frames* 1000)
 (def ^:dynamic *exclude-files* #{"core.clj" "stub.cljc"})
 
 (defn- excluded-trace-line? [line]
