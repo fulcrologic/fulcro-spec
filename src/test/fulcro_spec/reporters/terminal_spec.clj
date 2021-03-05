@@ -64,5 +64,5 @@
           (is (= "(exec 5 even?)" (find-expected-str test-5)))
           (is (= "6" (find-actual-str test-6)))
           (is (re-find #"odd_QMARK" (find-expected-str test-6)))
-          (is (= "java.lang.NullPointerException: null" (find-actual-str test-7)))
+          (is (re-find #"java.lang.NullPointerException" (find-actual-str test-7)))
           (is (= "(exec (some-> nil :fn) 7)" (find-expected-str test-7))))))))
