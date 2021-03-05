@@ -4,7 +4,7 @@
   <groupId>fulcrologic</groupId>
   <artifactId>fulcro-spec</artifactId>
   <packaging>jar</packaging>
-  <version>3.1.11-SNAPSHOT</version>
+  <version>3.1.11</version>
   <name>fulcro-spec</name>
   <description>Helper Macros for clj and cljs test</description>
   <url>https://github.com/fulcrologic/fulcro-spec</url>
@@ -53,7 +53,7 @@
     <url>https://github.com/fulcrologic/fulcro-spec</url>
     <connection>scm:git:git://github.com/fulcrologic/fulcro-spec.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/fulcrologic/fulcro-spec.git</developerConnection>
-    <tag>ccc2e4aa22793e0c625ba0fdd11715abeab933e5</tag>
+    <tag>fulcro-spec-3.1.11</tag>
   </scm>
   <repositories>
     <repository>
