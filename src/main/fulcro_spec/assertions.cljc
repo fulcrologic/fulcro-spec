@@ -8,7 +8,8 @@
     #?(:clj
        [fulcro-spec.impl.macros :as im])
     [fulcro-spec.spec :as fss]
-    [fulcro-spec.check :as fs.check]))
+    [fulcro-spec.check :as fs.check]
+    [fulcro-spec.impl.check :as fs.impl.check]))
 
 (s/def ::arrow (comp #{"=>" "=fn=>" "=throws=>" "=check=>"} str))
 (s/def ::behavior string?)
@@ -105,10 +106,10 @@
      (defmethod cljs.test/assert-expr 'exec [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
      (defmethod cljs.test/assert-expr 'check [env msg form]
-       (fs.check/check-expr true msg form))
+       (fs.impl.check/check-expr true msg form))
      (defmethod clojure.test/assert-expr '= [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr 'exec [msg form]
        `(clojure.test/do-report ~(assert-expr msg form)))
      (defmethod clojure.test/assert-expr 'check [msg form]
-       (fs.check/check-expr false msg form))))
+       (fs.impl.check/check-expr false msg form))))
