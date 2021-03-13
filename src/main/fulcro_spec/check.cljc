@@ -1,32 +1,9 @@
 (ns fulcro-spec.check
   #?(:cljs (:require-macros [fulcro-spec.check :refer [checker assert-is!]]))
   (:require
-    #?@(:cljs [[goog.string.format]
-               [goog.string :as gstring]])
     [clojure.set :as set]
-    [clojure.spec.alpha :as s]))
-
-(defn- format-str [& args]
-  (apply #?(:cljs gstring/format :clj format) args))
-
-(defn prepend-message
-  "WARNING: INTERNAL HELPER, DO NOT USE!"
-  [msg fail]
-  (if-not (:message fail)
-    (assoc fail :message msg)
-    (update fail :message (partial str msg "\n"))))
-
-(defn check-expr
-  "WARNING: FOR INTERNAL USE ONLY, DO NOT USE!"
-  [cljs? msg [_ checker actual]]
-  (let [prefix (if cljs? "cljs.test" "clojure.test")
-        do-report (symbol prefix "do-report")]
-    `(let [checker# ~checker, actual# ~actual, msg# ~msg
-           location# ~(select-keys (meta checker) [:line])]
-       (if-let [failures# ((all* checker#) actual#)]
-         (doseq [f# failures#]
-           (~do-report (merge (prepend-message msg# f#) {:type :fail} location#)))
-         (~do-report (merge {:type :pass :message msg#} location#))))))
+    [clojure.spec.alpha :as s]
+    [fulcro-spec.impl.check :as impl]))
 
 (defmacro checker
   "Creates a function that takes only one argument (usually named `actual`).
@@ -42,35 +19,35 @@
    NOTE: the fact that a checker is just a fn with metadata is an internal detail, do not rely on that fact, and prefer usage of the `checker` macro."
   [x] (and (fn? x) (::checker (meta x))))
 
-(defn- assert-are-checkers! [tag checkers]
+(defn assert-are-checkers!
+  "Helper to ensure that checker \"combinators\" are passed checkers.
+   The tag can be anything, but by convention should be the namespaced qualified symbol of the checker this function is inside of.
+   eg: `(assert-are-checkers! `and* checkers)`"
+  [tag checkers]
   (doseq [c checkers]
     (when-not (checker? c)
-      (throw (ex-info
-               (format-str "Invalid checker `%s` passed to `%s`"
-                 (pr-str c) tag)
+      (throw (ex-info (impl/format-str "Invalid checker `%s` passed to `%s`"
+                        (pr-str c) tag)
                {:checker c :meta (meta c) :type (type c)})))))
 
-(defmacro ^:private assert-is! [tag pred value]
-  `(when-not (~pred ~value)
-     (throw (ex-info (format-str "Invalid argument `%s` to `%s`, failed predicate `%s`"
-                       (pr-str ~value) ~tag '~pred)
-              {:predicate (str ~pred) :value ~value}))))
-
-(defn fmap*
-  "Creates a new checker that is the result of applying the function to the checker arguments before passing it to the wrapped checker.
-   Eg: `0 =check=> (fmap* inc (equals?* 1))`"
-  [f c]
-  (assert-are-checkers! `fmap* [c])
-  (assert-is! `fmap* ifn? f)
-  (checker [actual]
-    (c (f actual))))
+(defmacro assert-is!
+  "Helper macro to assert that values satisfy a predicate.
+   The tag can be anything, but by convention should be the namespaced qualified symbol of the checker this function is inside of.
+   eg: `(assert-is! `is?* ifn? predicate)`"
+  [tag pred value]
+  `(let [value# ~value]
+     (when-not (~pred value#)
+       (throw (ex-info (impl/format-str "Invalid argument `%s` to `%s`, failed predicate `%s`"
+                         (pr-str value#) ~tag '~pred)
+                {:tag ~tag :predicate (str ~pred) :value value#})))))
 
 (defn- check-failure? [x]
   (and (map? x)
     (or
       (contains? x :expected)
       (contains? x :actual)
-      (contains? x :message))))
+      (contains? x :message)
+      (contains? x :type))))
 
 (defn all*
   "Takes one or more `checker`s, and returns a new `checker`.
@@ -103,6 +80,40 @@
                             (vector ?fs))]
             (or (seq (filter check-failure? ?failures))
               (recur (first cs) (rest cs)))))))))
+
+(defn fmap*
+  "Creates a new checker that is the result of applying the function to the checker arguments before passing it to the wrapped checker.
+   Eg: `[:b :c :a] =check=> (fmap* sort (equals?* [:a :b :c]))`"
+  [f c]
+  (assert-are-checkers! `fmap* [c])
+  (assert-is! `fmap* ifn? f)
+  (checker [actual]
+    (c (f actual))))
+
+(defn with-message*
+  "Appends the message to all failures that the checker may return.
+   eg: `2.0 =check=> (_/with-message* \"some info\" (_/is?* double?))`"
+  [message c & cs]
+  (assert-is! `with-message* string? message)
+  (let [checkers (cons c cs)]
+    (assert-are-checkers! `with-message* checkers)
+    (checker [actual]
+      (map (partial impl/prepend-message message)
+        ((apply all* checkers) actual)))))
+
+(defn behavior*
+  "NOTE: experimental, may be considered poor form and deprecated at a later date.
+   Equivalent to `fulcro-spec.core/behavior`, so you can describe the expected behavior being checked.
+   eg: `2.0 =check=> (_/behavior* \"is a double\" (_/is?* double?))`"
+  [string c & cs]
+  (assert-is! `behavior* string? string)
+  (let [checkers (cons c cs)]
+    (assert-are-checkers! `behavior* checkers)
+    (checker [actual]
+      [{:type :begin-behavior :string string}
+       (or (seq ((apply all* checkers) actual))
+         {:type :pass})
+       {:type :end-behavior :string string}])))
 
 (defn is?*
   "Takes any truthy predicate function and returns a checker that checks with said predicate."
@@ -153,7 +164,7 @@
     (is?* string?)
     (checker [actual]
       (when-not (re-find regex actual)
-        {:message (format-str "Failed to find `%s` in '%s'" regex actual)
+        {:message (impl/format-str "Failed to find `%s` in '%s'" regex actual)
          :actual actual
          :expected `(re-pattern ~(str regex))}))))
 
@@ -176,7 +187,7 @@
           (fn? exp) (throw (ex-info "function found, should be created with `checker` macro"
                              {:function exp :meta (meta exp)}))
           (not= act exp) {:actual act :expected exp
-                          :message (format-str "at index `%s` failed to match:" idx)})))))
+                          :message (impl/format-str "at index `%s` failed to match:" idx)})))))
 
 (defn- min<=max [{:keys [min-len max-len]}] (<= min-len max-len))
 
@@ -194,7 +205,7 @@
          (when-not (= expected-length length)
            {:actual actual
             :expected `(~'of-length?* :equal-to ~expected-length)
-            :message (format-str "Expected collection count to be %s was %s"
+            :message (impl/format-str "Expected collection count to be %s was %s"
                        expected-length length)})))))
   ([min-len max-len]
    (assert-is! `of-length?* int? min-len)
@@ -207,16 +218,16 @@
          (when-not (<= min-len length max-len)
            {:actual actual
             :expected `(~'of-length?* :between :min ~min-len :max ~max-len)
-            :message (format-str "Expected collection count %s to be between [%s,%s]"
+            :message (impl/format-str "Expected collection count %s to be between [%s,%s]"
                        length min-len max-len)}))))))
 
 (defn seq-matches-exactly?*
   "Takes a `sequential?` collection, and returns a checker that checks its argument in a sequential manner.
    NOTE: \"exactly\" means that the `actual` collection is checked to have the **exact** same length as the `expected` collection.
    Eg:
-   `(seq-matches?* [1 2]) =check=> [1 2]`
+   `(seq-matches-exactly?* [1 2]) =check=> [1 2]`
    Can also take checkers as values, eg:
-   `(seq-matches?* [(is?* pos?)]) =check=> [42]`"
+   `(seq-matches-exactly?* [(is?* pos?)]) =check=> [42]`"
   [expected]
   (assert-is! `seq-matches-exactly?* sequential? expected)
   (and*
@@ -280,6 +291,12 @@
       {:path [] :value value})
     :path))
 
+(defn- add-path* [path ?failures]
+  (some->> ?failures
+    (map #(update % ::path
+            (fn [prev-path]
+              (vec (concat path (or prev-path []))))))))
+
 (defn in*
   "Takes a path and one or more checkers, and returns a checker that focuses the checker argument on the result of running `(get-in actual path)`.
    If the call to `get-in` failed it returns a `check-failure?`."
@@ -289,25 +306,16 @@
     (assert-are-checkers! `in* checkers)
     (checker [actual]
       (if-let [nested (get-in actual path)]
-        ((apply all* checkers) nested)
+        (add-path* path ((apply all* checkers) nested))
         (let [missing-path (path-to-get-in-failure actual path)
               failing-path-segment (last missing-path)
               failing-path (vec (drop-last missing-path))]
           {:actual actual
            :expected `(in* ~missing-path)
-           :message (format-str "expected `%s` to contain `%s` at path %s"
+           :message (impl/format-str "expected `%s` to contain `%s` at path %s"
                       (pr-str (get-in actual failing-path))
                       failing-path-segment
                       (pr-str failing-path))})))))
-
-(defn append-message
-  "WARNING: INTERNAL HELPER, DO NOT USE!"
-  [message failures]
-  (some->> failures
-    (map #(update % :message
-            (fn [msg]
-              (if-not msg message
-                (str msg "\n" message)))))))
 
 (defn embeds?*
   "Takes a map and returns a checker that checks if the values at the keys match (using `=`) .
@@ -332,9 +340,9 @@
                     #_=> (if-not (map? value-at-key)
                            {:actual value-at-key
                             :expected v
-                            :message (str "at path " path ":")}
+                            ::path path}
                            ((-embeds?* v path) value-at-key))
-                    (checker? v) #_=> (append-message (format-str "at path %s:" path)
+                    (checker? v) #_=> (add-path* path
                                         ((all* v) value-at-key))
                     (fn? v) (throw (ex-info "Expected a checker, found a function instead!"
                                      {:function v :meta (meta v)}))
@@ -342,12 +350,12 @@
                       (not= v ::not-found))
                     #_=> {:actual ::not-found
                           :expected v
-                          :message (str "at path " path ":")}
+                          ::path path}
                     (not= value-at-key v)
                     #_=> {:actual value-at-key
                           :expected v
-                          :message (str "at path " path ":")})))))]
-    (-embeds?* expected [])))
+                          ::path path})))))]
+    (all* (-embeds?* expected []))))
 
 (defn throwable*
   "Checks that the `actual` value is a `Throwable` (or in cljs a `js/Error`).

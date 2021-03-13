@@ -313,6 +313,98 @@ Note that you can schedule multiple things, and still return a value from the mo
 the above indicates that when `f` is called it will schedule `(g)` to run 200ms from \"now\" and `(h)` to run
 300ms from \"now\". Then `f` will return `true`.
 
+=== Check(ing)
+
+The `fulcro-spec.check` exposes functions to help make more useful and precise assertions in your tests.
+Here is a sampling of what is possible:
+
+[source]
+----
+(:require
+  [fulcro-spec.core :refer [assertions]]
+  [fulcro-spec.check :as _])
+
+(assertions
+  "equals?*"
+  1 =check=> (_/equals?* 1)
+
+  "is?*"
+  2 =check=> (_/is?* int?)
+
+  "valid?* - uses clojure.spec.alpha"
+  3 =check=> (_/valid?* int?)
+
+  "re-find?*"
+  "4" =check=> (_/re-find?* #"\d")
+
+  "seq-matches-exactly?*"
+  [5] =check=> (_/seq-matches-exactly?* [5])
+  [5 6] =check=> (_/seq-matches-exactly?*
+                   [(_/is?* int?) (_/equals?* 6)])
+
+  "every?*"
+  [7 8] =check=> (_/every?* (_/is?* int?))
+
+  "embeds?*"
+  {:a 9, :b 10}
+  =check=> (_/embeds?* {:a 9, :b (_/is?* int?)})
+
+  "throwable*"
+  (throw (ex-info "" {}))
+  =throws=> (_/throwable* (_/is?* some?))
+
+  "ex-data*"
+  (throw (ex-info "" {:c 11}))
+  =throws=> (_/ex-data* (_/equals?* {:c 11})))
+----
+
+You can make your own checkers using the `_/checker` macro.
+They are simply functions that are expected to conditionally return maps each representing a failed assertion.
+
+[source]
+----
+(defn my-equals?* [expected]
+  (_/checker [actual]
+    (when-not (= actual expected) ;; <1>
+      {:actual actual ;; <2> <3> <4>
+       :expected expected
+       :message "my-equals?* failed!"})))
+
+((my-equals?* 55) 33)
+;=> {:actual 33 :expected 55 ,,,}
+----
+
+<1> nil or an empty sequence is considered passing.
+<2> A checker can return a single failure, or many (arbitrarily nested, as will be `flatten` -ed by the `=check=>` arrow).
+<3> Note that for a map to be considered a failure, it must contain one of the following keys `#{:actual :expected :message :type}`.
+<4> The shown map keys are what `clojure.test` understands, but it is an open map that you can extend. When in an `assertions` macro all failures will sent to the current `clojure.test` reporter, but there are no guarantees that it will be understood or reported by it.
+
+==== Advanced usage
+
+To combine multiple checkers into a single assertion, two functions are provided.
+The first is `all*`, and it will run all it's checkers.
+The second is `and*`, it will short circuit execution on the first failure. Note that because checkers can return multiple failures, it is not guaranteed that `and*` will return only a single failure.
+
+[source]
+----
+(assertions
+  ((all* (_/equals?* 1) (_/is?* int?)) 5.0)
+  => [{:actual 5.0 :expected 1}
+      {:actual 5.0 :expected int?}]
+
+  ((and* (_/is?* int?) (_/equals?* 1)) 5.0)
+  => {:actual 5.0 :expected int?})
+----
+
+It can be useful to run a function on a value before passed to a checker, such as sorting.
+For this you can use `fmap*`, but use it judiciously, as you can perform arbitrary transformations that may make your test failures harder to understand.
+
+[source]
+----
+(assertions
+  [:c :a :b] => (_/fmap* sort (_/equals [:a :b :c])))
+----
+
 == REPL Usage (Clojure)
 
 The terminal reporter is quite easy and useful to use at the REPL for Clojure. Simply start a REPL, and define a keyboard shortcut to run something like this:
