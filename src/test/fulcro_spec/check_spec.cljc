@@ -317,7 +317,7 @@
      (assertions
        "called by assertions macro"
        (test-check-expr `(_/is?* even?) 333)
-       => [{:type :fail :message nil
+       => [{:type :fail :message nil ::_/actual 333
             :actual 333 :expected even?}]
        "reports a :pass if there were no checker failures"
        (test-check-expr `(_/is?* even?) 2)

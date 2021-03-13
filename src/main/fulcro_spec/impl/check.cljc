@@ -17,8 +17,8 @@
       (if-not msg message
         (str msg "\n" message)))))
 
-(defn failure->report [test-msg failure]
-  (merge {:type :fail}
+(defn failure->report [test-msg failure actual]
+  (merge {:type :fail :fulcro-spec.check/actual actual}
     (cond->> (prepend-message test-msg failure)
       (::path failure)
       (append-message
@@ -31,5 +31,5 @@
            location# ~(select-keys (meta checker) [:line])]
        (if-let [failures# ((fulcro-spec.check/all* checker#) actual#)]
          (doseq [f# failures#]
-           (~do-report (merge (failure->report msg# f#) location#)))
+           (~do-report (merge (failure->report msg# f# actual#) location#)))
          (~do-report (merge {:type :pass :message msg#} location#))))))
