@@ -68,7 +68,12 @@
      :*print-level*  3
      :*print-length* nil}))
 
-(defn env [k] (get @cfg k))
+(def ^{:dynamic true
+       :doc "Intended for use when running tests through kaocha, as you can set bindings in `tests.edn`.
+             Example: `#kaocha/v1 {:bindings {fulcro-spec.reporters.terminal/*config* {:fail-only? true}}}`"}
+  *config* {})
+
+(defn env [k] (get *config* k (get @cfg k)))
 
 (defn merge-cfg!
   "For use in the test-refresh repl to change configuration on the fly.
