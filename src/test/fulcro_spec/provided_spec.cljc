@@ -95,7 +95,7 @@
            (vector? (second redef-block)) => true
            (th/locate 'under-test expanded) => '(under-test)
            "no do-report pair"
-           (count (remove nil? redef-block)) => 4)))))
+           (count (remove nil? redef-block)) => 3)))))
 
 (defn my-square [x] (* x x))
 

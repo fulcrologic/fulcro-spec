@@ -109,5 +109,6 @@
        (im/try-report "Unexpected"
          (let [~@(mapcat (juxt :symgen :script) scripts)]
            (with-redefs [~@(mapcat (juxt :mock-name :sstub) scripts)]
-             ~@body
-             (stub/validate-target-function-counts ~(mapv :symgen scripts))))))))
+             (let [result# (do ~@body)]
+               (stub/validate-target-function-counts ~(mapv :symgen scripts))
+               result#)))))))
