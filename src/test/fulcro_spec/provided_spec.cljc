@@ -37,7 +37,8 @@
          (behavior "includes a stubbing function"
            (assertions
              (contains? result :stub-function) => true
-             (:stub-function result) => '(clojure.core/fn [a b] (+ a b))))
+             (take 2 (:stub-function result)) => '(clojure.core/fn [a b])
+             (take 2 (last (:stub-function result))) => '(try (+ a b))))
          (behavior "includes the symbol to mock"
            (assertions
              (contains? result :mock-name) => true

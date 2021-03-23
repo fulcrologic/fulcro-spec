@@ -52,12 +52,16 @@
 (defn parse-mock-triple [env conform? {:as triple :keys [under-mock arrow result]}]
   (merge under-mock
     (let [{:keys [params mock-name]} under-mock
-          arglist (map literal->gensym params)]
+          arglist (map literal->gensym params)
+          try-result `(try ~result
+                        (catch ~(if (im/cljs-env? env) :default 'Exception) t#
+                          (throw (ex-info "Uncaught exception in stub!"
+                                   {::stub/exception t#}))))]
       {:ntimes        (parse-arrow-count arrow)
        :literals      (mapv symbol->any params)
        :stub-function (if conform?
-                        (conformed-stub env mock-name arglist result)
-                        `(fn [~@arglist] ~result))})))
+                        (conformed-stub env mock-name arglist try-result)
+                        `(fn [~@arglist] ~try-result))})))
 
 (defn parse-mocks [env conform? mocks]
   (let [parse-steps

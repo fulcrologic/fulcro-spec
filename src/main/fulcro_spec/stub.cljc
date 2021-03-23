@@ -56,13 +56,14 @@
                  (update-in [:steps curr-step :history] conj args)))
             (try (apply stub args)
                  ;; NOTE: In cljs this is not really meant to catch anything
-
                  #?(:clj
                     (catch clojure.lang.ArityException ae
                       (throw (ex-info (str "The MOCKED version of " function " was called with " (.-actual ae)
                                         " argument(s), but the mock did not support that number of arguments.")
-                               {}))))
-                 (catch #?(:clj Exception :cljs :default) e (throw e))
+                               {:function function
+                                :args     args}))))
+                 (catch #?(:clj Exception :cljs :default) e
+                   (throw (or (some-> e ex-data ::exception) e)))
                  (finally
                    (increment-script-call-count script-atom curr-step)
                    (when (step-complete script-atom curr-step)
