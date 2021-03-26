@@ -161,6 +161,19 @@
         @detector => true))))
 
 #?(:clj
+   (deftest assert-no-duplicate-arglist-symbols!-test
+     (assertions
+       (p/assert-no-duplicate-arglist-symbols!
+         '[a b c])
+       => :ok
+       (p/assert-no-duplicate-arglist-symbols!
+         '[a & _])
+       => :ok
+       (p/assert-no-duplicate-arglist-symbols!
+         '[_ _])
+       =throws=> #"duplicate symbols")))
+
+#?(:clj
    (deftest collect-arglist-test
      (assertions
        "passes through a non-varargs arglist"

@@ -32,16 +32,21 @@
     (symbol? s) ::stub/any
     :else s))
 
-;; TODO: using the same symbol leads to the the last one being preferred, and causing the spec checking to fail
-;; eg: (foo _ _ _) => :stub/foo
-;; (foo 1 2 3)
-;; becomes a call like
-;; (foo 3 3 3)
 (defn literal->gensym [l]
   (if (symbol? l) l (gensym "arg")))
 
+(defn duplicates [coll]
+  (let [freqs (frequencies coll) ]
+    (distinct (filter #(< 1 (freqs %)) coll))))
+
+(defn assert-no-duplicate-arglist-symbols! [arglist]
+  (when-let [dupes (seq (duplicates arglist))]
+    (throw (ex-info "Found duplicate symbols, cannot resolve automatically! Disambiguate them by giving them unique names."
+             {:arglist arglist
+              :duplicates dupes})))
+  :ok)
+
 (defn collect-arglist [arglist]
-  ;(vec (remove #{'&} arglist))
   (let [[syms varargs] (split-with (comp not #{'&}) arglist)]
     (if (and (empty? syms) (seq varargs))
       (second varargs)
@@ -53,6 +58,7 @@
   (let [valid?   (if (im/cljs-env? env) `cljs.spec.alpha/valid? `clojure.spec.alpha/valid?)
         get-spec (if (im/cljs-env? env) `cljs.spec.alpha/get-spec `clojure.spec.alpha/get-spec)
         explain  (if (im/cljs-env? env) `cljs.spec.alpha/explain `clojure.spec.alpha/explain)]
+    (assert-no-duplicate-arglist-symbols! arglist)
     `(fn [~@arglist]
        (let [result# ~result]
          (when-let [spec# (~get-spec (var ~sym))]
