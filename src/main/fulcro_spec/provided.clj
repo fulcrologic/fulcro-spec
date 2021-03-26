@@ -70,7 +70,9 @@
                (throw (ex-info (str "Mock of " ~(str sym) " returned a value that does not conform to spec: " (with-out-str (~explain ret# result#))) {:mock? true})))))
          result#))))
 
-(defn parse-mock-triple [env conform? {:as triple :keys [under-mock arrow result]}]
+(defn parse-mock-triple
+  [env conform?
+   {:as triple :keys [under-mock arrow result behavior]}]
   (merge under-mock
     (let [{:keys [params mock-name]} under-mock
           arglist (map literal->gensym params)
@@ -78,15 +80,20 @@
                         (catch ~(if (im/cljs-env? env) :default 'Exception) t#
                           (throw (ex-info "Uncaught exception in stub!"
                                    {::stub/exception t#}))))]
-      {:ntimes        (parse-arrow-count arrow)
+      {:behavior      behavior
+       :ntimes        (parse-arrow-count arrow)
        :literals      (mapv symbol->any params)
        :stub-function (if conform?
                         (conformed-stub env mock-name arglist try-result)
                         `(fn [~@arglist] ~try-result))})))
 
+(defn parse-mock-block [env conform? {:keys [behavior triples]}]
+  (map (partial parse-mock-triple env conform?)
+    (map #(assoc % :behavior behavior) triples)))
+
 (defn parse-mocks [env conform? mocks]
   (let [parse-steps
-        (fn parse-steps [[mock-name steps :as group]]
+        (fn parse-steps [[[behavior mock-name] steps :as group]]
           (let [symgen (gensym "script")]
             {:script    `(stub/make-script ~(name mock-name)
                            ~(mapv (fn make-step [{:keys [stub-function ntimes literals]}]
@@ -94,10 +101,11 @@
                               steps))
              :sstub     `(stub/scripted-stub ~symgen)
              :mock-name mock-name
-             :symgen    symgen}))]
+             :symgen    symgen
+             :behavior  behavior}))]
     (->> mocks
-      (map (partial parse-mock-triple env conform?))
-      (group-by :mock-name)
+      (mapcat (partial parse-mock-block env conform?))
+      (group-by (juxt :behavior :mock-name))
       (map parse-steps))))
 
 (defn arrow? [sym]
@@ -110,15 +118,20 @@
     (s/cat
       :mock-name symbol?
       :params (s/* ::ffs/any))))
+(s/def ::behavior string?)
 (s/def ::arrow arrow?)
 (s/def ::triple
   (s/cat
     :under-mock ::under-mock
     :arrow ::arrow
     :result ::ffs/any))
+(s/def ::mock-block
+  (s/cat
+    :behavior (s/? ::behavior)
+    :triples (s/+ ::triple)))
 (s/def ::mocks
   (s/cat
-    :mocks (s/+ ::triple)
+    :mocks (s/+ ::mock-block)
     :body (s/+ ::ffs/any)))
 
 (defn provided*
@@ -129,7 +142,13 @@
     `(im/with-reporting ~(when-not skip-output? {:type :provided :string (str "PROVIDED: " string)})
        (im/try-report "Unexpected"
          (let [~@(mapcat (juxt :symgen :script) scripts)]
+           ~@(map
+               (fn [s] `(im/begin-reporting ~{:type :behavior :string s}))
+               (distinct (keep :behavior scripts)))
            (with-redefs [~@(mapcat (juxt :mock-name :sstub) scripts)]
              (let [result# (do ~@body)]
                (stub/validate-target-function-counts ~(mapv :symgen scripts))
+               ~@(map
+                   (fn [s] `(im/end-reporting ~{:type :behavior :string s}))
+                   (distinct (keep :behavior scripts)))
                result#)))))))

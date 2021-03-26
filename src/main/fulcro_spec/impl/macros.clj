@@ -16,16 +16,30 @@
             (~do-report {:type    :error :actual e#
                          :message ~block :expected "IT TO NOT THROW!"})))))
 
+(defn make-msg [msg-loc msg]
+  (update msg :type
+    #(keyword (str msg-loc "-" (name %)))))
+
+(defmacro begin-reporting
+  [msg & body]
+  (let [cljs?     (cljs-env? &env)
+        do-report (symbol (if cljs? "cljs.test" "clojure.test") "do-report")]
+    `(~do-report ~(make-msg "begin" msg))))
+
+(defmacro end-reporting
+  [msg & body]
+  (let [cljs?     (cljs-env? &env)
+        do-report (symbol (if cljs? "cljs.test" "clojure.test") "do-report")]
+    `(~do-report ~(make-msg "end" msg))))
+
 (defmacro with-reporting
   "Wraps body in a begin-* and an end-* do-report if the msg contains a :type"
   [msg & body]
   (let [cljs?     (cljs-env? &env)
-        do-report (symbol (if cljs? "cljs.test" "clojure.test") "do-report")
-        make-msg  (fn [msg-loc]
-                    (update msg :type
-                      #(keyword (str msg-loc "-" (name %)))))]
-    (if-not (:type msg) `(do ~@body)
-                        `(do
-                           (~do-report ~(make-msg "begin"))
-                           ~@body
-                           (~do-report ~(make-msg "end"))))))
+        do-report (symbol (if cljs? "cljs.test" "clojure.test") "do-report")]
+    (if-not (:type msg)
+      `(do ~@body)
+      `(do
+         (~do-report ~(make-msg "begin" msg))
+         ~@body
+         (~do-report ~(make-msg "end" msg))))))

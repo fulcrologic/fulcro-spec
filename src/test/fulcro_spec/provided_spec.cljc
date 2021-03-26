@@ -170,6 +170,9 @@
          '[a & _])
        => :ok
        (p/assert-no-duplicate-arglist-symbols!
+         '[_ & _])
+       =throws=> #"duplicate symbols"
+       (p/assert-no-duplicate-arglist-symbols!
          '[_ _])
        =throws=> #"duplicate symbols")))
 
