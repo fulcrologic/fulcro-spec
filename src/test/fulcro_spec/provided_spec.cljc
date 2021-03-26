@@ -160,6 +160,17 @@
       (assertions
         @detector => true))))
 
+#?(:clj
+   (deftest collect-arglist-test
+     (assertions
+       "passes through a non-varargs arglist"
+       (p/collect-arglist '[a b c]) => '[a b c]
+       "concats the vararg symbol with the regular symbols"
+       (p/collect-arglist '[a b & c]) => '[a b c]
+       "if there are no symbols, just returns the vararg symbol"
+       (p/collect-arglist '[& c]) => 'c
+       (p/collect-arglist '[& [a b]]) => '[a b])))
+
 (defn function-with-spec
   ([a])
   ([a b])
@@ -190,4 +201,8 @@
 
       (assertions
         "Throws an exception about the stub's return value"
-        (call-to-test 42) =throws=> #"returned a value"))))
+        (call-to-test 42) =throws=> #"returned a value"))
+    (provided! "Can use '&' in the mock definition"
+      (function-with-spec & args) => 1234
+      (assertions
+        (call-to-test 555) => 1234))))

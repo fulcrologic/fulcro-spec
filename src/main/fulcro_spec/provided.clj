@@ -32,8 +32,22 @@
     (symbol? s) ::stub/any
     :else s))
 
+;; TODO: using the same symbol leads to the the last one being preferred, and causing the spec checking to fail
+;; eg: (foo _ _ _) => :stub/foo
+;; (foo 1 2 3)
+;; becomes a call like
+;; (foo 3 3 3)
 (defn literal->gensym [l]
   (if (symbol? l) l (gensym "arg")))
+
+(defn collect-arglist [arglist]
+  ;(vec (remove #{'&} arglist))
+  (let [[syms varargs] (split-with (comp not #{'&}) arglist)]
+    (if (and (empty? syms) (seq varargs))
+      (second varargs)
+      (vec
+        (concat syms
+          (drop 1 varargs))))))
 
 (defn conformed-stub [env sym arglist result]
   (let [valid?   (if (im/cljs-env? env) `cljs.spec.alpha/valid? `clojure.spec.alpha/valid?)
@@ -42,11 +56,12 @@
     `(fn [~@arglist]
        (let [result# ~result]
          (when-let [spec# (~get-spec (var ~sym))]
-           (let [{:keys [~'args ~'ret]} spec#]
-             (when (and ~'args (not (~valid? ~'args [~@arglist])))
-               (throw (ex-info (str "Mock of " ~(str sym) " was sent arguments that do not conform to spec: " (with-out-str (~explain ~'args [~@arglist]))) {:mock? true})))
-             (when (and ~'ret (not (~valid? ~'ret result#)))
-               (throw (ex-info (str "Mock of " ~(str sym) " returned a value that does not conform to spec: " (with-out-str (~explain ~'ret result#))) {:mock? true})))))
+           (let [{args# :args ret# :ret} spec#
+                 arglist# ~(collect-arglist arglist)]
+             (when (and args# (not (~valid? args# arglist#)))
+               (throw (ex-info (str "Mock of " ~(str sym) " was sent arguments that do not conform to spec: " (with-out-str (~explain args# arglist#))) {:mock? true})))
+             (when (and ret# (not (~valid? ret# result#)))
+               (throw (ex-info (str "Mock of " ~(str sym) " returned a value that does not conform to spec: " (with-out-str (~explain ret# result#))) {:mock? true})))))
          result#))))
 
 (defn parse-mock-triple [env conform? {:as triple :keys [under-mock arrow result]}]

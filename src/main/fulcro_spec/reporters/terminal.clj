@@ -55,16 +55,16 @@
    "
   (atom
     {:fail-only?     false
+     :quick-fail?    true
+
      :color?         true
      :diff-hl?       false
      :diff?          true
-
      :diff-list?     false
      :num-diffs      1
-
      :full-diff?     true
+
      :frame-limit    100
-     :quick-fail?    true
      :*print-level*  3
      :*print-length* nil}))
 
