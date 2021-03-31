@@ -123,7 +123,8 @@ you want to isolate mocking to a specific behavior:
 [source]
 ----
 (:require
-  [fulcro-spec.core :refer [specification behavior when-mocking assertions])
+  [fulcro-spec.core :refer [specification behavior when-mocking assertions]]
+  [fulcro-spec.mocking :refer [calls-of])
 
 ;; source file
 (defn my-function [x y] (launch-rockets!))
@@ -131,14 +132,12 @@ you want to isolate mocking to a specific behavior:
 (specification "Thing"
   (behavior "Does something"
     (when-mocking
-      (my-function arg1 arg2)
-      => (do (assertions
-               arg1 => 3
-               arg2 => 5)
-           true)
+      (my-function arg1 arg2) => true
       ;;actual test
       (assertions
-        (my-function 3 5) => true))))
+        (my-function 3 5) => true
+        (calls-of my-function)
+        => [{'arg1 3, 'arg2 5}]))))
 ----
 
 Basically, you include triples (a form, arrow, form), followed by the code & tests to execute.
@@ -152,7 +151,7 @@ It is important to note that the mocking support does a bunch of verification at
 . It returns whatever the RHS of the mock expression indicates.
 . If the mocked function has a `clojure.spec.alpha/fdef` with `:ret`, it will validate the return value with it.
 . If the mocked function has a `clojure.spec.alpha/fdef` with `:fn` (and `:args` & `:ret`), it will validate the arguments and return value with it.
-. If assertions run in the RHS form, they will be honored (for test failures).
+. It provides a way to access the arguments and return values of the mocked functions (in fulcro-spec.mocking), that you can use to make your own assertions.
 
 So, the following mock script should pass:
 
@@ -177,6 +176,44 @@ So, the following mock script should pass:
 <2> The next two calls return the argument plus one.
 <3> `g` can be called any amount (but at least once) and returns 17 each time.
 <4> If you were to remove any call to `f` or `g` this test would fail.
+
+==== fulcro-spec.mocking API
+
+The namespace fulcro-spec.mocking provides helper functions to access the arguments and return values of a mocked function.
+Is the new preferred method to make assertions about what a mocked function received and returned.
+
+[source]
+----
+(:require
+  [fulcro-spec.core :refer [when-mocking assertions]]
+  [fulcro-spec.mocking :as mock])
+
+(defn f [a] (inc a))
+
+(when-mocking
+  (f a1) =1x=> (mock/real-return)
+  (f a*) => a
+  (assertions
+    (f 0) => 1
+    (f 5) => 5
+    (mock/calls-of f)
+    => [{'a1 0} <1>
+        {'a* 5}]
+    (mock/call-of f 0) <2>
+    => {'a1 0}
+    (mock/call-of f 3) <3>
+    => nil
+    (mock/spied-value f 1 'a*)
+    => 5
+    (mock/returns-of f)
+    => [1 5]
+    (mock/return-of f 0)
+    => 1))
+----
+
+<1> Note that the symbols returned match what was specified in the mock definition, not the defn.
+<2> Note that the index is a 0 based (is passed to `nth`).
+<3> Note that all these functions return nil if the function was not mocked, the index was not found, or the requested symbol was not found.
 
 ==== Clojure.spec mocking integration
 
@@ -214,10 +251,11 @@ Here's an example of how to do that with fulcro spec:
 [source]
 ----
 (:require
-  [fulcro-spec.core :refer [when-mocking assertions])
+  [fulcro-spec.core :refer [when-mocking assertions]]
+  [fulcro-spec.mocking :refer [real-return]])
 
-(let [real-fn f]
-  (when-mocking f => (do ... (real-fn))
+(specification "..."
+  (when-mocking f => (real-return)
   (assertions
     ...)
 ----

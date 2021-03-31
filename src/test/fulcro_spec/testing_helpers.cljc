@@ -2,6 +2,10 @@
   (:require
     [clojure.walk :as w]))
 
+(defn- private-fn [x] [::private x])
+
+(defn public-fn [x] (private-fn x))
+
 (defn locate
   "Locates and returns (sym ...) in haystack.
    For use in tests that assert against code blocks for assertions
