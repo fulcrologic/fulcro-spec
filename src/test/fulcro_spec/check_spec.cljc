@@ -3,7 +3,8 @@
     #?(:clj [clojure.test :as t])
     [clojure.spec.alpha :as s]
     [fulcro-spec.check :as _ :refer [checker]]
-    [fulcro-spec.core :refer [specification component assertions when-mocking]]))
+    [fulcro-spec.impl.check :as _impl]
+    [fulcro-spec.core :refer [specification behavior component assertions when-mocking]]))
 
 (def x-double?
   (checker [actual]
@@ -164,6 +165,7 @@
       (_/subset?* 123) =throws=> #"Invalid argument.*to.*subset"))
   (component "in*"
     (assertions
+      "checks that the value contains the path"
       ((_/in* [:a] (_/is?* some?)) {:x 1})
       => {:actual {:x 1}
           :expected `(_/in* [:a])
@@ -176,44 +178,55 @@
       => {:actual {:a {:b {:x 3}}}
           :expected `(_/in* [:a :b :c])
           :message "expected `{:x 3}` to contain `:c` at path [:a :b]"}
+      "the path is in the failure"
       ((_/in* [:a] (_/is?* even?)) {:a 1})
-      => [{:actual 1 :expected even?}]))
+      => [{:actual 1 :expected even? ::_/path [:a]}]
+      "paths for nested in* are correct"
+      ((_/in* [:a] (_/in* [:b] (_/equals?* "B"))) {:a {:b "not b"}})
+      => [{:actual "not b"
+           :expected "B"
+           ::_/path [:a :b]}] ))
   (component "embeds?*"
     (assertions
       "checks simple map values for equality"
       ((_/embeds?* {:a :X}) {:a "not :X"})
-      => [{:message "at path [:a]:"
-           :expected :X
-           :actual "not :X"}]
+      => [{:expected :X
+           :actual "not :X"
+           ::_/path [:a]}]
       "checks nested hashmap recursively"
       ((_/embeds?* {:a {:b :X}}) {:a {:b "not :X"}})
-      => [[{:message "at path [:a :b]:"
-            :expected :X
-            :actual "not :X"}]]
+      => [{:expected :X
+           :actual "not :X"
+           ::_/path [:a :b]}]
       ((_/embeds?* {:a {:b :X}}) {:a "not a map"})
-      => [{:message "at path [:a]:"
-           :expected {:b :X}
-           :actual "not a map"}]
+      => [{:expected {:b :X}
+           :actual "not a map"
+           ::_/path [:a]}]
       "checking for nil values that dont exist"
       ((_/embeds?* {:a nil}) {})
       => [{:actual ::_/not-found
            :expected nil
-           :message "at path [:a]:"}]
+           ::_/path [:a]}]
       "can take checkers as map values"
       ((_/embeds?* {:a (_/equals?* :X)}) {:a "not x"})
-      => [[{:message "at path [:a]:"
-            :actual "not x"
-            :expected :X}]]
+      => [{:actual "not x"
+           :expected :X
+           ::_/path [:a]}]
       "does not take functions as map values"
       (seq ((_/embeds?* {:a even?}) {:a 111}))
       =throws=> #"Expected a checker.*found a function"
       "can check that key value pair was not found by checking for equality with ::not-found"
       ((_/embeds?* {:a ::_/not-found}) {})
-      => [nil]
+      => nil
       ((_/embeds?* {:a ::_/not-found}) {:a "FAIL"})
       => [{:actual "FAIL"
            :expected ::_/not-found
-           :message "at path [:a]:"}])))
+           ::_/path [:a]}]
+      "paths for nested embeds are correct"
+      ((_/embeds?* {:a (_/embeds?* {:b "B"})}) {:a {:b "not b"}})
+      => [{:actual "not b"
+           :expected "B"
+           ::_/path [:a :b]}])))
 
 (specification "fmap*"
   (assertions
@@ -276,27 +289,27 @@
 
 (specification "prepend-message"
   (assertions
-    (_/prepend-message "TST:MSG" {})
+    (_impl/prepend-message "TST:MSG" {})
     => {:message "TST:MSG"}
-    (_/prepend-message "TST:MSG" {:message "message"})
+    (_impl/prepend-message "TST:MSG" {:message "message"})
     => {:message "TST:MSG\nmessage"}))
 
 (specification "append-message"
   (assertions
-    (_/append-message "TST:MSG" nil)
-    => nil
-    (_/append-message "TST:MSG" [])
-    => []
-    (_/append-message "TST:MSG" [{}])
-    => [{:message "TST:MSG"}]
-    (_/append-message "TST:MSG" [{:message "message"}])
-    => [{:message "message\nTST:MSG"}]))
+    (_impl/append-message "TST:MSG" nil)
+    => {:message "TST:MSG"}
+    (_impl/append-message "TST:MSG" {})
+    => {:message "TST:MSG"}
+    (_impl/append-message "TST:MSG" {})
+    => {:message "TST:MSG"}
+    (_impl/append-message "TST:MSG" {:message "message"})
+    => {:message "message\nTST:MSG"}))
 
 #?(:clj
    (defn test-check-expr [checker actual & [message]]
      (let [reports (atom [])]
        (with-redefs [t/do-report (fn [m] (swap! reports conj m))]
-         (eval (_/check-expr false message (list '_ checker actual)))
+         (eval (_impl/check-expr false message (list '_ checker actual)))
          @reports))))
 
 #?(:clj
@@ -304,7 +317,7 @@
      (assertions
        "called by assertions macro"
        (test-check-expr `(_/is?* even?) 333)
-       => [{:type :fail :message nil
+       => [{:type :fail :message nil ::_/actual 333
             :actual 333 :expected even?}]
        "reports a :pass if there were no checker failures"
        (test-check-expr `(_/is?* even?) 2)
