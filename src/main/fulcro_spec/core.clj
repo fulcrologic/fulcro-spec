@@ -7,11 +7,21 @@
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.provided :as p]
     [fulcro-spec.stub]
+    [fulcro-spec.hooks :refer [hooks]]
     [fulcro-spec.spec :as fss]
     [clojure.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]))
 
 (declare => =1x=> =2x=> =3x=> =4x=> =throws=> =fn=> =check=>)
+
+(defn set-hooks!
+  "Call this to set the `:on-enter` and `:on-leave` hooks.
+   Currently only `specification`, `behavior`, and `component` call these hooks.
+   `:on-enter` and `:on-leave` will be called with a single argument,
+   a map with the test or behavior string and its location (currently just line number).
+   See the macro source code for exact and up to date details."
+  [handlers]
+  (reset! hooks handlers))
 
 (defn var-name-from-string [s]
   (symbol (str "__" (str/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))
@@ -31,12 +41,18 @@
   (let [{:keys [name selectors body]} (fss/conform! ::specification args)
         test-name (-> (var-name-from-string name)
                     (with-meta (zipmap selectors (repeat true))))
-        prefix    (im/if-cljs &env "cljs.test" "clojure.test")]
+        prefix    (im/if-cljs &env "cljs.test" "clojure.test")
+        form-meta (select-keys (meta &form) [:line])
+        hook-info {::specification name
+                   ::location form-meta}]
     `(~(symbol prefix "deftest") ~test-name
-       (im/with-reporting {:type      :specification :string ~name
-                           :form-meta ~(select-keys (meta &form) [:line])}
-         (im/try-report ~name
-           ~@body)))))
+       (im/with-reporting {:type      :specification
+                           :string    ~name
+                           :form-meta ~form-meta}
+         ((:on-enter @hooks (fn [& _#])) ~hook-info)
+         (let [result# (im/try-report ~name ~@body)]
+           ((:on-leave @hooks (fn [& _#])) ~hook-info)
+           result#)))))
 
 (s/def ::behavior (s/cat
                     :name (constantly true)
@@ -55,11 +71,16 @@
   (let [{:keys [name opts body]} (fss/conform! ::behavior args)
         typekw (if (contains? opts :manual-test)
                  :manual :behavior)
-        prefix (im/if-cljs &env "cljs.test" "clojure.test")]
+        prefix (im/if-cljs &env "cljs.test" "clojure.test")
+        form-meta (select-keys (meta &form) [:line])
+        hook-info {::behavior name
+                   ::location form-meta}]
     `(~(symbol prefix "testing") ~name
        (im/with-reporting ~{:type typekw :string name}
-         (im/try-report ~name
-           ~@body)))))
+         ((:on-enter @hooks (fn [& _#])) ~hook-info)
+         (let [result# (im/try-report ~name ~@body)]
+           ((:on-leave @hooks (fn [& _#])) ~hook-info)
+           result#)))))
 
 (defmacro component
   "An alias for behavior. Makes some specification code easier to read where a given specification is describing subcomponents of a whole."
