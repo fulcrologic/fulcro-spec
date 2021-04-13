@@ -355,7 +355,8 @@
                     #_=> {:actual value-at-key
                           :expected v
                           ::path path})))))]
-    (all* (-embeds?* expected []))))
+    (and* (is?* map?)
+      (-embeds?* expected []))))
 
 (defn throwable*
   "Checks that the `actual` value is a `Throwable` (or in cljs a `js/Error`).
