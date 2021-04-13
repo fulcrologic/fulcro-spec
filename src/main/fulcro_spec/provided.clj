@@ -33,7 +33,18 @@
     :else s))
 
 (defn literal->gensym [l]
-  (if (symbol? l) l (gensym "arg")))
+  (if (or (not (symbol? l))
+        (= '_ l))
+    (gensym "arg")
+    l))
+
+(defn param-sym [p]
+  (cond
+    (not (symbol? p)) ::stub/literal
+    (= '_ p) ::stub/ignored
+    (= '& p) ::stub/&_
+    (str/starts-with? (str p) "_") ::stub/ignored
+    :else (str p)))
 
 (defn duplicates [coll]
   (let [freqs (frequencies coll) ]
@@ -70,34 +81,42 @@
                (throw (ex-info (str "Mock of " ~(str sym) " returned a value that does not conform to spec: " (with-out-str (~explain ret# result#))) {:mock? true})))))
          result#))))
 
+(defn try-stub [env body]
+  `(try ~body
+     (catch ~(if (im/cljs-env? env) :default 'Exception) t#
+       (throw (ex-info "Uncaught exception in stub!"
+                {::stub/exception t#})))))
+
 (defn parse-mock-triple
   [env conform?
    {:as triple :keys [under-mock arrow result behavior]}]
   (merge under-mock
-    (let [{:keys [params mock-name]} under-mock
-          arglist (map literal->gensym params)
-          try-result `(try ~result
-                        (catch ~(if (im/cljs-env? env) :default 'Exception) t#
-                          (throw (ex-info "Uncaught exception in stub!"
-                                   {::stub/exception t#}))))]
+    (let [{:keys [params mock-name]} under-mock]
       {:behavior      behavior
        :ntimes        (parse-arrow-count arrow)
        :literals      (mapv symbol->any params)
-       :stub-function (if conform?
-                        (conformed-stub env mock-name arglist try-result)
-                        `(fn [~@arglist] ~try-result))})))
+       :mock-arglist  (mapv param-sym params)
+       :stub-function (let [arglist (map literal->gensym params)]
+                        (if conform?
+                          (conformed-stub env mock-name arglist (try-stub env result))
+                          `(fn [~@arglist] ~(try-stub env result))))})))
 
 (defn parse-mock-block [env conform? {:keys [behavior triples]}]
   (map (partial parse-mock-triple env conform?)
     (map #(assoc % :behavior behavior) triples)))
 
+(defn emit-mock-fn [env mock-name]
+  (if (im/cljs-env? env)
+    mock-name
+    `(deref (var ~mock-name))))
+
 (defn parse-mocks [env conform? mocks]
   (let [parse-steps
         (fn parse-steps [[[behavior mock-name] steps :as group]]
           (let [symgen (gensym "script")]
-            {:script    `(stub/make-script ~(name mock-name)
-                           ~(mapv (fn make-step [{:keys [stub-function ntimes literals]}]
-                                    `(stub/make-step ~stub-function ~ntimes ~literals))
+            {:script    `(stub/make-script ~(emit-mock-fn env mock-name)
+                           ~(mapv (fn make-step [{:keys [stub-function ntimes literals mock-arglist]}]
+                                    `(stub/make-step ~stub-function ~ntimes ~literals ~mock-arglist))
                               steps))
              :sstub     `(stub/scripted-stub ~symgen)
              :mock-name mock-name
@@ -146,7 +165,13 @@
                (fn [s] `(im/begin-reporting ~{:type :behavior :string s}))
                (distinct (keep :behavior scripts)))
            (with-redefs [~@(mapcat (juxt :mock-name :sstub) scripts)]
-             (let [result# (do ~@body)]
+             (let [result# (binding [stub/*script-by-fn*
+                                     ~(into {}
+                                        (map (juxt
+                                               #(emit-mock-fn env (:mock-name %))
+                                               :symgen))
+                                        scripts)]
+                             ~@body)]
                (stub/validate-target-function-counts ~(mapv :symgen scripts))
                ~@(map
                    (fn [s] `(im/end-reporting ~{:type :behavior :string s}))

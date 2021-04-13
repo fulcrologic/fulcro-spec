@@ -5,6 +5,7 @@
     #?(:clj [fulcro-spec.impl.macros :as im])
     #?(:clj [fulcro-spec.provided :as p])
     [fulcro-spec.stub :as stub]
+    [fulcro-spec.mocking :as mocking]
     [fulcro-spec.spec :as fss]
     [clojure.test :refer [deftest]]
     [fulcro-spec.testing-helpers :as th])
@@ -161,19 +162,33 @@
         @detector => true))))
 
 #?(:clj
+   (deftest literal->gensym-test
+     (when-mocking
+       (gensym _) => :GENSYM
+       (assertions
+         (p/literal->gensym "lit")
+         => :GENSYM
+         (p/literal->gensym '_)
+         => :GENSYM
+         (p/literal->gensym '_aaa)
+         => '_aaa
+         (p/literal->gensym 'bbb)
+         => 'bbb))))
+
+#?(:clj
    (deftest assert-no-duplicate-arglist-symbols!-test
      (assertions
        (p/assert-no-duplicate-arglist-symbols!
          '[a b c])
        => :ok
        (p/assert-no-duplicate-arglist-symbols!
-         '[a & _])
+         '[a & b])
        => :ok
        (p/assert-no-duplicate-arglist-symbols!
-         '[_ & _])
+         '[D & D])
        =throws=> #"duplicate symbols"
        (p/assert-no-duplicate-arglist-symbols!
-         '[_ _])
+         '[D D])
        =throws=> #"duplicate symbols")))
 
 #?(:clj
@@ -186,6 +201,20 @@
        "if there are no symbols, just returns the vararg symbol"
        (p/collect-arglist '[& c]) => 'c
        (p/collect-arglist '[& [a b]]) => '[a b])))
+
+#?(:clj
+   (deftest param-sym-test
+     (assertions
+       "converts literals"
+       (p/param-sym "foo") => ::stub/literal
+       "converts &"
+       (p/param-sym '&) => ::stub/&_
+       "converts _"
+       (p/param-sym '_) => ::stub/ignored
+       "converts _*"
+       (p/param-sym '_a) => ::stub/ignored
+       "converts a symbol to a string"
+       (p/param-sym 'sym) => "sym")))
 
 (defn function-with-spec
   ([a])
@@ -222,3 +251,57 @@
       (function-with-spec & args) => 1234
       (assertions
         (call-to-test 555) => 1234))))
+
+(defn f [a] [::f a])
+
+(defn g [a b] [::g a b])
+
+(deftest real-return-test
+  (behavior "A mock can return the original/real return value"
+    (when-mocking
+      (f n) => (mocking/real-return)
+      (assertions
+        (f 7)
+        => [::f 7]))))
+
+(deftest spy-test
+  (when-mocking
+    (f a1) =1x=> :mock/return
+    (f a2) =1x=> (mocking/real-return)
+    (assertions
+      "a mock records the returned values"
+      (f 1) => :mock/return
+      (mocking/return-of f 0)
+      => :mock/return
+      (f 2) => [::f 2]
+      (mocking/return-of f 1)
+      => [::f 2]
+      "a mock records the arguments"
+      (mocking/calls-of f)
+      => [{'a1 1}
+          {'a2 2}]
+      (mocking/call-of f 0)
+      => {'a1 1}
+      (mocking/spied-value f 0 'a1)
+      => 1
+      (mocking/spied-value f 1 'a2)
+      => 2))
+  (behavior "literals and `_` prefixed symbols are not recorded"
+    (when-mocking
+      (g a _) =1x=> :g/return-1
+      (g 2 b) =1x=> :g/return-2
+      (g _a _b) =1x=> :g/return-3
+      (assertions
+        (g 1 1) => :g/return-1
+        (g 2 2) => :g/return-2
+        (g 3 3) => :g/return-3
+        (mocking/calls-of g)
+        => [{'a 1}
+            {'b 2}
+            {}]))))
+
+(deftest can-mock-private-functions
+  (when-mocking
+    (th/private-fn x) => (inc x)
+    (assertions
+      (th/public-fn 1) => 2)))
