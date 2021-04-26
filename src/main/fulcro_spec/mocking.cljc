@@ -2,6 +2,24 @@
   (:require
     [fulcro-spec.stub :as stub]))
 
+(defn original-fn
+  "For use in the RHS of a when-mocking (or similar).
+   The zero arity returns the original function, thereby avoiding a stackoverflow error with the mocked implementation.
+   The many arity is equivalent to calling the original function with all of the passed in arguments.
+   Example:
+   ```
+   (defn f [a] [:real a])
+
+   (when-mocking
+     (f a) =1x=> (original-fn)
+     (f a) =1x=> (original-fn 5)
+     (assertions
+       (f 0) => f
+       (f 1) => [:real 5]))
+   ```"
+  ([] (stub/original-fn))
+  ([& args] (apply stub/original-fn args)))
+
 (defn real-return
   "For use in the RHS of a when-mocking (or similar).
    Will return what the original call to the stubbed function would have returned if passed the specified arguments in the LHS.

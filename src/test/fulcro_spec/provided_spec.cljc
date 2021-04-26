@@ -265,27 +265,34 @@
         => [::f 7]))))
 
 (deftest spy-test
-  (when-mocking
-    (f a1) =1x=> :mock/return
-    (f a2) =1x=> (mocking/real-return)
-    (assertions
-      "a mock records the returned values"
-      (f 1) => :mock/return
-      (mocking/return-of f 0)
-      => :mock/return
-      (f 2) => [::f 2]
-      (mocking/return-of f 1)
-      => [::f 2]
-      "a mock records the arguments"
-      (mocking/calls-of f)
-      => [{'a1 1}
-          {'a2 2}]
-      (mocking/call-of f 0)
-      => {'a1 1}
-      (mocking/spied-value f 0 'a1)
-      => 1
-      (mocking/spied-value f 1 'a2)
-      => 2))
+  (let [original-f f]
+    (when-mocking
+      (f a1) =1x=> :mock/return
+      (f a2) =1x=> (mocking/real-return)
+      (f a3) =1x=> (mocking/original-fn 555)
+      (f a4) =1x=> (mocking/original-fn)
+      (assertions
+        "a mock records the returned values"
+        (f 1) => :mock/return
+        (mocking/return-of f 0)
+        => :mock/return
+        (f 2) => [::f 2]
+        (f 3) => [::f 555]
+        (f 4) => original-f
+        (mocking/return-of f 1)
+        => [::f 2]
+        "a mock records the arguments"
+        (mocking/calls-of f)
+        => [{'a1 1}
+            {'a2 2}
+            {'a3 3}
+            {'a4 4}]
+        (mocking/call-of f 0)
+        => {'a1 1}
+        (mocking/spied-value f 0 'a1)
+        => 1
+        (mocking/spied-value f 1 'a2)
+        => 2)))
   (behavior "literals and `_` prefixed symbols are not recorded"
     (when-mocking
       (g a _) =1x=> :g/return-1

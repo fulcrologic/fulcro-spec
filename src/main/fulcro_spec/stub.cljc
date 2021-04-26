@@ -38,7 +38,8 @@
                     (= lit arg))))
         true (zip-pad gensym literals args)))))
 
-(def ^:dynamic *real-return-fn* (constantly nil))
+(def ^:dynamic *original-fn* (constantly nil))
+(def ^:dynamic *real-return-thunk* (constantly nil))
 
 (defn scripted-stub [script-atom]
   (let [step (atom 0)]
@@ -58,7 +59,8 @@
               #(-> % (update :history conj args)
                  (update-in [:steps curr-step :history] conj args)))
             (try
-              (let [return (binding [*real-return-fn* (fn [] (apply function args))]
+              (let [return (binding [*original-fn* function
+                                     *real-return-thunk* (fn [] (apply function args))]
                              (apply stub args))]
                (swap! script-atom update :returned conj return)
                return)
@@ -98,8 +100,11 @@
                        (merge {:mock? true} @script))))))
     script-atoms))
 
-(defn real-return []
-  (*real-return-fn*))
+(defn original-fn
+  ([] *original-fn*)
+  ([& args] (apply *original-fn* args)))
+
+(defn real-return [] (*real-return-thunk*))
 
 (def ^:dynamic *script-by-fn* {})
 
