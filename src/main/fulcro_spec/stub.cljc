@@ -60,7 +60,7 @@
                  (update-in [:steps curr-step :history] conj args)))
             (try
               (let [return (binding [*original-fn* function
-                                     *real-return-thunk* (fn [] (apply function args))]
+                                     *real-return-thunk* (memoize (fn [] (apply function args)))]
                              (apply stub args))]
                (swap! script-atom update :returned conj return)
                return)
