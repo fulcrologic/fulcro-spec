@@ -1,4 +1,6 @@
-(ns fulcro-spec.stub)
+(ns fulcro-spec.stub
+  (:require
+    [clojure.test :as t]))
 
 (defn make-step [stub-function ntimes literals mock-arglist]
   {:stub         stub-function
@@ -93,9 +95,12 @@
                 count-results (reduce validate-step-counts [] steps)
                 first-error   (first (filter #(not= :ok %) count-results))]
             (when first-error
-              (throw (ex-info (str function " was not called as many times as specified.\n"
-                                "Expected " (second first-error) ", actual " (first first-error))
-                       (merge {:mock? true} @script))))))
+              (t/do-report
+                {:type     :error
+                 :mock?    true
+                 :message  (str function " was not called as many times as specified.")
+                 :actual   (first first-error)
+                 :expected (second first-error)}))))
     script-atoms))
 
 (defn real-return []

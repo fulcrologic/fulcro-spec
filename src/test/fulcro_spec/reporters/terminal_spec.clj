@@ -6,8 +6,6 @@
     [fulcro-spec.reporter :as base]
     [fulcro-spec.reporters.terminal :as term]))
 
-(term/merge-cfg! {:quick-fail? false})
-
 (defn test! [test-fn]
   (t/report {:type :begin-test-ns :ns *ns*})
   (try (test-fn)
@@ -39,30 +37,31 @@
         reporter))))
 
 (deftest terminal-reporter
-  (core/behavior "actual and expected are printed correctly"
-    (let [reporter (__SHADOW_TEST_PLEASE_IGNORE__)]
-      (core/behavior "test harness sanity check"
-        (is (= (type (base/map->TestReporter {}))
-               (type reporter)))
-        (is (= [:id :name :test-items :status]
-               (keys (first (:namespaces (base/get-test-report reporter)))))))
-      (let [report-ns (first (:namespaces (base/get-test-report reporter)))
-            report-behavior (first (:test-items report-ns))
-            [eq-arrow-tests fn-arrow-tests] (:test-items report-behavior)
-            find-actual-str #(second (re-find #"\s+Actual: ([^\n]*)" %))
-            find-expected-str #(second (re-find #"\s+Expected: ([^\n]*)" %))]
-        (is (= "terminal reporting prints good results" (:name report-behavior)))
-        (is (= "for => arrow" (:name eq-arrow-tests)))
-        (is (= [["nil" "1"], ["2" "nil"], ["nil" "3"], ["4" "nil"]]
-               (map #((juxt find-actual-str find-expected-str)
-                      (with-out-str (term/print-test-result % println 0)))
-                 (:test-results eq-arrow-tests))))
-        (let [[test-5, test-6, test-7]
-              (map #(with-out-str (term/print-test-result % println 0))
-                (:test-results fn-arrow-tests))]
-          (is (str/starts-with? (find-actual-str test-5) "java.lang.ClassCastException"))
-          (is (= "(exec 5 even?)" (find-expected-str test-5)))
-          (is (= "6" (find-actual-str test-6)))
-          (is (re-find #"odd_QMARK" (find-expected-str test-6)))
-          (is (re-find #"java.lang.NullPointerException" (find-actual-str test-7)))
-          (is (= "(exec (some-> nil :fn) 7)" (find-expected-str test-7))))))))
+  (binding [term/*config* {:quick-fail? false}]
+    (core/behavior "actual and expected are printed correctly"
+      (let [reporter (__SHADOW_TEST_PLEASE_IGNORE__)]
+        (core/behavior "test harness sanity check"
+          (is (= (type (base/map->TestReporter {}))
+                (type reporter)))
+          (is (= [:id :name :test-items :status]
+                (keys (first (:namespaces (base/get-test-report reporter)))))))
+        (let [report-ns (first (:namespaces (base/get-test-report reporter)))
+              report-behavior (first (:test-items report-ns))
+              [eq-arrow-tests fn-arrow-tests] (:test-items report-behavior)
+              find-actual-str #(second (re-find #"\s+Actual: ([^\n]*)" %))
+              find-expected-str #(second (re-find #"\s+Expected: ([^\n]*)" %))]
+          (is (= "terminal reporting prints good results" (:name report-behavior)))
+          (is (= "for => arrow" (:name eq-arrow-tests)))
+          (is (= [["nil" "1"], ["2" "nil"], ["nil" "3"], ["4" "nil"]]
+                (map #((juxt find-actual-str find-expected-str)
+                       (with-out-str (term/print-test-result % println 0)))
+                  (:test-results eq-arrow-tests))))
+          (let [[test-5, test-6, test-7]
+                (map #(with-out-str (term/print-test-result % println 0))
+                  (:test-results fn-arrow-tests))]
+            (is (str/starts-with? (find-actual-str test-5) "java.lang.ClassCastException"))
+            (is (= "(exec 5 even?)" (find-expected-str test-5)))
+            (is (= "6" (find-actual-str test-6)))
+            (is (re-find #"odd_QMARK" (find-expected-str test-6)))
+            (is (re-find #"java.lang.NullPointerException" (find-actual-str test-7)))
+            (is (= "(exec (some-> nil :fn) 7)" (find-expected-str test-7)))))))))

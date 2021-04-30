@@ -1,6 +1,6 @@
 (ns fulcro-spec.stub-spec
   (:require
-    [clojure.test :refer [is deftest]]
+    [clojure.test :as t :refer [is deftest]]
     [fulcro-spec.stub :as stub]
     [fulcro-spec.core :refer [behavior assertions]])
   #?(:clj
@@ -101,50 +101,72 @@
         (:history @script) => [[1 2] [3 4] [:a :b]]
         (map :history (:steps @script)) => [[[1 2] [3 4]] [[:a :b]]]))))
 
+(defn test-validate-counts [script-atoms]
+  (let [error (atom nil)]
+    (with-redefs [t/do-report (fn [m] (reset! error m))]
+      (let [return (stub/validate-target-function-counts script-atoms)]
+        (or @error return)))))
+
 (deftest validate-target-function-counts
   (behavior "returns nil if a target function has been called enough times"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 5 :times 5}]})]]
       (assertions
-        (stub/validate-target-function-counts script-atoms)
+        (test-validate-counts script-atoms)
         =fn=> some?)))
-  (behavior "throws an exception when a target function has not been called enough times"
+  (behavior "reports an error when a target function has not been called enough times"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times 5}]})]]
       (assertions
-        (stub/validate-target-function-counts script-atoms)
-        =throws=> ExceptionInfo)))
+        (test-validate-counts script-atoms)
+        => {:type :error,
+            :mock? true,
+            :message "fun1 was not called as many times as specified.",
+            :actual 0,
+            :expected 5})))
 
   (behavior "returns nil if a target function has been called enough times with :many specified"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times :many}]})]]
       (assertions
-        (stub/validate-target-function-counts script-atoms)
+        (test-validate-counts script-atoms)
         =fn=> some?)))
 
   (behavior "throws an exception if a function has not been called at all with :many was specified"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times :many}]})]]
       (assertions
-        (stub/validate-target-function-counts script-atoms)
-        =throws=> ExceptionInfo)))
+        (test-validate-counts script-atoms)
+        => {:type :error,
+            :mock? true,
+            :message "fun1 was not called as many times as specified.",
+            :actual 0,
+            :expected :many})))
 
   (behavior "returns nil all the function have been called the specified number of times"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
                         (atom {:function "fun2" :steps [{:ncalled 1 :times 1}]})]]
       (assertions
-        (stub/validate-target-function-counts script-atoms)
+        (test-validate-counts script-atoms)
         =fn=> some?)))
 
   (behavior "throws an exception if the second function has not been called at all with :many was specified"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
                         (atom {:function "fun2" :steps [{:ncalled 0 :times 1}]})]]
       (assertions
-        (stub/validate-target-function-counts script-atoms)
-        =throws=> ExceptionInfo)))
+        (test-validate-counts script-atoms)
+        => {:type :error,
+            :mock? true,
+            :message "fun2 was not called as many times as specified.",
+            :actual 0,
+            :expected 1})))
 
   (behavior "stubs record history, will show the script when it fails to validate"
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 1 :times 1}]})
                         (atom {:function "fun2" :steps [{:ncalled 1 :times 2}]})]]
       (assertions
-        (stub/validate-target-function-counts script-atoms)
-        =throws=> ExceptionInfo))))
+        (test-validate-counts script-atoms)
+        => {:type :error,
+            :mock? true,
+            :message "fun2 was not called as many times as specified.",
+            :actual 1,
+            :expected 2}))))
 
 (deftest zip-arglist-test
   (assertions

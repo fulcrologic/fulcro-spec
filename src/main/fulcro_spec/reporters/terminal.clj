@@ -52,6 +52,8 @@
    ```
    (swap! fulcro-spec.reporters.terminal/cfg assoc :color? false)
    ```
+
+   When using kaocha, see `fulcro-spec.reporters.terminal/*config*`.
    "
   (atom
     {:fail-only?     false
@@ -228,10 +230,11 @@
         (throw (ex-info "" {::stop? true}))))))
 
 (def when-fail-only-keep-failed
-  (filter #(or
-             (not (env :fail-only?))
-             (pos? (:fail (:status %) 0))
-             (pos? (:error (:status %) 0)))))
+  (partial filter
+    #(or
+       (not (env :fail-only?))
+       (pos? (:fail (:status %) 0))
+       (pos? (:error (:status %) 0)))))
 
 (defn print-test-item [test-item print-level]
   (let [status  (:status test-item)
@@ -244,33 +247,37 @@
       (println (space-level print-level)
         (color-str (:status test-item)
           (:name test-item)))))
-  (into []
-    (comp (filter (comp #{:fail :error} :status))
-      (map #(print-test-result % (->> print-level inc space-level
-                                   (partial println))
-              (inc print-level))))
-    (:test-results test-item))
-  (into []
-    (comp when-fail-only-keep-failed
-      (map #(print-test-item % (inc print-level))))
-    (:test-items test-item)))
+  (let [to-report (filter (comp #{:fail :error} :status)
+                    (:test-results test-item))
+        p #(print-test-result % (->> print-level inc space-level
+                                  (partial println))
+             (inc print-level))]
+    (->> to-report
+      (remove :mock?)
+      (mapv p))
+    (->> (:test-items test-item)
+      (when-fail-only-keep-failed)
+      (mapv #(print-test-item % (inc print-level))))
+    (->> to-report
+      (filter :mock?)
+      (mapv p))))
 
 (defn print-namespace [make-tests-by-namespace]
   (println)
   (println (color-str (:status make-tests-by-namespace)
              "Testing " (:name make-tests-by-namespace)))
-  (into []
-    (comp when-fail-only-keep-failed
-      (map #(print-test-item % 1)))
-    (:test-items make-tests-by-namespace)))
+  (->> (:test-items make-tests-by-namespace)
+    (when-fail-only-keep-failed)
+    (mapv #(print-test-item % 1))))
 
-(defn print-test-report [{:keys [test-results namespaces test pass fail error]}]
+(defn print-test-report [{:as test-report
+                          :keys [test-results namespaces test pass fail error]}]
   (println "Running tests for:" (map :name namespaces))
   (try
     (->> test-results
       (mapv #(print-test-result % println 1)))
     (->> namespaces
-      (into [] when-fail-only-keep-failed)
+      (when-fail-only-keep-failed)
       (sort-by :name)
       (mapv print-namespace))
     (catch Exception e
