@@ -20,9 +20,9 @@
 (defn failure->report [test-msg failure actual]
   (merge {:type :fail :fulcro-spec.check/actual actual}
     (cond->> (prepend-message test-msg failure)
-      (::path failure)
+      (:fulcro-spec.check/path failure)
       (append-message
-        (str "at path " (::path failure) ":")))))
+        (str "at path " (:fulcro-spec.check/path failure) ":")))))
 
 (defn check-expr [cljs? msg [_ checker actual]]
   (let [prefix (if cljs? "cljs.test" "clojure.test")
