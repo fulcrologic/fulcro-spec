@@ -50,7 +50,7 @@ shadow-cljs target that can auto-scan for tests if you use their deftest macro. 
 like the `provided` macro work within Workspaces.  I recommend using shadow-cljs
 `:karma` target for running CI tests.
 
-See https://github.com/fulcrologic/fulcro-spec/blob/develop/docs/index.adoc[the docs] for more details.
+See https://github.com/fulcrologic/fulcro-spec/blob/main/docs/index.adoc[the docs] for more details.
 
 == Description
 
@@ -58,8 +58,7 @@ A Clojure(scipt) testing library to augment the standard `clojure.test`.
 
 image:https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https://clojars.org/fulcrologic/fulcro-spec"]
 
-Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/master"]
-Snapshot: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/develop"]
+Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/main.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/main"]
 
 == NEW!  REPL Runner
 
