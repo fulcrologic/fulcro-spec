@@ -70,7 +70,7 @@ The main testing macros are `specification`, `behavior`, `component`, and `asser
         form3 => expected-result3)))
 ----
 
-See the clojure.spec.alpha/def for `::assertions` in link:../src/fulcro_spec/assertions.cljc[assertions.cljc] for the grammar of the `assertions` macro.
+See the clojure.spec.alpha/def for `::assertions` in link:../src/main/fulcro_spec/assertions.cljc[assertions.cljc] for the grammar of the `assertions` macro.
 
 [NOTE]
 ====
