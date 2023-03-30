@@ -95,7 +95,7 @@ NOTE: Be sure to check "Before Executing" -> "Load File" on the REPL command.
     ...))
 
 (defn f [x] 900)
-(defn g [y] (f y))
+(defn g [y] (+ y (f y)))
 
 (deftest my-test
   (when-mocking
