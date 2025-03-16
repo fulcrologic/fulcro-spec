@@ -8,7 +8,8 @@ module.exports = function (config) {
         frameworks: ['cljs-test'],
         plugins: ['karma-cljs-test', 'karma-chrome-launcher'],
         colors: true,
-        logLevel: config.LOG_INFO,
+        logLevel: config.DISABLE,
+        reporters: ['dots'],
         client: {
             args: ["shadow.test.karma.init"],
             singleRun: true
