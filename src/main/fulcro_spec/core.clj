@@ -1,16 +1,16 @@
 (ns fulcro-spec.core
   (:require
+    [clojure.spec.alpha :as s]
+    [clojure.spec.gen.alpha]
     [clojure.string :as str]
     [clojure.test]
     [fulcro-spec.assertions :as ae]
     [fulcro-spec.async :as async]
+    [fulcro-spec.hooks :refer [hooks]]
     [fulcro-spec.impl.macros :as im]
     [fulcro-spec.provided :as p]
-    [fulcro-spec.stub]
-    [fulcro-spec.hooks :refer [hooks]]
     [fulcro-spec.spec :as fss]
-    [clojure.spec.alpha :as s]
-    [clojure.spec.gen.alpha :as gen]))
+    [fulcro-spec.stub]))
 
 (declare => =1x=> =2x=> =3x=> =4x=> =throws=> =fn=> =check=>)
 
@@ -28,6 +28,7 @@
 
 (s/def ::specification
   (s/cat
+    :metadata (s/? map?)
     :name string?
     :selectors (s/* keyword?)
     :body (s/* ::fss/any)))
@@ -36,15 +37,27 @@
 (defmacro specification
   "Defines a specification which is translated into a what a deftest macro produces with report hooks for the
    description. Technically outputs a deftest with additional output reporting.
-   When *load-tests* is false, the specification is ignored."
+   When *load-tests* is false, the specification is ignored.
+
+   Usage:
+     (specification \"test name\" ...)
+     (specification \"test name\" :focus ...)
+     (specification {:integration true} \"test name\" ...)
+     (specification {:integration true :slow true} \"test name\" :focus ...)
+
+   An optional metadata map can appear before the test name to add custom metadata to the test var.
+   Keyword selectors (like :focus) can follow the test name and are converted to metadata (e.g., {:focus true}).
+   Both metadata sources are merged, with selector keywords taking precedence over the metadata map."
   [& args]
-  (let [{:keys [name selectors body]} (fss/conform! ::specification args)
-        test-name (-> (var-name-from-string name)
-                    (with-meta (zipmap selectors (repeat true))))
-        prefix    (im/if-cljs &env "cljs.test" "clojure.test")
-        form-meta (select-keys (meta &form) [:line])
-        hook-info {::specification name
-                   ::location form-meta}]
+  (let [{:keys [metadata name selectors body]} (fss/conform! ::specification args)
+        selector-meta (zipmap selectors (repeat true))
+        combined-meta (merge metadata selector-meta)
+        test-name     (-> (var-name-from-string name)
+                        (with-meta combined-meta))
+        prefix        (im/if-cljs &env "cljs.test" "clojure.test")
+        form-meta     (select-keys (meta &form) [:line])
+        hook-info     {::specification name
+                       ::location      form-meta}]
     `(~(symbol prefix "deftest") ~test-name
        (im/with-reporting {:type      :specification
                            :string    ~name
@@ -69,9 +82,9 @@
    (behavior \"blows up when the moon is full\" :manual-test)"
   [& args]
   (let [{:keys [name opts body]} (fss/conform! ::behavior args)
-        typekw (if (contains? opts :manual-test)
-                 :manual :behavior)
-        prefix (im/if-cljs &env "cljs.test" "clojure.test")
+        typekw    (if (contains? opts :manual-test)
+                    :manual :behavior)
+        prefix    (im/if-cljs &env "cljs.test" "clojure.test")
         form-meta (select-keys (meta &form) [:line])
         hook-info {::behavior name
                    ::location form-meta}]

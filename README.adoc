@@ -90,7 +90,7 @@ NOTE: Be sure to check "Before Executing" -> "Load File" on the REPL command.
 -----
 (ns my-test
   (:require
-    [fulcro-spec.core :refer [when-mocking provided assertions]
+    [fulcro-spec.core :refer [specification when-mocking provided assertions]]
     [clojure.test :refer [deftest]]
     ...))
 
@@ -105,5 +105,36 @@ NOTE: Be sure to check "Before Executing" -> "Load File" on the REPL command.
       "mocking works"
       (g 9) => 31)))
 -----
+
+The `specification` macro is a convenient alternative to `deftest` that provides enhanced reporting
+and metadata support:
+
+[source, clojure]
+-----
+;; Basic usage
+(specification "My feature works correctly"
+  (assertions
+    "addition works"
+    (+ 1 2) => 3))
+
+;; With selector keywords for test filtering (e.g., :focus)
+(specification "Debug this test" :focus
+  (assertions
+    (+ 1 2) => 3))
+
+;; With custom metadata map for advanced test organization
+(specification {:integration true :slow true} "Database integration test"
+  (assertions
+    (db/query ...) => ...))
+
+;; Combining metadata map with selector keywords
+(specification {:integration true} "Critical integration test" :focus
+  (assertions
+    (critical-operation) => expected-result))
+-----
+
+The metadata map (when provided) must appear before the test name string. Selector keywords
+(like `:focus`) follow the test name and are automatically converted to metadata. Both metadata
+sources are merged, allowing test runners to filter tests by any metadata key.
 
 See the full documentation for complete details.
