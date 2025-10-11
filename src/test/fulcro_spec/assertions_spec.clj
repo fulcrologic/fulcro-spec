@@ -4,7 +4,8 @@
     [fulcro-spec.assertions :as ae]
     [fulcro-spec.core
      :refer [assertions behavior]]
-    [fulcro-spec.spec :as fss]))
+    [fulcro-spec.spec :as fss])
+  (:import (clojure.lang ExceptionInfo)))
 
 (defn check-assertion [expected]
   (fn [actual]
