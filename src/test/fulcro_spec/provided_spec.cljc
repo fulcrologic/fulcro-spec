@@ -86,10 +86,10 @@
                    {:type :provided :string "PROVIDED: some string"})))))
 
      (behavior "Can do mocking without output"
-       (let [expanded    (p/provided* {} false :skip-output
-                           '[(f n) => (+ n 1)
-                             (f n) =2x=> (* 3 n)
-                             (under-test)])
+       (let [expanded (p/provided* {} false :skip-output
+                        '[(f n) => (+ n 1)
+                          (f n) =2x=> (* 3 n)
+                          (under-test)])
              redef-block (th/locate `with-redefs expanded)]
          (assertions
            (first redef-block) => `with-redefs

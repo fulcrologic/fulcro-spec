@@ -1,10 +1,9 @@
 (ns fulcro-spec.diff-spec
   (:require
-    [fulcro-spec.diff :as src
-     :refer [nf diff diff-elem patch compress decompress]]
     [clojure.test :refer [deftest]]
-    [fulcro-spec.core :as fsc :refer
-     [behavior assertions]]))
+    [fulcro-spec.core :refer
+     [assertions behavior]]
+    [fulcro-spec.diff :refer [compress decompress diff diff-elem nf patch]]))
 
 (deftest diff-test
   (assertions

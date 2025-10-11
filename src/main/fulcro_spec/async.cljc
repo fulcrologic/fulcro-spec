@@ -37,7 +37,7 @@
       (reset! (:now this) stop-time)))
   (schedule-event
     [this ms-from-now fn-to-call]
-    (let [tm (+ ms-from-now @(:now this))
+    (let [tm    (+ ms-from-now @(:now this))
           event (Event. tm fn-to-call)]
       (if (contains? @(:schedule this) tm)
         (throw (ex-info (str "Schedule already contains an event " ms-from-now "ms from 'now' which would generate an indeterminant ordering for your events. Please offset your submission time a bit") {}))

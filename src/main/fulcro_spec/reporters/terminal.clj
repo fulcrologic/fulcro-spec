@@ -1,16 +1,15 @@
 (ns fulcro-spec.reporters.terminal
   (:require
-    [clojure.stacktrace :refer [print-stack-trace]]
-    [clojure.edn :as edn]
     [clojure.pprint :refer [pprint]]
+    [clojure.stacktrace :refer [print-stack-trace]]
     [clojure.string :as s]
+    [clojure.string :as str]
     [clojure.test :as t]
     [colorize.core :as c]
-    [io.aviso.exception :as pretty]
+    [fulcro-spec.assertions :as ae]
     [fulcro-spec.diff :as diff]
     [fulcro-spec.reporter :as base]
-    [clojure.string :as str]
-    [fulcro-spec.assertions :as ae])
+    [io.aviso.exception :as pretty])
   (:import (clojure.lang ExceptionInfo)))
 
 ;; ensure test runners don't see fulcro-spec's extended events
@@ -71,7 +70,7 @@
      :*print-length* nil}))
 
 (def ^{:dynamic true
-       :doc "Intended for use when running tests through kaocha, as you can set bindings in `tests.edn`.
+       :doc     "Intended for use when running tests through kaocha, as you can set bindings in `tests.edn`.
              Example: `#kaocha/v1 {:bindings {fulcro-spec.reporters.terminal/*config* {:fail-only? true}}}`"}
   *config* {})
 
@@ -249,9 +248,9 @@
           (:name test-item)))))
   (let [to-report (filter (comp #{:fail :error} :status)
                     (:test-results test-item))
-        p #(print-test-result % (->> print-level inc space-level
-                                  (partial println))
-             (inc print-level))]
+        p         #(print-test-result % (->> print-level inc space-level
+                                          (partial println))
+                     (inc print-level))]
     (->> to-report
       (remove :mock?)
       (mapv p))
@@ -270,7 +269,7 @@
     (when-fail-only-keep-failed)
     (mapv #(print-test-item % 1))))
 
-(defn print-test-report [{:as test-report
+(defn print-test-report [{:as   test-report
                           :keys [test-results namespaces test pass fail error]}]
   (println "Running tests for:" (map :name namespaces))
   (try

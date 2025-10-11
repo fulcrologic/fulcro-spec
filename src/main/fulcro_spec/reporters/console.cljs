@@ -63,5 +63,5 @@
 
 (defmethod cljs.test/report [::console :summary] [m]
   (println "\nRan" (:test m) "tests containing"
-           (+ (:pass m) (:fail m) (:error m)) "assertions.")
+    (+ (:pass m) (:fail m) (:error m)) "assertions.")
   (println (:fail m) "failures," (:error m) "errors."))

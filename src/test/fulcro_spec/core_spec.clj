@@ -1,8 +1,8 @@
 (ns fulcro-spec.core-spec
   (:require
-    [clojure.test :as t :refer [is deftest]]
+    [clojure.test :refer [deftest]]
     [fulcro-spec.core
-     :refer [behavior when-mocking assertions]
+     :refer [assertions]
      :as core]))
 
 (deftest var-name-from-string

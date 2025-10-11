@@ -62,8 +62,8 @@
             (try
               (let [return (binding [*real-return-fn* (fn [] (apply function args))]
                              (apply stub args))]
-               (swap! script-atom update :returned conj return)
-               return)
+                (swap! script-atom update :returned conj return)
+                return)
               ;; NOTE: In cljs this is not really meant to catch anything
               #?(:clj
                  (catch clojure.lang.ArityException ae

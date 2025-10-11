@@ -1,16 +1,10 @@
 (ns fulcro-spec.assertions-spec
   (:require
-    [clojure.spec.alpha :as s]
-    [clojure.test :as t :refer [is testing deftest]]
+    [clojure.test :as t :refer [deftest is]]
     [fulcro-spec.assertions :as ae]
     [fulcro-spec.core
-     :refer [specification component behavior assertions]]
-    [fulcro-spec.impl.macros :as im]
-    [fulcro-spec.spec :as fss]
-    [fulcro-spec.testing-helpers :as th]
-    [clojure.string :as str]
-    [fulcro-spec.check :as check])
-  (:import clojure.lang.ExceptionInfo))
+     :refer [assertions behavior]]
+    [fulcro-spec.spec :as fss]))
 
 (defn check-assertion [expected]
   (fn [actual]

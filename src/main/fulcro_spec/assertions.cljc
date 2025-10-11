@@ -82,7 +82,7 @@
              :else
              `(~is (~'check (fs.check/throwable* ~expected)
                      (try ~actual
-                       (catch ~cls e# e#)))
+                          (catch ~cls e# e#)))
                 ~msg)))
 
          (throw (ex-info "invalid arrow" {:arrow arrow}))))))

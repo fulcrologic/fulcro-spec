@@ -71,15 +71,15 @@
   (let [checkers (cons c cs)]
     (assert-are-checkers! `and* checkers)
     (checker [actual]
-      (loop [c (first checkers)
+      (loop [c  (first checkers)
              cs (rest checkers)]
         (if (nil? c) nil
-          (let [?fs (c actual)
-                ?failures (if (sequential? ?fs)
-                            (flatten ?fs)
-                            (vector ?fs))]
-            (or (seq (filter check-failure? ?failures))
-              (recur (first cs) (rest cs)))))))))
+                     (let [?fs       (c actual)
+                           ?failures (if (sequential? ?fs)
+                                       (flatten ?fs)
+                                       (vector ?fs))]
+                       (or (seq (filter check-failure? ?failures))
+                         (recur (first cs) (rest cs)))))))))
 
 (defn fmap*
   "Creates a new checker that is the result of applying the function to the checker arguments before passing it to the wrapped checker.
@@ -121,7 +121,7 @@
   (assert-is! `is?* ifn? predicate)
   (checker [actual]
     (when-not (predicate actual)
-      {:actual actual
+      {:actual   actual
        :expected predicate})))
 
 (defn equals?*
@@ -129,7 +129,7 @@
   [expected]
   (checker [actual]
     (when-not (= expected actual)
-      {:actual actual
+      {:actual   actual
        :expected expected})))
 
 (defn- specable? [x] (or (ifn? x) (s/spec? x)))
@@ -141,13 +141,13 @@
   (assert-is! `valid?* specable? spec)
   (checker [actual]
     (when-not (s/valid? spec actual)
-      {:message (s/explain-str spec actual)
-       :actual actual
+      {:message  (s/explain-str spec actual)
+       :actual   actual
        :expected spec})))
 
 (defn- regex? [x]
   (instance?
-    #?(:clj java.util.regex.Pattern
+    #?(:clj  java.util.regex.Pattern
        :cljs js/RegExp)
     x))
 
@@ -164,8 +164,8 @@
     (is?* string?)
     (checker [actual]
       (when-not (re-find regex actual)
-        {:message (impl/format-str "Failed to find `%s` in '%s'" regex actual)
-         :actual actual
+        {:message  (impl/format-str "Failed to find `%s` in '%s'" regex actual)
+         :actual   actual
          :expected `(re-pattern ~(str regex))}))))
 
 (defn seq-matches?*
@@ -186,7 +186,7 @@
           (checker? exp) (exp act)
           (fn? exp) (throw (ex-info "function found, should be created with `checker` macro"
                              {:function exp :meta (meta exp)}))
-          (not= act exp) {:actual act :expected exp
+          (not= act exp) {:actual  act :expected exp
                           :message (impl/format-str "at index `%s` failed to match:" idx)})))))
 
 (defn- min<=max [{:keys [min-len max-len]}] (<= min-len max-len))
@@ -203,10 +203,10 @@
      (checker [actual]
        (let [length (count actual)]
          (when-not (= expected-length length)
-           {:actual actual
+           {:actual   actual
             :expected `(~'of-length?* :equal-to ~expected-length)
-            :message (impl/format-str "Expected collection count to be %s was %s"
-                       expected-length length)})))))
+            :message  (impl/format-str "Expected collection count to be %s was %s"
+                        expected-length length)})))))
   ([min-len max-len]
    (assert-is! `of-length?* int? min-len)
    (assert-is! `of-length?* int? max-len)
@@ -216,10 +216,10 @@
      (checker [actual]
        (let [length (count actual)]
          (when-not (<= min-len length max-len)
-           {:actual actual
+           {:actual   actual
             :expected `(~'of-length?* :between :min ~min-len :max ~max-len)
-            :message (impl/format-str "Expected collection count %s to be between [%s,%s]"
-                       length min-len max-len)}))))))
+            :message  (impl/format-str "Expected collection count %s to be between [%s,%s]"
+                        length min-len max-len)}))))))
 
 (defn seq-matches-exactly?*
   "Takes a `sequential?` collection, and returns a checker that checks its argument in a sequential manner.
@@ -242,7 +242,7 @@
   (checker [actual]
     (when-not (some? actual)
       (cond-> {:expected `some?
-               :actual actual}
+               :actual   actual}
         msg (assoc :message msg)))))
 
 (defn every?*
@@ -275,9 +275,9 @@
     (is?* seqable?)
     (checker [actual]
       (when-not (set/subset? (set actual) expected)
-        {:actual {:extra-values (set/difference (set actual) expected)}
+        {:actual   {:extra-values (set/difference (set actual) expected)}
          :expected `(~'subset?* ~expected)
-         :message "Found extra values in set"}))))
+         :message  "Found extra values in set"}))))
 
 (defn- path-to-get-in-failure [value path]
   (->> path
@@ -307,15 +307,15 @@
     (checker [actual]
       (if-let [nested (get-in actual path)]
         (add-path* path ((apply all* checkers) nested))
-        (let [missing-path (path-to-get-in-failure actual path)
+        (let [missing-path         (path-to-get-in-failure actual path)
               failing-path-segment (last missing-path)
-              failing-path (vec (drop-last missing-path))]
-          {:actual actual
+              failing-path         (vec (drop-last missing-path))]
+          {:actual   actual
            :expected `(in* ~missing-path)
-           :message (impl/format-str "expected `%s` to contain `%s` at path %s"
-                      (pr-str (get-in actual failing-path))
-                      failing-path-segment
-                      (pr-str failing-path))})))))
+           :message  (impl/format-str "expected `%s` to contain `%s` at path %s"
+                       (pr-str (get-in actual failing-path))
+                       failing-path-segment
+                       (pr-str failing-path))})))))
 
 (defn embeds?*
   "Takes a map and returns a checker that checks if the values at the keys match (using `=`) .
@@ -334,13 +334,13 @@
             (checker [actual]
               (for [[k v] expected]
                 (let [value-at-key (get actual k ::not-found)
-                      path (conj path k)]
+                      path         (conj path k)]
                   (cond
                     (map? v)
                     #_=> (if-not (map? value-at-key)
-                           {:actual value-at-key
+                           {:actual   value-at-key
                             :expected v
-                            ::path path}
+                            ::path    path}
                            ((-embeds?* v path) value-at-key))
                     (checker? v) #_=> (add-path* path
                                         ((all* v) value-at-key))
@@ -348,13 +348,13 @@
                                      {:function v :meta (meta v)}))
                     (and (= value-at-key ::not-found)
                       (not= v ::not-found))
-                    #_=> {:actual ::not-found
+                    #_=> {:actual   ::not-found
                           :expected v
-                          ::path path}
+                          ::path    path}
                     (not= value-at-key v)
-                    #_=> {:actual value-at-key
+                    #_=> {:actual   value-at-key
                           :expected v
-                          ::path path})))))]
+                          ::path    path})))))]
     (and* (is?* map?)
       (-embeds?* expected []))))
 
@@ -367,7 +367,7 @@
     (checker [actual]
       (if (instance? #?(:clj Throwable :cljs js/Error) actual)
         ((apply all* checkers) actual)
-        {:actual actual
+        {:actual   actual
          :expected #?(:clj Throwable :cljs js/Error)}))))
 
 (defn exception*
@@ -379,7 +379,7 @@
     (checker [actual]
       (if (instance? #?(:clj Exception :cljs js/Error) actual)
         ((apply all* checkers) actual)
-        {:actual actual
+        {:actual   actual
          :expected #?(:clj Exception :cljs js/Error)}))))
 
 (defn ex-data*

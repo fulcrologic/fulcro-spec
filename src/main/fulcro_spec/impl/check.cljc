@@ -15,7 +15,7 @@
   (update failure :message
     (fn [msg]
       (if-not msg message
-        (str msg "\n" message)))))
+                  (str msg "\n" message)))))
 
 (defn failure->report [test-msg failure actual]
   (merge {:type :fail :fulcro-spec.check/actual actual}
@@ -25,9 +25,9 @@
         (str "at path " (:fulcro-spec.check/path failure) ":")))))
 
 (defn check-expr [cljs? msg [_ checker actual]]
-  (let [prefix (if cljs? "cljs.test" "clojure.test")
+  (let [prefix    (if cljs? "cljs.test" "clojure.test")
         do-report (symbol prefix "do-report")]
-    `(let [checker# ~checker, actual# ~actual, msg# ~msg
+    `(let [checker#  ~checker, actual# ~actual, msg# ~msg
            location# ~(select-keys (meta checker) [:line])]
        (if-let [failures# ((fulcro-spec.check/all* checker#) actual#)]
          (doseq [f# failures#]

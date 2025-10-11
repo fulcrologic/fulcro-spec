@@ -35,7 +35,7 @@
 (deftest scripted-stub
   (behavior "calls the stub function"
     (let [detector (atom false)
-          sstub    (make-call-script (fn [] (reset! detector true)))]
+          sstub (make-call-script (fn [] (reset! detector true)))]
       (sstub), (is (= true @detector))))
 
   (behavior "verifies the stub fn is called with the correct literals"
@@ -47,7 +47,7 @@
         (sstub 41 :w/e) => [42 :w/e]
         (sstub 2 :w/e) =throws=> #"called with wrong arguments"
         (try (sstub 2 :w/e)
-          (catch ExceptionInfo e (ex-data e)))
+             (catch ExceptionInfo e (ex-data e)))
         => {:args              [2 :w/e]
             :expected-literals [41 ::stub/any]}))
     (let [sstub (make-call-script
@@ -58,10 +58,10 @@
         (sstub :w/e 2) => [:w/e 3]
         (sstub :w/e 8)
         =throws=> #"called with wrong arguments"
-         (try (sstub :w/e 8)
-           (catch ExceptionInfo e (ex-data e)))
-         => {:args              [:w/e 8]
-             :expected-literals [::stub/any 2]})))
+        (try (sstub :w/e 8)
+             (catch ExceptionInfo e (ex-data e)))
+        => {:args              [:w/e 8]
+            :expected-literals [::stub/any 2]})))
 
   (behavior "returns whatever the stub function returns"
     (let [sstub (make-call-script (fn [] 42))]
@@ -83,10 +83,10 @@
   (behavior "only moves to the next script step if the call count for the current step reaches the programmed amount"
     (let [a-count (atom 0)
           b-count (atom 0)
-          script  (stub/make-script "something"
-                    [(stub/make-step (fn [] (swap! a-count inc)) 2 [] [])
-                     (stub/make-step (fn [] (swap! b-count inc)) 1 nil [])])
-          sstub   (stub/scripted-stub script)]
+          script (stub/make-script "something"
+                   [(stub/make-step (fn [] (swap! a-count inc)) 2 [] [])
+                    (stub/make-step (fn [] (swap! b-count inc)) 1 nil [])])
+          sstub (stub/scripted-stub script)]
       (assertions
         (repeatedly 3 (fn [] (sstub) [@a-count @b-count]))
         => [[1 0] [2 0] [2 1]])))
@@ -95,7 +95,7 @@
     (let [script (stub/make-script "something"
                    [(stub/make-step (fn [& args] args) 2 nil [])
                     (stub/make-step (fn [& args] args) 1 nil [])])
-          sstub  (stub/scripted-stub script)]
+          sstub (stub/scripted-stub script)]
       (sstub 1 2) (sstub 3 4), (sstub :a :b)
       (assertions
         (:history @script) => [[1 2] [3 4] [:a :b]]
@@ -117,10 +117,10 @@
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times 5}]})]]
       (assertions
         (test-validate-counts script-atoms)
-        => {:type :error,
-            :mock? true,
-            :message "fun1 was not called as many times as specified.",
-            :actual 0,
+        => {:type     :error,
+            :mock?    true,
+            :message  "fun1 was not called as many times as specified.",
+            :actual   0,
             :expected 5})))
 
   (behavior "returns nil if a target function has been called enough times with :many specified"
@@ -133,10 +133,10 @@
     (let [script-atoms [(atom {:function "fun1" :steps [{:ncalled 0 :times :many}]})]]
       (assertions
         (test-validate-counts script-atoms)
-        => {:type :error,
-            :mock? true,
-            :message "fun1 was not called as many times as specified.",
-            :actual 0,
+        => {:type     :error,
+            :mock?    true,
+            :message  "fun1 was not called as many times as specified.",
+            :actual   0,
             :expected :many})))
 
   (behavior "returns nil all the function have been called the specified number of times"
@@ -151,10 +151,10 @@
                         (atom {:function "fun2" :steps [{:ncalled 0 :times 1}]})]]
       (assertions
         (test-validate-counts script-atoms)
-        => {:type :error,
-            :mock? true,
-            :message "fun2 was not called as many times as specified.",
-            :actual 0,
+        => {:type     :error,
+            :mock?    true,
+            :message  "fun2 was not called as many times as specified.",
+            :actual   0,
             :expected 1})))
 
   (behavior "stubs record history, will show the script when it fails to validate"
@@ -162,10 +162,10 @@
                         (atom {:function "fun2" :steps [{:ncalled 1 :times 2}]})]]
       (assertions
         (test-validate-counts script-atoms)
-        => {:type :error,
-            :mock? true,
-            :message "fun2 was not called as many times as specified.",
-            :actual 1,
+        => {:type     :error,
+            :mock?    true,
+            :message  "fun2 was not called as many times as specified.",
+            :actual   1,
             :expected 2}))))
 
 (deftest zip-arglist-test

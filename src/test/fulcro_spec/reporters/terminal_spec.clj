@@ -1,7 +1,7 @@
 (ns fulcro-spec.reporters.terminal-spec
   (:require
-    [clojure.test :as t :refer [deftest is]]
     [clojure.string :as str]
+    [clojure.test :as t :refer [deftest is]]
     [fulcro-spec.core :as core]
     [fulcro-spec.reporter :as base]
     [fulcro-spec.reporters.terminal :as term]))
@@ -9,10 +9,10 @@
 (defn test! [test-fn]
   (t/report {:type :begin-test-ns :ns *ns*})
   (try (test-fn)
-    (catch Throwable e
-      (t/report
-        {:type :error, :message "Uncaught exception, not in assertion."
-         :expected nil, :actual e})))
+       (catch Throwable e
+         (t/report
+           {:type     :error, :message "Uncaught exception, not in assertion."
+            :expected nil, :actual e})))
   (t/report {:type :end-test-ns :ns *ns*}))
 
 (def __SHADOW_TEST_PLEASE_IGNORE__

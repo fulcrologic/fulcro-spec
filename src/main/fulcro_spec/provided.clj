@@ -1,11 +1,10 @@
 (ns fulcro-spec.provided
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.spec.test.alpha :as st]
     [clojure.string :as str]
     [fulcro-spec.impl.macros :as im]
-    [fulcro-spec.stub :as stub]
-    [fulcro-spec.spec :as ffs]))
+    [fulcro-spec.spec :as ffs]
+    [fulcro-spec.stub :as stub]))
 
 (defn parse-arrow-count
   "parses how many times the mock/stub should be called with.
@@ -47,13 +46,13 @@
     :else (str p)))
 
 (defn duplicates [coll]
-  (let [freqs (frequencies coll) ]
+  (let [freqs (frequencies coll)]
     (distinct (filter #(< 1 (freqs %)) coll))))
 
 (defn assert-no-duplicate-arglist-symbols! [arglist]
   (when-let [dupes (seq (duplicates arglist))]
     (throw (ex-info "Found duplicate symbols, cannot resolve automatically! Disambiguate them by giving them unique names."
-             {:arglist arglist
+             {:arglist    arglist
               :duplicates dupes})))
   :ok)
 
@@ -83,9 +82,9 @@
 
 (defn try-stub [env body]
   `(try ~body
-     (catch ~(if (im/cljs-env? env) :default 'Exception) t#
-       (throw (ex-info "Uncaught exception in stub!"
-                {::stub/exception t#})))))
+        (catch ~(if (im/cljs-env? env) :default 'Exception) t#
+          (throw (ex-info "Uncaught exception in stub!"
+                   {::stub/exception t#})))))
 
 (defn parse-mock-triple
   [env conform?

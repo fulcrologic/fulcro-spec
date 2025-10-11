@@ -24,7 +24,7 @@
   (reset! hooks handlers))
 
 (defn var-name-from-string [s]
-  (symbol (str "__" (str/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\:\?\|]" "-") "__")))
+  (symbol (str "__" (str/replace s #"[^\w\d\-\!\#\$\%\&\*\_\<\>\?\|]" "-") "__")))
 
 (s/def ::specification
   (s/cat

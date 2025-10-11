@@ -1,7 +1,7 @@
 (ns fulcro-spec.reporters.repl
   (:require
-    [fulcro-spec.reporters.terminal :as term]
-    [clojure.test :as t]))
+    [clojure.test :as t]
+    [fulcro-spec.reporters.terminal]))
 
 (def ^:dynamic *selector-predicate* (constantly true))
 

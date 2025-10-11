@@ -16,6 +16,6 @@
       #(do (when (and (not @needle)
                    (seq? %) (= sym (first %)))
              (vreset! needle %))
-         %)
+           %)
       haystack)
     @needle))
