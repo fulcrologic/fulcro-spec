@@ -30,7 +30,7 @@
       :assert-type '~'exec
       ::actual     arg#
       ::expected   ~f
-      :actual      (list ~f arg#)
+      :actual      '~form
       :expected    '~form}))
 
 (defn eq-assert-expr [msg [exp act :as form]]

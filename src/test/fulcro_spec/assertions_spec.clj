@@ -60,15 +60,15 @@
 
 (deftest fix-assertions-reporting-for-issue-13
   (let [addition-report {:type :pass :expected 2 :actual 2 :message "msg: addition" :assert-type 'eq}
-        even-report {:type :pass :expected '(even? 64) :actual (list even? 64) :message "msg: even 64"}]
+        even-report     {:type :pass :expected '(even? 64) :actual '(even? 64) :message "msg: even 64"}
+        actual          (into []
+                          (comp
+                            (filter #(-> % :type (#{:fail :error :pass})))
+                            (map #(select-keys % [:type :expected :actual :assert-type :message])))
+                          @reports)]
     (assertions
       "capturing clojure.test reports for comparison"
-      (into []
-        (comp
-          (filter #(-> % :type (#{:fail :error :pass})))
-          (map #(select-keys % [:type :expected :actual :assert-type :message])))
-        @reports)
-      => [addition-report even-report]
+      actual => [addition-report even-report]
 
       "checking generated assertions against clojure.test reports"
       (eval (ae/eq-assert-expr "msg: addition" (list 2 (+ 1 1))))

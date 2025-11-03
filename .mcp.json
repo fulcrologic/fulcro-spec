@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "clojure-mcp-dev": {
+      "type": "stdio",
+      "command": "/bin/sh",
+      "args": [
+        "-c",
+        "/opt/homebrew/bin/clojure -X:mcp-dev"
+      ],
+      "env": {}
+    }
+  }
+}
