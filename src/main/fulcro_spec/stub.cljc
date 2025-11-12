@@ -2,6 +2,11 @@
   (:require
     [clojure.test :as t]))
 
+(def ^:dynamic *validation-problems*
+  "Atom to collect validation errors during mock execution.
+   Bound by scripted-stub around each mock call."
+  nil)
+
 (defn make-step [stub-function ntimes literals mock-arglist]
   {:stub         stub-function
    :times        ntimes
@@ -11,7 +16,7 @@
    :mock-arglist mock-arglist})
 
 (defn make-script [function steps]
-  (atom {:function function :steps steps :history [] :returned []}))
+  (atom {:function function :steps steps :history [] :returned [] :validation-errors []}))
 
 (defn increment-script-call-count [script-atom step]
   (swap! script-atom update-in [:steps step :ncalled] inc))
@@ -60,8 +65,14 @@
               #(-> % (update :history conj args)
                  (update-in [:steps curr-step :history] conj args)))
             (try
-              (let [return (binding [*real-return-fn* (fn [] (apply function args))]
-                             (apply stub args))]
+              (let [problems (atom [])
+                    return   (binding [*real-return-fn*      (fn [] (apply function args))
+                                       *validation-problems* problems]
+                               (apply stub args))]
+                ;; Transfer any validation problems to the script atom
+                (when (seq @problems)
+                  (swap! script-atom update :validation-errors into @problems))
+                ;; Return the mocked value normally (let test continue)
                 (swap! script-atom update :returned conj return)
                 return)
               ;; NOTE: In cljs this is not really meant to catch anything
@@ -90,18 +101,28 @@
       :ok [ncalled times])))
 
 (defn validate-target-function-counts [script-atoms]
-  (mapv (fn [script]
-          (let [{:keys [function steps history]} @script
-                count-results (reduce validate-step-counts [] steps)
-                first-error   (first (filter #(not= :ok %) count-results))]
-            (when first-error
-              (t/do-report
-                {:type     :error
-                 :mock?    true
-                 :message  (str function " was not called as many times as specified.")
-                 :actual   (first first-error)
-                 :expected (second first-error)}))))
-    script-atoms))
+  (doseq [script script-atoms]
+    (let [{:keys [function steps validation-errors]} @script
+          count-results     (reduce validate-step-counts [] steps)
+          first-count-error (first (filter #(not= :ok %) count-results))]
+
+      ;; Report validation errors (if any)
+      (doseq [error validation-errors]
+        (t/do-report
+          {:type     :fail
+           :message  (:message error)
+           :expected "Guardrails to validate"
+           :actual   (:message error)}))
+
+      ;; Report call count mismatches (if any)
+      (when first-count-error
+        (t/do-report
+          {:type     :fail
+           :message  (str function " was not called the expected number of times.")
+           :actual   (first first-count-error)
+           :expected (second first-count-error)}))))
+  ;; Return script-atoms for backward compatibility with tests
+  script-atoms)
 
 (defn real-return []
   (*real-return-fn*))
