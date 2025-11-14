@@ -6,7 +6,7 @@ jobs:
     docker:
       - image: cimg/clojure:1.11.4-openjdk-21.0-browsers
     steps:
-      - browser-tools/install-browser-tools
+      - browser-tools/install_browser_tools
       - checkout
       - restore_cache:
           key: cljs-{{ checksum "deps.edn" }}-{{ checksum "package.json" }}
@@ -20,7 +20,7 @@ jobs:
                   - ~/.m2
                 key: cljs-{{ checksum "deps.edn" }}-{{ checksum "package.json" }}
   clj:
-    docker: 
+    docker:
       - image: cimg/clojure:1.11.4-openjdk-21.0-browsers
     steps:
       - checkout
