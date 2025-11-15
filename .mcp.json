@@ -1,13 +1,15 @@
 {
   "mcpServers": {
-    "clojure-mcp-dev": {
+    "clojure-mcp-test": {
       "type": "stdio",
       "command": "/bin/sh",
       "args": [
         "-c",
-        "/opt/homebrew/bin/clojure -X:mcp-dev"
+        "clojure -X:mcp-test"
       ],
-      "env": {}
+      "env": {
+        "MCP_TIMEOUT": "300000"
+      }
     }
   }
 }
