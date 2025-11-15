@@ -1,0 +1,1391 @@
+= Comprehensive Unit Testing Guide for Fulcro Spec
+:source-highlighter: coderay
+:source-language: clojure
+:toc:
+:toc-placement!:
+:toclevels: 4
+:sectlinks:
+:sectanchors:
+:sectnums:
+
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+ifdef::env-github[]
+toc::[]
+endif::[]
+
+== Introduction
+
+This guide presents a comprehensive approach to writing maintainable, thorough unit tests using Fulcro Spec. The core philosophy is simple: *testability is a design quality*. Code that is easy to test is usually well-designed. Code that is hard to test usually needs refactoring.
+
+=== The Promise of This Approach
+
+When you follow the principles in this guide:
+
+* You can achieve near-complete behavior coverage without combinatorial explosion
+* Your tests will be fast, deterministic, and easy to understand
+* Refactoring becomes safe and straightforward
+* New developers can understand your code through the tests
+* Bugs become rare, and when they occur, they're easy to locate
+
+=== What Makes This Different
+
+Unlike approaches that focus on testing *through* the complexity (heavy mocking, complex test fixtures, slow integration tests), this guide teaches you to design complexity *out* of your code, making testing natural and simple.
+
+== Core Principles of Testable Design
+
+=== Principle 1: Move Side Effects to the Edges
+
+The single most important principle for testability is to separate pure logic from effects.
+
+*Side effects* are operations that interact with the outside world:
+
+* Database queries and updates
+* HTTP requests
+* File I/O
+* Getting the current time
+* Generating random numbers
+* Sending emails
+* Logging (if it is a defined necessary behavior)
+
+*Pure functions* are deterministic transformations of data:
+
+* Input → Output, with no side effects
+* Same inputs always produce same outputs
+* Can be understood and tested in isolation
+
+==== The Bad Pattern: Mixed Concerns
+
+[source,clojure]
+----
+;; ANTI-PATTERN: Side effects mixed with business logic
+(defn process-order! [order-id]
+  (let [order (db-query [:order order-id])           ;; Side effect: DB read
+        inventory (db-query [:inventory (:item-id order)])  ;; Side effect: DB read
+        price (* (:quantity order) (:unit-price inventory))] ;; Pure logic
+    (if (>= (:stock inventory) (:quantity order))    ;; Pure logic
+      (do
+        (db-update! [:inventory (:item-id order)]    ;; Side effect: DB write
+                    (- (:stock inventory) (:quantity order)))
+        (db-update! [:order order-id :status] :fulfilled) ;; Side effect: DB write
+        (send-email! (:customer-email order)         ;; Side effect: Email
+                     "Order Confirmed"
+                     (str "Your order for " (:quantity order) " items..."))
+        {:status :success :total price})
+      (do
+        (send-email! (:customer-email order)         ;; Side effect: Email
+                     "Order Failed"
+                     "Insufficient inventory")
+        {:status :failed :reason :insufficient-stock}))))
+----
+
+*Problems with this approach:*
+
+1. Cannot test business logic without database
+2. Cannot test email generation without side effects
+3. Cannot test price calculation independently
+4. Cannot test decision logic (stock check) independently
+5. Difficult to test failure paths
+6. Tests will be slow
+7. Tests will be non-deterministic
+8. Hard to understand the actual logic amidst the noise
+
+==== The Good Pattern: Separated Concerns
+
+[source,clojure]
+----
+;; =========================================================
+;; PURE FUNCTIONS - Business Logic (No Side Effects)
+;; =========================================================
+
+(defn calculate-order-total
+  "Pure: Calculate total price for an order.
+  BEHAVIOR: Multiplies quantity by unit price"
+  [quantity unit-price]
+  (* quantity unit-price))
+
+(defn sufficient-stock?
+  "Pure: Check if there's enough stock.
+  BEHAVIOR: Returns true if stock >= quantity"
+  [stock quantity]
+  (>= stock quantity))
+
+(defn calculate-remaining-stock
+  "Pure: Calculate stock after fulfillment.
+  BEHAVIOR: Subtracts quantity from stock"
+  [stock quantity]
+  (- stock quantity))
+
+(defn order-success-email
+  "Pure: Generate success email content.
+  BEHAVIOR: Returns map with subject and body"
+  [quantity total]
+  {:subject "Order Confirmed"
+   :body (str "Your order for " quantity " items has been confirmed. "
+              "Total: $" total)})
+
+(defn order-failure-email
+  "Pure: Generate failure email content.
+  BEHAVIOR: Returns map with subject and body"
+  [reason]
+  {:subject "Order Failed"
+   :body "Insufficient inventory. Please try again later."})
+
+(defn order-fulfillment-plan
+  "Pure: Creates a plan for fulfilling an order.
+  This function contains ALL the business logic but performs NO side effects.
+
+  BEHAVIOR 1: If sufficient stock, returns success plan with updates
+  BEHAVIOR 2: If insufficient stock, returns failure plan with notification"
+  [order inventory]
+  (let [quantity (:quantity order)
+        stock (:stock inventory)
+        unit-price (:unit-price inventory)
+        total (calculate-order-total quantity unit-price)]
+    (if (sufficient-stock? stock quantity)
+      {:status :success
+       :total total
+       :db-updates [[:inventory (:item-id order)
+                     (calculate-remaining-stock stock quantity)]
+                    [:order (:id order) {:status :fulfilled :total total}]]
+       :email {:to (:customer-email order)
+               :content (order-success-email quantity total)}}
+      {:status :failed
+       :reason :insufficient-stock
+       :db-updates []
+       :email {:to (:customer-email order)
+               :content (order-failure-email :insufficient-stock)}})))
+
+;; =========================================================
+;; SIDE EFFECT INTERFACE - Injectable Dependencies
+;; =========================================================
+
+(defn fetch-order [db order-id]
+  "Side effect: Database query"
+  (db-query db [:order order-id]))
+
+(defn fetch-inventory [db item-id]
+  "Side effect: Database query"
+  (db-query db [:inventory item-id]))
+
+(defn update-db! [db! key value]
+  "Side effect: Database update"
+  (db! key value))
+
+(defn send-email! [email-service! recipient content]
+  "Side effect: Email sending"
+  (email-service! recipient (:subject content) (:body content)))
+
+;; =========================================================
+;; ORCHESTRATION - Side Effects at the Edge
+;; =========================================================
+
+(defn process-order!
+  "Top-level function: Orchestrates side effects and pure logic.
+  Testable by mocking the dependency functions."
+  [order-id db db! email-service!]
+  (let [order (fetch-order db order-id)
+        inventory (fetch-inventory db (:item-id order))
+        plan (order-fulfillment-plan order inventory)]  ;; PURE - testable alone
+    ;; Execute the plan (side effects)
+    (doseq [[key value] (:db-updates plan)]
+      (update-db! db! key value))
+    (send-email! email-service!
+                 (get-in plan [:email :to])
+                 (get-in plan [:email :content]))
+    ;; Return result
+    (select-keys plan [:status :total :reason])))
+----
+
+*Benefits of this approach:*
+
+1. All business logic is in pure functions - test with simple assertions
+2. Each decision point (sufficient stock check) is independently testable
+3. Email generation is testable without sending emails
+4. Price calculation is trivially testable
+5. The plan generation contains ALL logic in one pure function
+6. Side effects are localized and mockable
+7. Tests are fast, deterministic, and clear
+8. Easy to test both success and failure paths
+
+==== Testing the Pure Approach
+
+[source,clojure]
+----
+(specification "calculate-order-total" :group1
+  (behavior "multiplies quantity by unit price"
+    (assertions
+      (calculate-order-total 5 10.0) => 50.0
+      (calculate-order-total 1 99.99) => 99.99)))
+
+(specification "sufficient-stock?" :group1
+  (behavior "returns true when stock >= quantity"
+    (assertions
+      (sufficient-stock? 10 5) => true
+      (sufficient-stock? 5 5) => true))
+  (behavior "returns false when stock < quantity"
+    (assertions
+      (sufficient-stock? 3 5) => false)))
+
+(specification "order-fulfillment-plan" :group1
+  (behavior "creates success plan when stock is sufficient"
+    (let [order {:id 123 :item-id 456 :quantity 5 :customer-email "user@example.com"}
+          inventory {:stock 10 :unit-price 10.0}
+          plan (order-fulfillment-plan order inventory)]
+      (assertions
+        "status is success"
+        (:status plan) => :success
+        "total is calculated"
+        (:total plan) => 50.0
+        "includes inventory update"
+        (first (:db-updates plan)) => [:inventory 456 5]
+        "includes order status update"
+        (second (:db-updates plan)) => [:order 123 {:status :fulfilled :total 50.0}]
+        "includes success email"
+        (get-in plan [:email :content :subject]) => "Order Confirmed")))
+
+  (behavior "creates failure plan when stock is insufficient"
+    (let [order {:id 123 :item-id 456 :quantity 10 :customer-email "user@example.com"}
+          inventory {:stock 3 :unit-price 10.0}
+          plan (order-fulfillment-plan order inventory)]
+      (assertions
+        "status is failed"
+        (:status plan) => :failed
+        "reason is insufficient-stock"
+        (:reason plan) => :insufficient-stock
+        "no db updates"
+        (:db-updates plan) => []
+        "includes failure email"
+        (get-in plan [:email :content :subject]) => "Order Failed"))))
+
+(specification "process-order!" :group1
+  (behavior "orchestrates the process with mocked dependencies"
+    (when-mocking
+      (fetch-order db order-id) => {:id 123 :item-id 456 :quantity 5 :customer-email "user@example.com"}
+      (fetch-inventory db item-id) => {:stock 10 :unit-price 10.0}
+      (update-db! db! key value) => nil
+      (send-email! email-svc to content) => nil
+
+      (let [result (process-order! 123 :db :db! :email-svc)]
+        (assertions
+          "returns success status"
+          (:status result) => :success
+          "returns total"
+          (:total result) => 50.0)))))
+----
+
+Notice:
+
+* *10 lines of pure function tests* vs potentially hundreds of lines for integration tests
+* *No database setup* - tests run in milliseconds
+* *Complete coverage* - both success and failure paths tested
+* *Clear assertions* - easy to understand what's being tested
+* *Only ONE mock test* - for the orchestration function
+
+=== Principle 2: Single Level of Abstraction
+
+Each function should operate at ONE level of abstraction. Don't mix high-level orchestration with low-level details.
+
+==== What is "Level of Abstraction"?
+
+Think of abstraction as a ladder:
+
+* *High level*: "Process the daily billing" - business concept
+* *Mid level*: "Check if billing is due, calculate amount, send notification"
+* *Low level*: "Subtract two dates and divide by milliseconds in a day"
+
+A function should stay at one level. It should either:
+
+* Call high-level functions (orchestration)
+* Call mid-level functions (business logic)
+* Perform low-level operations (primitive operations)
+
+But not mix them.
+
+==== Bad Example: Mixed Levels
+
+[source,clojure]
+----
+;; ANTI-PATTERN: Mixing levels of abstraction
+(defn run-daily-tasks! []
+  (let [today (java.time.LocalDate/now)      ;; Low level: Java interop
+        day-of-week (.getValue (.getDayOfWeek today))] ;; Low level: method calls
+    (when (= day-of-week 2)                  ;; Magic number: what is 2?
+      (let [users (db-query "SELECT * FROM users WHERE active = true")] ;; Mid level + low level
+        (doseq [user users]
+          (let [last-bill (:last-billed user)
+                days-since (/ (- (.getTime today)   ;; Low level: date math
+                               (.getTime last-bill))
+                            (* 1000 60 60 24))]
+            (when (> days-since 30)          ;; Magic number
+              (process-billing! (:id user)))))))) ;; High level
+----
+
+*Problems:*
+
+1. Can't test the "is it Tuesday?" logic without side effects
+2. Can't test the "has 30 days passed?" logic independently
+3. Magic numbers (2, 30) embedded in the function
+4. Date math mixed with business logic
+5. High-level operation (process-billing!) mixed with low-level date arithmetic
+
+==== Good Example: Separated Levels
+
+[source,clojure]
+----
+;; LOW LEVEL: Date operations
+(defn day-of-week
+  "Pure: Extract day of week from date.
+  BEHAVIOR: Returns 1-7 (Monday=1, Tuesday=2, etc.)"
+  [date]
+  (.getValue (.getDayOfWeek date)))
+
+(defn days-between
+  "Pure: Calculate days between two dates.
+  BEHAVIOR: Returns integer number of days"
+  [start end]
+  (.between java.time.temporal.ChronoUnit/DAYS start end))
+
+;; MID LEVEL: Business predicates
+(defn tuesday?
+  "Pure: Check if date is a Tuesday.
+  BEHAVIOR: Returns true if day-of-week is 2"
+  [date]
+  (= 2 (day-of-week date)))
+
+(defn billing-due?
+  "Pure: Check if billing is due.
+  BEHAVIOR 1: True if more than 30 days since last-billed
+  BEHAVIOR 2: True if never billed (nil)
+  BEHAVIOR 3: False otherwise"
+  [last-billed current-date]
+  (or (nil? last-billed)
+      (> (days-between last-billed current-date) 30)))
+
+;; MID LEVEL: Data filtering
+(defn users-needing-billing
+  "Pure: Filter users who need billing.
+  BEHAVIOR: Returns users where billing-due? is true"
+  [current-date users]
+  (filter #(billing-due? (:last-billed %) current-date) users))
+
+;; HIGH LEVEL: Task orchestration
+(defn run-tuesday-tasks!
+  "High level: Run tasks that happen on Tuesday.
+  BEHAVIOR: Processes billing for all users who need it"
+  [current-date fetch-users! process-billing!]
+  (let [users (fetch-users!)
+        users-to-bill (users-needing-billing current-date users)]
+    (doseq [user users-to-bill]
+      (process-billing! (:id user)))))
+
+(defn run-daily-tasks!
+  "Top level: Orchestrate daily tasks based on current date.
+  BEHAVIOR: Calls appropriate task functions based on day of week"
+  [get-current-date! fetch-users! process-billing!]
+  (let [current-date (get-current-date!)]
+    (when (tuesday? current-date)
+      (run-tuesday-tasks! current-date fetch-users! process-billing!))))
+----
+
+*Benefits:*
+
+1. Each function is at one level of abstraction
+2. Each function is independently testable
+3. No magic numbers - named functions document meaning
+4. Pure functions for all logic
+5. Side effects only in top-level orchestration
+
+==== Testing Each Level
+
+[source,clojure]
+----
+;; Testing LOW LEVEL - trivial, fast
+(specification "tuesday?" :group1
+  (behavior "returns true for Tuesday"
+    (let [tuesday (java.time.LocalDate/of 2025 1 14)] ;; A Tuesday
+      (assertions
+        (tuesday? tuesday) => true)))
+  (behavior "returns false for other days"
+    (let [monday (java.time.LocalDate/of 2025 1 13)]
+      (assertions
+        (tuesday? monday) => false))))
+
+;; Testing MID LEVEL - simple, clear
+(specification "billing-due?" :group1
+  (behavior "returns true when never billed"
+    (assertions
+      (billing-due? nil (java.time.LocalDate/of 2025 1 15)) => true))
+  (behavior "returns true when > 30 days"
+    (let [last-billed (java.time.LocalDate/of 2024 12 1)
+          current (java.time.LocalDate/of 2025 1 15)]
+      (assertions
+        (billing-due? last-billed current) => true)))
+  (behavior "returns false when <= 30 days"
+    (let [last-billed (java.time.LocalDate/of 2025 1 1)
+          current (java.time.LocalDate/of 2025 1 15)]
+      (assertions
+        (billing-due? last-billed current) => false))))
+
+;; Testing MID LEVEL - pure data transformation
+(specification "users-needing-billing" :group1
+  (behavior "filters to users needing billing"
+    (let [current (java.time.LocalDate/of 2025 1 15)
+          users [{:id 1 :last-billed nil}  ;; Needs billing
+                 {:id 2 :last-billed (java.time.LocalDate/of 2024 12 1)}  ;; Needs
+                 {:id 3 :last-billed (java.time.LocalDate/of 2025 1 10)}] ;; Doesn't
+          result (users-needing-billing current users)]
+      (assertions
+        (count result) => 2
+        (map :id result) => [1 2]))))
+
+;; Testing HIGH LEVEL - minimal mocking
+(specification "run-tuesday-tasks!" :group1
+  (behavior "processes billing for users who need it"
+    (let [current (java.time.LocalDate/of 2025 1 14)  ;; Tuesday
+          users [{:id 1 :last-billed nil}
+                 {:id 2 :last-billed (java.time.LocalDate/of 2025 1 10)}]]
+      (when-mocking
+        (fetch-users!) => users
+        (process-billing! user-id) => nil
+
+        (run-tuesday-tasks! current fetch-users! process-billing!)
+
+        (assertions
+          "processes billing for user who needs it"
+          (mock/spied-value process-billing! 0 'user-id) => 1)))))
+----
+
+=== Principle 3: Cover Every Behavior
+
+A "behavior" is any decision point in your code that causes different outcomes. The goal is to test *every behavior*, not necessarily every line.
+
+==== What Counts as a Behavior?
+
+* *Conditional branches*: `if`, `when`, `cond`, `case`, `when-let`
+* *Boolean operators*: `and`, `or`
+* *Exceptions*: `try/catch`, `throw`
+* *Collection operations*: `filter`, `map` (when the predicate/function varies)
+* *Pattern matching*: Different match cases
+
+Each behavior represents a *meaningful difference in outcome* that users or callers care about.
+
+==== Identifying Behaviors - Example
+
+[source,clojure]
+----
+(defn calculate-discount
+  "Calculate discount for a user's purchase.
+  Input: user map, purchase amount
+  Output: discount amount"
+  [user amount]
+  (cond
+    (nil? user) 0                                    ;; BEHAVIOR 1: No user = no discount
+    (< amount 100) 0                                 ;; BEHAVIOR 2: Small purchases = no discount
+    (:premium? user) (* amount 0.20)                 ;; BEHAVIOR 3: Premium = 20%
+    (>= (:loyalty-years user 0) 5) (* amount 0.15)   ;; BEHAVIOR 4: Loyal = 15%
+    :else (* amount 0.10)))                          ;; BEHAVIOR 5: Regular = 10%
+----
+
+This function has *5 behaviors*. Each one should have a test:
+
+[source,clojure]
+----
+(specification "calculate-discount" :group1
+  (behavior "returns 0 for nil user"
+    (assertions
+      (calculate-discount nil 500) => 0))
+
+  (behavior "returns 0 for purchases under 100"
+    (assertions
+      (calculate-discount {:premium? false} 50) => 0
+      (calculate-discount {:premium? false} 99) => 0))
+
+  (behavior "returns 20% for premium users"
+    (assertions
+      (calculate-discount {:premium? true} 100) => 20.0
+      (calculate-discount {:premium? true} 500) => 100.0))
+
+  (behavior "returns 15% for loyal (5+ years) users"
+    (assertions
+      (calculate-discount {:premium? false :loyalty-years 5} 100) => 15.0
+      (calculate-discount {:premium? false :loyalty-years 10} 200) => 30.0))
+
+  (behavior "returns 10% for regular users"
+    (assertions
+      (calculate-discount {:premium? false :loyalty-years 2} 100) => 10.0
+      (calculate-discount {:premium? false} 100) => 10.0)))
+----
+
+==== The Combinatorial Explosion Problem
+
+As behaviors combine, test cases can explode:
+
+* Function A has 3 behaviors
+* Function B has 4 behaviors
+* Function C calls A then B: potentially 3 × 4 = 12 combinations
+
+*The Solution:* Test each function's behaviors independently at its own level.
+
+*Example:* Composition without explosion
+
+[source,clojure]
+----
+;; LOW LEVEL: 2 behaviors each
+(defn premium? [user]
+  (boolean (:premium? user)))
+
+(defn loyalty-years [user]
+  (:loyalty-years user 0))
+
+;; MID LEVEL: 5 behaviors (tested independently)
+(defn calculate-discount [user amount]
+  (cond
+    (nil? user) 0
+    (< amount 100) 0
+    (premium? user) (* amount 0.20)
+    (>= (loyalty-years user) 5) (* amount 0.15)
+    :else (* amount 0.10)))
+
+;; HIGH LEVEL: 2 behaviors (tested with mocks)
+(defn apply-discount-to-order [order fetch-user!]
+  (let [user (fetch-user! (:user-id order))
+        discount (calculate-discount user (:amount order))]
+    (- (:amount order) discount)))
+----
+
+*Testing strategy:*
+
+1. Test `premium?` - 2 tests (true/false)
+2. Test `loyalty-years` - 2 tests (present/absent)
+3. Test `calculate-discount` - 5 tests (all branches)
+4. Test `apply-discount-to-order` - 2 tests (with mocked user)
+
+*Total: 11 tests* instead of potentially dozens, and each test is clear and focused.
+
+=== Principle 4: Effective Use of Mocking
+
+Mocking should be used strategically to:
+
+1. *Isolate the code under test* from its dependencies
+2. *Control inputs* to test all branches
+3. *Avoid side effects* in unit tests
+4. *Make tests deterministic* (no random data, current time, etc.)
+
+==== When to Mock
+
+*DO mock:*
+
+* Side effect functions (database, file I/O, network, etc.)
+* Functions that return non-deterministic values (current time, random numbers)
+* External dependencies you don't own
+* Complex dependencies when testing high-level orchestration
+
+*DON'T mock:*
+
+* Pure functions - just call them
+* Your own code when testing that specific code
+* Data structures - just create them
+* Trivial functions (getters, simple transformations)
+
+==== Mocking Patterns
+
+===== Pattern 1: Mock Side Effects
+
+[source,clojure]
+----
+(specification "load-user-preferences" :group1
+  (behavior "fetches and processes user preferences"
+    (when-mocking
+      (db-query db query) => {:theme :dark :lang "en"}
+
+      (let [result (load-user-preferences db 123)]
+        (assertions
+          (:theme result) => :dark
+          (:lang result) => "en")))))
+----
+
+===== Pattern 2: Mock for Determinism
+
+[source,clojure]
+----
+(specification "create-order" :group1
+  (behavior "assigns current timestamp to order"
+    (when-mocking
+      (current-time) => #inst "2025-01-15T12:00:00"
+
+      (let [order (create-order {:item-id 123})]
+        (assertions
+          (:created-at order) => #inst "2025-01-15T12:00:00")))))
+----
+
+===== Pattern 3: Mock to Control Branches
+
+[source,clojure]
+----
+(specification "process-payment" :group1
+  (behavior "handles successful payment"
+    (when-mocking
+      (charge-card! gateway card amount) => {:status :success :transaction-id "ABC123"}
+
+      (let [result (process-payment gateway card 100)]
+        (assertions
+          (:status result) => :paid
+          (:transaction-id result) => "ABC123"))))
+
+  (behavior "handles failed payment"
+    (when-mocking
+      (charge-card! gateway card amount) => {:status :failed :error "Insufficient funds"}
+
+      (let [result (process-payment gateway card 100)]
+        (assertions
+          (:status result) => :failed
+          (:error result) => "Insufficient funds")))))
+----
+
+===== Pattern 4: Scripted Mocks (Different Returns)
+
+[source,clojure]
+----
+(specification "retry-on-failure" :group1
+  (behavior "retries up to 3 times on failure"
+    (when-mocking
+      (external-api-call request) =1x=> {:status :error}  ;; First call fails
+      (external-api-call request) =1x=> {:status :error}  ;; Second call fails
+      (external-api-call request) => {:status :success}    ;; Third call succeeds
+
+      (let [result (retry-on-failure #(external-api-call {:data "test"}))]
+        (assertions
+          (:status result) => :success
+          "made 3 attempts"
+          (count (mock/calls-of external-api-call)) => 3)))))
+----
+
+===== Pattern 5: Spy Pattern (Verify Arguments)
+
+[source,clojure]
+----
+(specification "send-notification" :group1
+  (behavior "sends email with correct content"
+    (when-mocking
+      (send-email! to subject body) => nil
+
+      (send-notification {:user-email "test@example.com" :message "Hello"})
+
+      (assertions
+        "sends to correct recipient"
+        (mock/spied-value send-email! 0 'to) => "test@example.com"
+        "includes message in body"
+        (mock/spied-value send-email! 0 'body) => "Hello"))))
+----
+
+==== Anti-Patterns in Mocking
+
+*ANTI-PATTERN 1: Mocking Pure Functions*
+
+[source,clojure]
+----
+;; BAD: Mocking a pure function you're testing
+(when-mocking
+  (calculate-total items) => 100  ;; Why mock it? Just test it directly!
+
+  (process-order {:items items}))
+
+;; GOOD: Test the pure function directly
+(assertions
+  (calculate-total [{:price 50} {:price 50}]) => 100)
+----
+
+*ANTI-PATTERN 2: Over-Mocking*
+
+[source,clojure]
+----
+;; BAD: Mocking every single function, even trivial ones
+(when-mocking
+  (get-user-id user) => 123          ;; Just use (:id user)
+  (get-user-email user) => "test@example.com"  ;; Just use (:email user)
+  (format-email email) => "test@example.com"   ;; Trivial - test directly
+
+  ;; Actual test lost in mock noise
+  ...)
+----
+
+*ANTI-PATTERN 3: Mocking Too Many Levels Deep*
+
+[source,clojure]
+----
+;; BAD: This suggests the function is doing too much
+(when-mocking
+  (fetch-user db id) => {:id 1}
+  (fetch-orders db user-id) => [{:id 1}]
+  (fetch-items db order-id) => [{:id 1}]
+  (calculate-tax items) => 10
+  (calculate-shipping items) => 5
+  (format-receipt order) => "Receipt"
+  (send-email! email receipt) => nil
+
+  ;; What is this even testing?
+  (process-order-pipeline id))
+
+;; GOOD: Break into testable layers
+;; Test calculate-tax directly (pure)
+;; Test calculate-shipping directly (pure)
+;; Test format-receipt directly (pure)
+;; Test top-level with minimal mocks
+----
+
+=== Principle 5: Test Structure as Readable Outlines
+
+Tests should read like documentation. The combination of `specification`, `behavior`, and `component` names should form complete, readable sentences.
+
+==== The Outline Pattern
+
+[source,clojure]
+----
+(specification "The trim function" :group1  ;; Subject
+  (behavior "removes whitespace"            ;; Predicate
+    (behavior "from the beginning"          ;; Detail
+      (assertions
+        (trim "  foo") => "foo"))
+    (behavior "from the end"                ;; Detail
+      (assertions
+        (trim "bar  ") => "bar")))
+  (behavior "treats nil as empty string"    ;; Predicate
+    (assertions
+      (trim nil) => "")))
+----
+
+Reading this aloud:
+
+* "The trim function removes whitespace from the beginning"
+* "The trim function removes whitespace from the end"
+* "The trim function treats nil as empty string"
+
+==== Nested Component Pattern
+
+For complex functions, use `component` to break down sub-parts:
+
+[source,clojure]
+----
+(specification "order-fulfillment-plan" :group1
+  (component "when stock is sufficient"
+    (behavior "sets status to success"
+      (assertions ...))
+    (behavior "includes inventory update"
+      (assertions ...))
+    (behavior "includes order update"
+      (assertions ...))
+    (behavior "generates success email"
+      (assertions ...)))
+
+  (component "when stock is insufficient"
+    (behavior "sets status to failed"
+      (assertions ...))
+    (behavior "includes no database updates"
+      (assertions ...))
+    (behavior "generates failure email"
+      (assertions ...))))
+----
+
+Reads as:
+
+* "order-fulfillment-plan when stock is sufficient sets status to success"
+* "order-fulfillment-plan when stock is insufficient generates failure email"
+
+==== Assertion Labels
+
+Use assertion labels when testing multiple aspects in one behavior:
+
+[source,clojure]
+----
+(behavior "processes user batch completely"
+  (let [result (process-user-batch enrichment users)]
+    (assertions
+      "processes valid users"
+      (count (:processed result)) => 2
+
+      "enriches with additional data"
+      (get-in result [:processed 0 :score]) => 95
+
+      "includes statistics"
+      (get-in result [:stats :total]) => 3
+      (get-in result [:stats :valid]) => 2
+      (get-in result [:stats :invalid]) => 1)))
+----
+
+== Advanced Patterns and Techniques
+
+=== Testing Collection Operations
+
+Collections introduce edge cases that must be tested:
+
+* Empty collections
+* Single-element collections
+* Order preservation
+* Nil values within collections
+
+==== Comprehensive Filter Testing
+
+[source,clojure]
+----
+(specification "filter-active-users" :group1
+  (behavior "returns only active users"
+    (let [users [{:id 1 :status :active}
+                 {:id 2 :status :inactive}
+                 {:id 3 :status :active}]
+          result (filter-active-users users)]
+      (assertions
+        (count result) => 2
+        (map :id result) => [1 3])))
+
+  (behavior "returns empty collection for empty input"
+    (assertions
+      (filter-active-users []) => []))
+
+  (behavior "returns empty collection when no matches"
+    (let [users [{:id 1 :status :inactive}]]
+      (assertions
+        (filter-active-users users) => [])))
+
+  (behavior "preserves order"
+    (let [users [{:id 1 :status :active}
+                 {:id 2 :status :active}
+                 {:id 3 :status :active}]
+          result (filter-active-users users)]
+      (assertions
+        (map :id result) => [1 2 3])))
+
+  (behavior "handles nil values in collection"
+    (let [users [{:id 1 :status nil}
+                 {:id 2 :status :active}]]
+      (assertions
+        (count (filter-active-users users)) => 1))))
+----
+
+==== Testing Aggregations
+
+[source,clojure]
+----
+(specification "sum-field" :group1
+  (behavior "sums field values"
+    (assertions
+      (sum-field :amount [{:amount 10} {:amount 20} {:amount 30}]) => 60))
+
+  (behavior "returns 0 for empty collection"
+    (assertions
+      (sum-field :amount []) => 0))
+
+  (behavior "treats nil values as 0"
+    (assertions
+      (sum-field :amount [{:amount 10} {:amount nil} {:amount 20}]) => 30))
+
+  (behavior "treats missing key as 0"
+    (assertions
+      (sum-field :amount [{:amount 10} {:other 5}]) => 10)))
+----
+
+=== Testing Composition
+
+When functions compose other functions, test each layer independently:
+
+==== Layer 1: Primitives
+
+[source,clojure]
+----
+(defn active? [user] (= :active (:status user)))
+(defn premium? [user] (#{:premium :enterprise} (:tier user)))
+
+;; Test each primitive
+(specification "active?" :group1 ...)
+(specification "premium?" :group1 ...)
+----
+
+==== Layer 2: Composition
+
+[source,clojure]
+----
+(defn active-premium-users [users]
+  (->> users
+       (filter active?)
+       (filter premium?)))
+
+;; Test composition
+(specification "active-premium-users" :group1
+  (behavior "returns only users that are both active and premium"
+    (let [users [{:status :active :tier :premium}     ;; Match
+                 {:status :inactive :tier :premium}   ;; Not active
+                 {:status :active :tier :basic}       ;; Not premium
+                 {:status :active :tier :enterprise}] ;; Match
+          result (active-premium-users users)]
+      (assertions
+        (count result) => 2))))
+----
+
+Note: We don't re-test what "active" means - that's tested in the primitive. We only test that the composition works.
+
+=== Testing Error Paths
+
+Error handling is a behavior that must be tested.
+
+==== Validation Functions
+
+[source,clojure]
+----
+(defn validate-user [user]
+  (cond
+    (nil? (:email user)) {:error :missing-email}
+    (not (valid-email? (:email user))) {:error :invalid-email}
+    (nil? (:name user)) {:error :missing-name}
+    :else nil))  ;; nil = valid
+
+(specification "validate-user" :group1
+  (behavior "returns nil for valid user"
+    (assertions
+      (validate-user {:email "test@example.com" :name "Test"}) => nil))
+
+  (behavior "returns error for missing email"
+    (assertions
+      (:error (validate-user {:name "Test"})) => :missing-email))
+
+  (behavior "returns error for invalid email format"
+    (assertions
+      (:error (validate-user {:email "invalid" :name "Test"})) => :invalid-email))
+
+  (behavior "returns error for missing name"
+    (assertions
+      (:error (validate-user {:email "test@example.com"})) => :missing-name))
+
+  (behavior "returns first error encountered"
+    ;; Missing both email and name - should return missing-email first
+    (assertions
+      (:error (validate-user {})) => :missing-email)))
+----
+
+==== Exception Handling
+
+[source,clojure]
+----
+(specification "parse-int" :group1
+  (behavior "parses valid integer strings"
+    (assertions
+      (parse-int "123") => 123
+      (parse-int "0") => 0
+      (parse-int "-456") => -456))
+
+  (behavior "throws exception for invalid input"
+    (assertions
+      (parse-int "not-a-number") =throws=> #?(:clj NumberFormatException
+                                              :cljs js/Error)
+      (parse-int "") =throws=> #?(:clj NumberFormatException
+                                  :cljs js/Error)))
+
+  (behavior "includes descriptive error message"
+    (assertions
+      (parse-int "abc") =throws=> #"invalid")))
+----
+
+=== Testing with Edge Cases
+
+Always consider:
+
+* Boundaries (0, empty, max values)
+* Nil values
+* Invalid input
+* Unexpected types
+
+==== Example: Boundary Testing
+
+[source,clojure]
+----
+(specification "take-up-to-N" :group1
+  (behavior "takes N elements when collection has >= N"
+    (assertions
+      (take-up-to-N 3 [1 2 3 4 5]) => [1 2 3]))
+
+  (behavior "takes all elements when collection has < N"
+    (assertions
+      (take-up-to-N 5 [1 2 3]) => [1 2 3]))
+
+  (behavior "returns empty collection for empty input"
+    (assertions
+      (take-up-to-N 5 []) => []))
+
+  (behavior "handles N = 0"
+    (assertions
+      (take-up-to-N 0 [1 2 3]) => []))
+
+  (behavior "handles negative N gracefully"
+    (assertions
+      (take-up-to-N -1 [1 2 3]) => [])))
+----
+
+== Real-World Example: Complete Module
+
+Let's see a complete example that brings all principles together.
+
+=== Scenario: User Batch Processing
+
+We need to process batches of user data:
+
+1. Validate each user
+2. Enrich with external data
+3. Calculate derived fields
+4. Separate valid from invalid
+5. Return statistics
+
+See `src/main/fulcro_spec/examples/data_processing.cljc` for the complete implementation and `src/test/fulcro_spec/examples/data_processing_spec.cljc` for comprehensive tests (113 assertions, all passing).
+
+=== Key Takeaways from the Example
+
+The example demonstrates:
+
+1. *Pure predicates* - `active?`, `premium?`, `valid-email?` - trivial to test
+2. *Pure transformations* - `normalize-email`, `add-computed-fields` - simple input/output
+3. *Composition* - `active-premium-user-summaries` composes filters and transforms
+4. *Validation layers* - separate validation concerns, compose them
+5. *No mocking needed* for 95% of the code - only the top-level orchestration
+
+== Testing Workflow and Practices
+
+=== Development Workflow
+
+==== TDD (Test-Driven Development) Option
+
+1. Write the specification structure (empty behaviors)
+2. Fill in one behavior at a time
+3. Write minimal code to make it pass
+4. Refactor
+5. Repeat
+
+==== Test-After Option
+
+1. Write the function
+2. Identify all behaviors (decision points)
+3. Write a test for each behavior
+4. Run tests, fix any issues
+5. Refactor if needed
+
+Both work - choose what fits your style.
+
+=== REPL-Driven Testing
+
+Fulcro Spec works great with REPL workflow:
+
+[source,clojure]
+----
+;; In your REPL
+(in-ns 'my-namespace-spec)
+(require 'fulcro-spec.reporters.repl)
+
+;; Run all tests in current namespace
+(fulcro-spec.reporters.repl/run-tests)
+
+;; Run only focused tests
+(fulcro-spec.reporters.repl/run-tests #(:focus (meta %)))
+----
+
+Workflow:
+
+1. Write/modify function
+2. Write/modify test
+3. Run tests in REPL (keyboard shortcut)
+4. See immediate feedback
+5. Iterate
+
+=== Test Organization
+
+Group related behaviors together:
+
+[source,clojure]
+----
+(ns myapp.billing.core-spec
+  (:require
+    [fulcro-spec.core :refer [specification behavior assertions when-mocking]]
+    [myapp.billing.core :as billing]))
+
+;; Group 1: Price calculations
+(specification "calculate-base-price" :group1 ...)
+(specification "apply-discount" :group1 ...)
+(specification "calculate-tax" :group1 ...)
+
+;; Group 2: Business rules
+(specification "billing-due?" :group2 ...)
+(specification "eligible-for-discount?" :group2 ...)
+
+;; Group 3: Orchestration
+(specification "process-billing!" :group3 ...)
+(specification "generate-invoice!" :group3 ...)
+----
+
+The `:groupN` metadata allows CI systems to run tests in parallel.
+
+=== What to Test vs What to Skip
+
+*ALWAYS test:*
+
+* Public API functions
+* Business logic
+* Decision points (conditionals)
+* Error handling
+* Edge cases
+
+*Can SKIP:*
+
+* Private implementation details (test through public API)
+* Generated code
+* Trivial getters/setters
+* Third-party library behavior (trust the library tests)
+
+*DON'T test:*
+
+* Implementation details that might change
+* Framework behavior
+* Database schema (use integration tests)
+
+== Common Challenges and Solutions
+
+=== Challenge 1: "This function is too hard to test"
+
+*Solution:* The function is telling you it's poorly designed. Refactor it.
+
+Usually one or more of these apply:
+
+1. Mixed side effects and logic → Separate them
+2. Too many responsibilities → Split into smaller functions
+3. Mixed levels of abstraction → Layer properly
+4. Hidden dependencies → Make them explicit parameters
+
+=== Challenge 2: "I need to mock 10 things"
+
+*Solution:* Your function is too coupled. Refactor.
+
+Options:
+
+1. Extract pure logic into separate functions
+2. Create a higher-level abstraction
+3. Use data-driven design (return a plan, execute elsewhere)
+
+=== Challenge 3: "The setup is huge"
+
+*Solution:* Use test data builders.
+
+[source,clojure]
+----
+;; BAD: Repeated setup everywhere
+(let [user {:id 1 :name "Test" :email "test@example.com"
+            :status :active :tier :premium :created-at #inst "2025-01-01"}]
+  ...)
+
+;; GOOD: Test data builder
+(defn make-test-user
+  [overrides]
+  (merge
+    {:id 1
+     :name "Test User"
+     :email "test@example.com"
+     :status :active
+     :tier :basic
+     :created-at #inst "2025-01-01"}
+    overrides))
+
+;; Use it
+(let [user (make-test-user {:tier :premium})]
+  ...)
+----
+
+=== Challenge 4: "Testing async/callbacks is hard"
+
+*Solution:* Use Fulcro Spec's timeline testing.
+
+[source,clojure]
+----
+(specification "async operation" :group1
+  (with-timeline
+    (behavior "calls callback after delay"
+      (let [result (atom nil)]
+        (when-mocking
+          (js/setTimeout f tm) => (async tm (f))
+
+          (async-operation #(reset! result :done))
+
+          (tick 100)
+          (assertions @result => :done))))))
+----
+
+=== Challenge 5: "I have datetime/random dependencies"
+
+*Solution:* Inject them as parameters.
+
+[source,clojure]
+----
+;; BAD: Hard-coded current time
+(defn create-timestamp []
+  (java.time.Instant/now))
+
+;; GOOD: Injected clock
+(defn create-timestamp [clock]
+  (clock))
+
+;; Production use
+(create-timestamp java.time.Instant/now)
+
+;; Test use
+(create-timestamp (constantly #inst "2025-01-15T12:00:00"))
+----
+
+== Evolution and Maintenance
+
+=== Refactoring with Tests
+
+Tests enable fearless refactoring:
+
+1. Run tests - all green
+2. Refactor implementation
+3. Run tests - should still be green
+4. If red, fix or update tests
+
+*When to update tests:*
+
+* Behavior actually changed
+* API changed
+* You discovered a missing edge case
+
+*When NOT to update tests:*
+
+* Internal implementation details changed
+* Code was reorganized but behavior unchanged
+
+=== Growing a Codebase
+
+As the codebase grows:
+
+1. *Keep functions small* - easier to test
+2. *Add tests for bugs* - before fixing, write a failing test
+3. *Refactor toward testability* - when you find hard-to-test code
+4. *Review test coverage* - are all behaviors tested?
+
+=== Working in Teams
+
+Tests serve as:
+
+* *Documentation* - show how to use the code
+* *Safety net* - prevent regressions
+* *Design review* - hard-to-test = needs redesign
+* *Communication* - tests express intent
+
+Good tests make onboarding easier and enable parallel development.
+
+== Antipatterns to Avoid
+
+=== Antipattern 1: Testing Implementation Details
+
+[source,clojure]
+----
+;; BAD: Testing how it works instead of what it does
+(assertions
+  "calls helper-fn exactly once"
+  (mock/call-of helper-fn 0) => {...})
+
+;; GOOD: Testing the observable result
+(assertions
+  "returns correct result"
+  (my-function input) => expected-output)
+----
+
+=== Antipattern 2: Brittle Tests
+
+[source,clojure]
+----
+;; BAD: Breaks when any field changes
+(assertions
+  result => {:id 1 :name "Test" :email "test@example.com"
+             :created-at #inst "2025-01-01" :updated-at #inst "2025-01-01"
+             :status :active :tier :basic :score 0 ...})
+
+;; GOOD: Test only what matters
+(assertions
+  (:id result) => 1
+  (:status result) => :active
+  (:tier result) => :basic)
+----
+
+=== Antipattern 3: One Giant Test
+
+[source,clojure]
+----
+;; BAD: Tests everything in one giant test
+(behavior "does everything"
+  (assertions
+    (function-under-test input1) => output1
+    (function-under-test input2) => output2
+    (function-under-test input3) => output3
+    ...))
+
+;; GOOD: Separate behavior per test
+(behavior "handles case A"
+  (assertions (function-under-test input1) => output1))
+(behavior "handles case B"
+  (assertions (function-under-test input2) => output2))
+----
+
+=== Antipattern 4: No Assertions
+
+[source,clojure]
+----
+;; BAD: Test that doesn't assert anything meaningful
+(behavior "processes order"
+  (process-order! order))  ;; No assertions!
+
+;; GOOD: Verify the outcome
+(behavior "processes order successfully"
+  (when-mocking
+    (save-order! db order) => nil
+
+    (let [result (process-order! order db)]
+      (assertions
+        (:status result) => :success))))
+----
+
+== Conclusion
+
+Mastering these principles and techniques will transform your testing practice:
+
+1. *Move side effects to edges* - makes 90% of code pure and easy to test
+2. *Single level of abstraction* - makes each function focused and clear
+3. *Cover every behavior* - comprehensive without combinatorial explosion
+4. *Strategic mocking* - only where needed, minimal and clear
+5. *Readable test structure* - tests as living documentation
+
+The result is:
+
+* Fast test suites (milliseconds)
+* Comprehensive coverage (all behaviors)
+* Clear, maintainable tests
+* Confidence in refactoring
+* Better designed code
+
+*Remember:* If it's hard to test, it's probably poorly designed. Let testability guide your design toward simplicity and clarity.
+
+== Further Examples
+
+See the example implementations in this repository:
+
+* `src/main/fulcro_spec/examples/billing_good.cljc` - Billing system (104 assertions)
+* `src/main/fulcro_spec/examples/data_processing.cljc` - Data processing (113 assertions)
+* `src/test/fulcro_spec/examples/billing_good_spec.cljc` - Full test suite
+* `src/test/fulcro_spec/examples/data_processing_spec.cljc` - Full test suite
+
+Study these examples to see the principles in action across different domains.
+
+== Additional Resources
+
+* link:docs/writing-tests.md[Writing Tests Guide] - Quick reference
+* link:docs/index.adoc[Fulcro Spec Documentation] - Complete API reference
+* link:src/test/fulcro_spec/provided_spec.cljc[Mocking Examples] - Advanced mocking patterns
+* link:src/test/fulcro_spec/check_spec.cljc[Checker Examples] - Assertion helpers

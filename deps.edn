@@ -20,7 +20,7 @@
                                                  :git/tag "v0.1.11-alpha"
                                                  :git/sha "7739dba"}}
             :exec-fn   clojure-mcp.main/start-mcp-server
-            :exec-args {:start-nrepl-cmd ["/opt/homebrew/bin/clojure" "-A:test" "-M:test-nrepl"]}}
+            :exec-args {:start-nrepl-cmd ["clojure" "-A:test" "-M:test-nrepl"]}}
 
            :test      {:extra-paths ["src/test"]
                        :extra-deps  {thheller/shadow-cljs {:mvn/version "3.2.1"}}}}}
