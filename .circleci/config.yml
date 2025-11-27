@@ -1,12 +1,12 @@
 version: 2.1
 orbs:
-  browser-tools: circleci/browser-tools@1.5.3
+  browser-tools: circleci/browser-tools@2.3.2
 jobs:
   cljs:
     docker:
-      - image: cimg/clojure:1.10.3-browsers
+      - image: cimg/clojure:1.11.4-openjdk-21.0-browsers
     steps:
-      - browser-tools/install-browser-tools
+      - browser-tools/install_browser_tools
       - checkout
       - restore_cache:
           key: cljs-{{ checksum "deps.edn" }}-{{ checksum "package.json" }}
@@ -20,13 +20,13 @@ jobs:
                   - ~/.m2
                 key: cljs-{{ checksum "deps.edn" }}-{{ checksum "package.json" }}
   clj:
-    docker: 
-      - image: cimg/clojure:1.10.3
+    docker:
+      - image: cimg/clojure:1.11.4-openjdk-21.0-browsers
     steps:
       - checkout
       - restore_cache:
           key: clj-{{ checksum "deps.edn" }}
-      - run: clojure -A:clj-tests -J-Ddev
+      - run: clojure -M:test:clj-tests -J-Ddev
       - save_cache:
           paths:
             - ~/.m2

@@ -3,24 +3,18 @@
  :deps    {colorize/colorize                   {:mvn/version "0.1.1" :exclusions [org.clojure/clojure]}
            io.aviso/pretty                     {:mvn/version "1.4.4"}
            com.lucasbradstreet/cljs-uuid-utils {:mvn/version "1.0.2"}
+           com.fulcrologic/guardrails          {:mvn/version "1.2.11"}
+           metosin/malli                       {:mvn/version "0.19.2"}
            org.clojure/clojure                 {:mvn/version "1.12.3"}
            org.clojure/clojurescript           {:mvn/version "1.12.42"}}
 
- :aliases {:clj-tests {:extra-paths ["src/test"]
-                       :main-opts   ["-m" "kaocha.runner"]
-                       :extra-deps  {lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
+ :aliases {:clj-tests  {:extra-paths ["src/test"]
+                        :main-opts   ["-m" "kaocha.runner"]}
 
-           :test-nrepl  {:extra-deps {nrepl/nrepl {:mvn/version "1.4.0"}}
-                         :jvm-opts   ["-Djdk.attach.allowAttachSelf" "-Dtest" "-XX:-OmitStackTraceInFastThrow"]
-                         :main-opts  ["-m" "nrepl.cmdline"]}
+           :test-nrepl {:extra-deps {nrepl/nrepl {:mvn/version "1.5.1"}}
+                        :jvm-opts   ["-Djdk.attach.allowAttachSelf" "-Dtest" "-XX:-OmitStackTraceInFastThrow" "-Dguardrails.enabled"]
+                        :main-opts  ["-m" "nrepl.cmdline"]}
 
-           :mcp-dev
-           {:deps      {org.slf4j/slf4j-nop     {:mvn/version "2.0.17"} ;; Required for stdio server
-                        com.bhauman/clojure-mcp {:git/url "https://github.com/bhauman/clojure-mcp.git"
-                                                 :git/tag "v0.1.11-alpha"
-                                                 :git/sha "7739dba"}}
-            :exec-fn   clojure-mcp.main/start-mcp-server
-            :exec-args {:start-nrepl-cmd ["/opt/homebrew/bin/clojure" "-A:test" "-M:test-nrepl"]}}
-
-           :test      {:extra-paths ["src/test"]
-                       :extra-deps  {thheller/shadow-cljs {:mvn/version "3.2.1"}}}}}
+           :test       {:extra-paths ["src/test"]
+                        :extra-deps  {lambdaisland/kaocha  {:mvn/version "1.91.1392"}
+                                      thheller/shadow-cljs {:mvn/version "3.2.1"}}}}}

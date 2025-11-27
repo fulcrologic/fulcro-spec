@@ -15,43 +15,6 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
-== CHANGE OF SCOPE NOTICE
-
-**BREAKING CHANGES** as of 3.1.  The `=throws=>` clause now just takes either a type
-or a regex. Not maps/lists.
-
-**BREAKING CHANGES** as of 3.0. Do NOT upgrade without being prepared to port your
-test runners.
-
-IMPORTANT: This library no longer contains browser-based runners.
-
-I recommend the following alternatives:
-
-Clojure Tests:: I recommend IntelliJ/Emacs/Vim in-editor testing, or perhaps
-Clojure Tools Deps with kaocha. The latter renders into a terminal, but can use fulcro-spec's
-macros. Here is a sample config file that will use Fulcro spec's terminal reporting:
-
-[source, clojure]
------
-#kaocha/v1
-    {:tests    [{:id           :unit
-                 :ns-patterns  ["-test$" "-spec$"]
-                 :test-paths   ["src/test"]
-                 :skip-meta    [:integration]
-                 :source-paths ["src/main"]}]
-     :reporter [fulcro-spec.reporters.terminal/fulcro-report]
-     :plugins  [:kaocha.plugin/randomize
-                :kaocha.plugin/filter
-                :kaocha.plugin/capture-output]}
------
-
-Clojurescript Tests:: I highly recommend using Nubank's Workspaces.  I've contributed a
-shadow-cljs target that can auto-scan for tests if you use their deftest macro. Again, things
-like the `provided` macro work within Workspaces.  I recommend using shadow-cljs
-`:karma` target for running CI tests.
-
-See https://github.com/fulcrologic/fulcro-spec/blob/main/docs/index.adoc[the docs] for more details.
-
 == Description
 
 A Clojure(scipt) testing library to augment the standard `clojure.test`.
@@ -59,30 +22,6 @@ A Clojure(scipt) testing library to augment the standard `clojure.test`.
 image:https://img.shields.io/clojars/v/fulcrologic/fulcro-spec.svg[link="https://clojars.org/fulcrologic/fulcro-spec"]
 
 Release: image:https://circleci.com/gh/fulcrologic/fulcro-spec/tree/main.svg?style=svg["CircleCI", link="https://circleci.com/gh/fulcrologic/fulcro-spec/tree/main"]
-
-== NEW!  REPL Runner
-
-It is common to want to run tests in the REPL, but the output of the default runner leaves a lot to be desired.  If
-you're using IntelliJ you can now add something like this to your REPL commands (and hook it to a keyboard shortcut) for a much
-better testing experience:
-
-Run Tests with a `:focus` metadata marker (selector):
-
-```
-(in-ns (.getName *ns*))
-(require 'fulcro-spec.reporters.repl)
-(fulcro-spec.reporters.repl/run-tests #(:focus (meta %)))
-```
-
-Run all tests:
-
-```
-(in-ns (.getName *ns*))
-(require 'fulcro-spec.reporters.repl)
-(fulcro-spec.reporters.repl/run-tests)
-```
-
-NOTE: Be sure to check "Before Executing" -> "Load File" on the REPL command.
 
 == Usage
 
@@ -137,4 +76,26 @@ The metadata map (when provided) must appear before the test name string. Select
 (like `:focus`) follow the test name and are automatically converted to metadata. Both metadata
 sources are merged, allowing test runners to filter tests by any metadata key.
 
-See the full documentation for complete details.
+== REPL Runner
+
+It is common to want to run tests in the REPL, but the output of the default runner leaves a lot to be desired.  If
+you're using IntelliJ you can now add something like this to your REPL commands (and hook it to a keyboard shortcut) for a much
+better testing experience:
+
+Run Tests with a `:focus` metadata marker (selector):
+
+```
+(in-ns (.getName *ns*))
+(require 'fulcro-spec.reporters.repl)
+(fulcro-spec.reporters.repl/run-tests #(:focus (meta %)))
+```
+
+Run all tests:
+
+```
+(in-ns (.getName *ns*))
+(require 'fulcro-spec.reporters.repl)
+(fulcro-spec.reporters.repl/run-tests)
+```
+
+See https://github.com/fulcrologic/fulcro-spec/blob/main/docs/index.adoc[the docs] for more details.
