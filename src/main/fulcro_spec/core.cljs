@@ -6,6 +6,7 @@
     [fulcro-spec.assertions]
     [fulcro-spec.async]
     [fulcro-spec.hooks :refer [hooks]]
+    [fulcro-spec.instrument]
     [fulcro-spec.stub]))
 
 (declare => =1x=> =2x=> =3x=> =4x=> =throws=> =fn=>)

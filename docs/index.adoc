@@ -443,6 +443,384 @@ For this you can use `fmap*`, but use it judiciously, as you can perform arbitra
   [:c :a :b] => (_/fmap* sort (_/equals [:a :b :c])))
 ----
 
+== Transitive Coverage Proofs
+
+The coverage analysis system enables building provable chains of test coverage from low-level functions up to application logic. This is a Clojure-only feature that requires guardrails (`>defn`) for call graph analysis.
+
+=== Overview
+
+The system tracks which tests cover which functions, and can verify that a function and all its transitive dependencies have test coverage. Additionally, it supports staleness detection: when a function's source code changes after a test was sealed, the coverage is marked as stale until the developer reviews and re-seals the test.
+
+Key namespaces:
+
+- `fulcro-spec.coverage` - Registry tracking which tests cover which functions
+- `fulcro-spec.signature` - Computes signatures for staleness detection
+- `fulcro-spec.proof` - High-level API for coverage verification
+
+=== Declaring Coverage
+
+Tests declare which functions they cover via the `:covers` metadata on `specification`:
+
+[source]
+----
+(:require
+  [fulcro-spec.core :refer [specification behavior assertions]]
+  [fulcro-spec.proof :as proof])
+
+;; With signature (enables staleness detection)
+(specification {:covers {`my-fn "abc123"}} "my-fn test"
+  (assertions
+    (my-fn 1 2) => 3))
+
+;; Legacy format (no staleness detection)
+(specification {:covers [`my-fn]} "my-fn test"
+  (assertions
+    (my-fn 1 2) => 3))
+----
+
+The signature is a 6-character hash of the function's normalized source code (with docstrings removed and whitespace normalized). This means:
+
+- Changing implementation DOES change the signature
+- Changing docstrings does NOT change the signature
+- Reformatting whitespace does NOT change the signature
+
+=== Getting Signatures
+
+Use `signature` to get the signature for a function. The signature format is automatically determined based on the function's call graph:
+
+[source]
+----
+(require '[fulcro-spec.signature :as sig])
+(require '[fulcro-spec.proof :as proof])
+
+;; With .fulcro-spec.edn configured, just pass the function symbol:
+(sig/signature 'myapp.core/my-function)
+(proof/signature 'myapp.core/my-function)
+;; => "a1b2c3" (leaf function - no in-scope callees)
+;; OR
+;; => "a1b2c3,def456" (non-leaf function - has callees)
+
+;; Or with explicit scope:
+(sig/signature 'myapp.core/my-function #{"myapp"})
+----
+
+**Signature formats:**
+
+- **LEAF functions** (no in-scope callees): `"xxxxxx"` - just the 6-char hash of the function's own source
+- **NON-LEAF functions** (has callees): `"xxxxxx,yyyyyy"` - the function's hash plus a hash of all transitive callees' signatures
+
+This unified approach ensures:
+
+- Leaf functions get simple signatures (no redundant suffix)
+- Non-leaf functions automatically track their entire call tree
+- Changes to any function in the call chain invalidate dependent tests
+
+=== Configuring Scope
+
+Before using the coverage system, configure which namespaces are "in scope" for coverage checking. The simplest approach is to create a `.fulcro-spec.edn` file in your project root:
+
+[source]
+----
+;; .fulcro-spec.edn
+{:scope-ns-prefixes #{"myapp" "myapp.lib"}}
+----
+
+This file is automatically loaded when coverage features are first used. Alternatively, configure programmatically:
+
+[source]
+----
+(proof/configure! {:scope-ns-prefixes #{"myapp" "myapp.lib"}
+                   :enforce? false})
+----
+
+Options:
+
+- `:scope-ns-prefixes` - Set of namespace prefix strings that define which namespaces are in scope. E.g., `#{"myapp"}` includes `myapp.core`, `myapp.db`, etc.
+- `:enforce?` - When true, `when-mocking!!` and `provided!!` will throw if mocked functions lack transitive coverage. Default: false.
+
+=== Querying Coverage
+
+==== Simple Queries
+
+[source]
+----
+;; Is this function and all its transitive deps covered?
+(proof/fully-tested? 'myapp.orders/create-order)
+;; => true or false
+
+;; What's missing?
+(proof/why-not-tested? 'myapp.orders/create-order)
+;; => {:uncovered #{myapp.db/save!} :stale #{myapp.validation/check}}
+;; => nil if fully tested
+----
+
+==== Detailed Report
+
+[source]
+----
+(proof/verify-transitive-coverage 'myapp.orders/create-order)
+;; => {:function myapp.orders/create-order
+;;     :scope-ns-prefixes #{"myapp"}
+;;     :transitive-deps #{...}
+;;     :covered #{...}
+;;     :uncovered #{...}
+;;     :stale #{...}
+;;     :proof-complete? true/false}
+
+;; Human-readable output
+(proof/print-coverage-report 'myapp.orders/create-order)
+----
+
+==== Scope-wide Statistics
+
+[source]
+----
+(proof/coverage-stats)
+;; => {:total 42
+;;     :covered 38
+;;     :uncovered 4
+;;     :stale 2
+;;     :fresh 36
+;;     :coverage-pct 90.47619047619048}
+
+;; All uncovered functions
+(proof/uncovered-in-scope)
+;; => #{myapp.db/save! myapp.cache/invalidate!}
+----
+
+=== Staleness Detection
+
+When you seal a test with a signature and later modify the function's implementation, the coverage becomes "stale". This helps ensure tests are reviewed when code changes.
+
+==== Checking Staleness
+
+[source]
+----
+;; Has this function been sealed with a signature?
+(proof/sealed? 'myapp.core/my-fn)
+;; => true/false
+
+;; Is the sealed signature current?
+(proof/fresh? 'myapp.core/my-fn)
+;; => true only if sealed AND signature matches current
+
+;; Has the implementation changed since sealing?
+(proof/stale? 'myapp.core/my-fn)
+;; => true if sealed AND signature differs from current
+----
+
+The `fresh?` and `stale?` functions work with both leaf functions (single-field signatures) and non-leaf functions (two-field signatures). They automatically compare the sealed signature against the current computed signature.
+
+==== Finding Stale Functions
+
+[source]
+----
+;; All stale functions in scope
+(proof/stale-functions)
+;; => #{myapp.core/changed-fn myapp.db/modified-fn}
+
+;; Detailed stale coverage info
+(proof/stale-coverage)
+;; => {myapp.core/changed-fn {:sealed-sig "abc123"
+;;                            :current-sig "def456"
+;;                            :tested-by #{myapp.core-test/my-test}}}
+----
+
+==== Re-sealing Workflow
+
+When functions become stale, use `reseal-advice` to get the new signatures:
+
+[source]
+----
+;; Get advice for stale functions
+(proof/reseal-advice)
+;; => {myapp.core/changed-fn {:new-signature "def456,abc789"
+;;                            :tested-by #{myapp.core-test/my-test}}}
+
+;; Human-readable advice
+(proof/print-reseal-advice)
+;; Stale functions needing re-seal:
+;; ================================
+;;   myapp.core/changed-fn
+;;     New signature: def456,abc789
+;;     Tested by: myapp.core-test/my-test
+;;     Update to: {:covers {`changed-fn "def456,abc789"}}
+----
+
+Then update your test's `:covers` declaration with the new signature. The signature format (single-field for leaves, two-field for non-leaves) is determined automatically.
+
+=== Enforcement with Double-Bang Mocking
+
+The `when-mocking!!` and `provided!!` macros (note double-bang) enforce transitive coverage for mocked functions:
+
+[source]
+----
+(proof/configure! {:scope-ns-prefixes #{"myapp"}
+                   :enforce? true})
+
+(specification "High-level test"
+  ;; This will throw if helper-fn lacks transitive coverage
+  (when-mocking!!
+    (helper-fn x) => :mocked
+
+    (assertions
+      (main-fn 1) => :expected)))
+----
+
+When enforcement is enabled and a mocked function (or its transitive dependencies) lacks coverage or has stale coverage, an exception is thrown with details about what's missing.
+
+NOTE: Single-bang versions (`when-mocking!` / `provided!`) do not enforce coverage.
+
+=== Baseline Export/Import
+
+For CI integration or comparing coverage over time:
+
+[source]
+----
+;; Export current signatures as a baseline
+(def baseline (proof/export-baseline))
+;; => {:generated-at #inst "..."
+;;     :scope-ns-prefixes #{"myapp"}
+;;     :signatures {myapp.core/fn1 "abc123" ...}}
+
+;; Save to file
+(spit ".fulcro-spec-baseline.edn" (pr-str baseline))
+
+;; Later, compare against baseline
+(def old-baseline (read-string (slurp ".fulcro-spec-baseline.edn")))
+(proof/compare-to-baseline old-baseline)
+;; => {:changed #{...}    - functions whose signatures differ
+;;     :added #{...}      - new functions not in baseline
+;;     :removed #{...}    - functions no longer in scope
+;;     :unchanged #{...}} - functions with matching signatures
+----
+
+=== Auto-Skip for Unchanged Tests
+
+When running full test suites, you can enable automatic skipping of tests whose covered functions
+have not changed since they were last sealed. This provides fast feedback when re-running tests
+after small changes.
+
+==== Java System Properties
+
+Two properties control auto-skip behavior (presence of property enables feature):
+
+[cols="1,2"]
+|===
+| Property | Description
+
+| `fulcro-spec.auto-skip`
+| When set, tests with matching signatures are skipped
+
+| `fulcro-spec.sigcache`
+| When set, signatures are cached for the JVM lifetime (for full suite runs)
+|===
+
+==== Usage Scenarios
+
+**Interactive development (default):**
+[source,bash]
+----
+# No properties set - all tests run, signatures computed fresh each time
+clojure -M:test
+----
+
+**Fast local iteration with auto-skip:**
+[source,bash]
+----
+# Skip unchanged tests, but still recompute signatures (catches edits)
+clojure -J-Dfulcro-spec.auto-skip -M:test
+----
+
+**Full suite run with maximum performance:**
+[source,bash]
+----
+# Skip unchanged AND cache signatures (fastest, but restart JVM after edits)
+clojure -J-Dfulcro-spec.auto-skip -J-Dfulcro-spec.sigcache -M:test
+----
+
+==== Configuration
+
+The coverage system requires configuration to know which namespace prefixes are in scope.
+Configuration is handled automatically via a `.fulcro-spec.edn` file in your project root:
+
+[source,clojure]
+----
+;; .fulcro-spec.edn
+{:scope-ns-prefixes #{"myapp" "myapp.lib"}}
+----
+
+The system automatically loads this file when coverage features are first used. If the file is missing, a warning is printed and coverage features are disabled:
+
+----
+WARNING: .fulcro-spec.edn not found. Coverage features disabled.
+         Create .fulcro-spec.edn with {:scope-ns-prefixes #{"your.ns.prefix"}}
+----
+
+**Configuration options:**
+
+[cols="1,2"]
+|===
+| Option | Description
+
+| `:scope-ns-prefixes`
+| Set of namespace prefix strings that define which namespaces are in scope for coverage analysis. E.g., `#{"myapp"}` includes `myapp.core`, `myapp.db`, etc.
+
+| `:enforce?`
+| When true, `when-mocking!!` and `provided!!` throw if mocked functions lack transitive coverage. Default: false.
+|===
+
+**Programmatic override:**
+
+You can also configure programmatically, which takes precedence over the file:
+
+[source,clojure]
+----
+(require '[fulcro-spec.proof :as proof])
+(proof/configure! {:scope-ns-prefixes #{"myapp"}
+                   :enforce? true})
+----
+
+Without configuration (no file and no `configure!` call), coverage features are disabled and tests run normally.
+
+==== How It Works
+
+When a test has `:covers` metadata with signatures:
+
+[source,clojure]
+----
+(specification {:covers {`process-order "a1b2c3,d4e5f6"}} "order processing" ...)
+----
+
+At runtime, if auto-skip is enabled:
+
+1. The current signature is computed for each covered function
+2. If ALL signatures match their sealed values, the test body is replaced with a simple `(is true)` assertion
+3. The test output shows: `"skipped. Unchanged since last run"`
+
+This means:
+
+- Tests with **no** `:covers` metadata always run
+- Tests with **stale** signatures always run
+- Only tests with **all matching** signatures are skipped
+
+==== Zero Overhead When Disabled
+
+The system is designed for zero overhead when disabled:
+
+- Property checks use `delay` - evaluated once, cached forever
+- `already-checked?` short-circuits immediately when auto-skip is false
+- No signature computation occurs unless auto-skip is enabled
+- No call graph analysis happens unless needed
+
+This ensures REPL interactions remain fast when the feature is not in use.
+
+=== Limitations
+
+- **Clojure only** - Call graph analysis uses guardrails which is not available in ClojureScript
+- **Requires guardrails** - Functions must be defined with `>defn` for call graph tracking
+- **Source must be available** - Signatures cannot be computed for compiled-only code or REPL definitions without files
+
 == REPL Usage (Clojure)
 
 The terminal reporter is quite easy and useful to use at the REPL for Clojure. Simply start a REPL, and define a keyboard shortcut to run something like this:

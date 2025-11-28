@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Use your clojure repl skill to run ANY clojure code or tests in this project.
+
 ## Overview
 
 Fulcro-spec is a Clojure/ClojureScript testing library that augments `clojure.test` with enhanced features including:
@@ -26,24 +28,8 @@ Fulcro-spec is a Clojure/ClojureScript testing library that augments `clojure.te
 
 ## Common Commands
 
-### Running Tests
+## Running Tests
 
-**Clojure tests (via Kaocha):**
-```bash
-clojure -A:clj-tests
-```
-
-**ClojureScript tests (full CI suite):**
-```bash
-make tests
-# Or manually:
-npm install
-npx shadow-cljs compile ci-tests
-npx karma start --single-run
-clojure -A:clj-tests
-```
-
-**REPL-based testing (recommended for development):**
 ```clojure
 (in-ns (.getName *ns*))
 (require 'fulcro-spec.reporters.repl)
@@ -51,16 +37,6 @@ clojure -A:clj-tests
 (fulcro-spec.reporters.repl/run-tests)
 ;; Run only tests with :focus metadata
 (fulcro-spec.reporters.repl/run-tests #(:focus (meta %)))
-```
-
-### Building
-
-The project uses Maven for releases (pom.xml) but deps.edn for development.
-
-**Install locally:**
-```bash
-clojure -Spom  # Update pom.xml from deps.edn if needed
-mvn install
 ```
 
 ## Architecture Notes
@@ -125,6 +101,88 @@ Checkers (`fulcro_spec/check.cljc`) are composable validation functions that ret
 ```
 
 Test runners can filter by metadata (e.g., Kaocha's `:skip-meta [:integration]`).
+
+### Coverage Analysis and Transitive Proof System
+
+The library includes a system for verifying transitive test coverage (CLJ only):
+
+**Key namespaces:**
+- `fulcro-spec.coverage` - Registry tracking which tests cover which functions
+- `fulcro-spec.signature` - Computes signatures for staleness detection
+- `fulcro-spec.proof` - High-level API for coverage verification
+
+**Coverage declaration:**
+Tests declare which functions they cover via metadata:
+```clojure
+;; With signature (enables staleness detection)
+(specification {:covers {`my-fn "abc123"}} "my-fn test" ...)
+
+;; Legacy format (no staleness detection)
+(specification {:covers [`my-fn]} "my-fn test" ...)
+```
+
+**Configuration via `.fulcro-spec.edn`:**
+Create a file in your project root:
+```clojure
+;; .fulcro-spec.edn
+{:scope-ns-prefixes #{"myapp"}}
+```
+
+This file is auto-loaded when coverage features are used. Alternatively, configure programmatically:
+```clojure
+(proof/configure! {:scope-ns-prefixes #{"myapp"}})
+```
+
+**Getting signatures:**
+```clojure
+(require '[fulcro-spec.signature :as sig])
+(require '[fulcro-spec.proof :as proof])
+
+;; With .fulcro-spec.edn configured, just pass the function symbol:
+(sig/signature 'myapp.core/my-function)
+(proof/signature 'myapp.core/my-function)
+;; => "a1b2c3" (leaf) or "a1b2c3,def456" (non-leaf)
+
+;; Or with explicit scope:
+(sig/signature 'myapp.core/my-function #{"myapp"})
+
+;; Get advice for resealing all covered functions
+(proof/reseal-advice)
+```
+
+**Signature format:**
+- `"xxxxxx"` - leaf functions (no in-scope callees)
+- `"xxxxxx,yyyyyy"` - non-leaf functions (6-char hash of function + 6-char hash of callees)
+
+**Verifying coverage:**
+```clojure
+(proof/fully-tested? 'myapp.orders/process-order)
+(proof/why-not-tested? 'myapp.orders/process-order)
+(proof/coverage-stats)
+```
+
+**Staleness detection:**
+- `sealed?` - Has a signature recorded
+- `fresh?` - Sealed AND signature matches current (works for both leaf and non-leaf)
+- `stale?` - Sealed but signature differs (works for both leaf and non-leaf)
+- `stale-functions` - All stale functions in scope
+- `reseal-advice` - Get new signatures for stale functions
+
+**Auto-skip tests (performance optimization):**
+When enabled, tests with matching signatures are automatically skipped:
+```bash
+# Full test suite with auto-skip + caching (fast)
+clj -J-Dfulcro-spec.auto-skip -J-Dfulcro-spec.sigcache -M:test
+```
+- `-Dfulcro-spec.auto-skip` - Enable skipping already-checked tests
+- `-Dfulcro-spec.sigcache` - Cache signatures for JVM lifetime (faster)
+
+When a test is skipped, it outputs: `"skipped. Unchanged since last run"`
+
+**Enforcement in mocking:**
+- `when-mocking!!` / `provided!!` (double-bang) enforce transitive coverage
+- Requires guardrails (`>defn`) for call graph analysis
+- CLJ only (call graph analysis not available in CLJS)
 
 ## Important Configuration Files
 

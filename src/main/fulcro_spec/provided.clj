@@ -3,6 +3,7 @@
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [fulcro-spec.impl.macros :as im]
+    [fulcro-spec.instrument]
     [fulcro-spec.spec :as ffs]
     [fulcro-spec.stub :as stub]))
 
@@ -64,7 +65,10 @@
         (concat syms
           (drop 1 varargs))))))
 
-(defn conformed-stub [env sym arglist result]
+;; Store the original spec-only conformed-stub for fallback
+(defn spec-only-conformed-stub
+  "Original spec-only stub validation (fallback when no guardrails schema)."
+  [env sym arglist result]
   (let [valid?   (if (im/cljs-env? env) `cljs.spec.alpha/valid? `clojure.spec.alpha/valid?)
         get-spec (if (im/cljs-env? env) `cljs.spec.alpha/get-spec `clojure.spec.alpha/get-spec)
         explain  (if (im/cljs-env? env) `cljs.spec.alpha/explain `clojure.spec.alpha/explain)]
@@ -79,6 +83,44 @@
              (when (and ret# (not (~valid? ret# result#)))
                (throw (ex-info (str "Mock of " ~(str sym) " returned a value that does not conform to spec: " (with-out-str (~explain ret# result#))) {:mock? true})))))
          result#))))
+
+(defn conformed-stub
+  "Creates a stub that validates args/return against guardrails specs.
+   Checks for Malli schema first (via :malli/schema metadata), then Clojure Spec fspec.
+   Falls back to original spec-only behavior if neither is found."
+  [env sym arglist result]
+  (let [cljs?    (im/cljs-env? env)
+        spec-get (if cljs? 'cljs.spec.alpha/get-spec 'clojure.spec.alpha/get-spec)]
+    (assert-no-duplicate-arglist-symbols! arglist)
+    `(let [stub# (fn [~@arglist] ~result)]
+       (cond
+         ;; Check for Malli schema first
+         (get (meta (var ~sym)) :malli/schema)
+         (let [schema# (get (meta (var ~sym)) :malli/schema)]
+           (fulcro-spec.instrument/malli-instrument stub# schema#
+             (fn [error-type# error-data#]
+               (when stub/*validation-problems*
+                 (swap! stub/*validation-problems* conj
+                   {:message    (str "Mock validation failed for " ~(str sym)
+                                  ": Malli schema violation")
+                    :error-type error-type#
+                    :details    (dissoc error-data# :schema :input :output :guard)})))))
+
+         ;; Check for Spec fspec
+         (~spec-get (var ~sym))
+         (fulcro-spec.instrument/spec-instrument stub# (var ~sym)
+           (fn [error-type# error-data#]
+             (when stub/*validation-problems*
+               (swap! stub/*validation-problems* conj
+                 {:message    (str "Mock validation failed for " ~(str sym)
+                                ": " (or (:original-error error-data#) (str error-type#)))
+                  :error-type error-type#
+                  :details    {:problems (:problems error-data#)
+                               :args     (:args error-data#)
+                               :value    (:value error-data#)}}))))
+
+         ;; No schema/spec - just return the plain stub
+         :else stub#))))
 
 (defn try-stub [env body]
   `(try ~body
@@ -176,3 +218,14 @@
                    (fn [s] `(im/end-reporting ~{:type :behavior :string s}))
                    (distinct (keep :behavior scripts)))
                result#)))))))
+
+(defn extract-mocked-symbols
+  "Extract the function symbols being mocked from mock triple forms.
+   Returns a vector of symbols (not necessarily qualified - they're as written in the mock)."
+  [forms]
+  (let [{:keys [mocks]} (ffs/conform! ::mocks forms)]
+    (->> mocks
+      (mapcat :triples)
+      (map (comp :mock-name :under-mock))
+      (distinct)
+      (vec))))

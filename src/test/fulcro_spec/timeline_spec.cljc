@@ -1,6 +1,7 @@
 (ns fulcro-spec.timeline-spec
   (:require
-    [clojure.test :refer [deftest is]]
+    #?(:clj  [clojure.test :refer [deftest is]]
+       :cljs [cljs.test :refer [deftest is]])
     [fulcro-spec.core :refer [async behavior provided tick with-timeline]]))
 
 

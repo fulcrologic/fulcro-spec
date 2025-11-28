@@ -3,12 +3,13 @@
  :deps    {colorize/colorize                   {:mvn/version "0.1.1" :exclusions [org.clojure/clojure]}
            io.aviso/pretty                     {:mvn/version "1.4.4"}
            com.lucasbradstreet/cljs-uuid-utils {:mvn/version "1.0.2"}
-           com.fulcrologic/guardrails          {:mvn/version "1.2.11"}
+           com.fulcrologic/guardrails          {:mvn/version "1.2.14"}
            metosin/malli                       {:mvn/version "0.19.2"}
            org.clojure/clojure                 {:mvn/version "1.12.3"}
            org.clojure/clojurescript           {:mvn/version "1.12.42"}}
 
  :aliases {:clj-tests  {:extra-paths ["src/test"]
+                        :jvm-opts    ["-Dguardrails.enabled"]
                         :main-opts   ["-m" "kaocha.runner"]}
 
            :test-nrepl {:extra-deps {nrepl/nrepl {:mvn/version "1.5.1"}}
