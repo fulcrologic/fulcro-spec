@@ -26,7 +26,7 @@ jobs:
       - checkout
       - restore_cache:
           key: clj-{{ checksum "deps.edn" }}
-      - run: clojure -M:test:clj-tests -J-Ddev
+      - run: clojure -J-Ddev -M:test:clj-tests 
       - save_cache:
           paths:
             - ~/.m2
