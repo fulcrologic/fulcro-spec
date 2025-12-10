@@ -1,1 +1,2 @@
-{:mode :pro}
+{:mode   :all
+ :throw? true}

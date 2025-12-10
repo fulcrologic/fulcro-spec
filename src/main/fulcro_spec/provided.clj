@@ -3,9 +3,83 @@
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [fulcro-spec.impl.macros :as im]
-    [fulcro-spec.instrument]
+    [fulcro-spec.instrument :as instrument]
     [fulcro-spec.spec :as ffs]
     [fulcro-spec.stub :as stub]))
+
+(defn format-mock-error
+  "Formats a clear error message for mock validation failures.
+
+   Arguments:
+   - sym: The symbol of the mocked function
+   - error-type: The type of error (e.g., ::instrument/invalid-spec-input)
+   - error-data: The error details map from the instrument layer
+
+   Returns a human-readable error message describing what went wrong."
+  [sym error-type error-data]
+  (let [{:keys [args value spec problems original-error input output]} error-data]
+    (case error-type
+      ;; Spec-based errors
+      ::instrument/invalid-spec-input
+      (let [explain-str (when problems
+                          (with-out-str
+                            (clojure.spec.alpha/explain-out problems)))]
+        (str "The mock for `" sym "` was called with arguments that don't match the expected spec.\n"
+          "Arguments received: " (pr-str args) "\n"
+          (when explain-str
+            (str "Spec failure:\n" explain-str))))
+
+      ::instrument/invalid-spec-output
+      (let [explain-str (when problems
+                          (with-out-str
+                            (clojure.spec.alpha/explain-out problems)))]
+        (str "The mock for `" sym "` returned a value that doesn't match the expected spec.\n"
+          "Return value: " (pr-str value) "\n"
+          (when explain-str
+            (str "Spec failure:\n" explain-str))))
+
+      ::instrument/invalid-spec-fn
+      (str "The mock for `" sym "` failed the :fn spec check.\n"
+        "Arguments: " (pr-str args) "\n"
+        "Return value: " (pr-str value))
+
+      ::instrument/spec-resolution-error
+      (str "The mock for `" sym "` could not be validated because the schema/spec failed to resolve.\n"
+        (when original-error
+          (str "Error: " original-error "\n"))
+        "This typically means a referenced schema or spec doesn't exist or wasn't loaded.")
+
+      ;; Malli-based errors
+      ::instrument/invalid-input
+      (str "The mock for `" sym "` was called with arguments that don't match the Malli schema.\n"
+        "Arguments received: " (pr-str args) "\n"
+        "Expected input schema: " (pr-str input))
+
+      ::instrument/invalid-output
+      (str "The mock for `" sym "` returned a value that doesn't match the Malli schema.\n"
+        "Return value: " (pr-str value) "\n"
+        "Expected output schema: " (pr-str output))
+
+      ::instrument/invalid-arity
+      (let [{:keys [arity arities]} error-data]
+        (str "The mock for `" sym "` was called with wrong arity.\n"
+          "Called with " arity " argument(s)\n"
+          "Expected arities: " (pr-str arities)))
+
+      ::instrument/invalid-guard
+      (str "The mock for `" sym "` failed the guard condition.\n"
+        "Arguments: " (pr-str args) "\n"
+        "Return value: " (pr-str value))
+
+      ::instrument/malli-error
+      (str "The mock for `" sym "` validation encountered a Malli internal error.\n"
+        (when original-error
+          (str "Error: " original-error "\n"))
+        "This may indicate the schema is malformed or references an unregistered type.")
+
+      ;; Default fallback
+      (str "Mock validation failed for `" sym "`: " error-type
+        (when original-error (str "\nError: " original-error))))))
 
 (defn parse-arrow-count
   "parses how many times the mock/stub should be called with.
@@ -90,9 +164,17 @@
    Falls back to original spec-only behavior if neither is found."
   [env sym arglist result]
   (let [cljs?    (im/cljs-env? env)
-        spec-get (if cljs? 'cljs.spec.alpha/get-spec 'clojure.spec.alpha/get-spec)]
+        spec-get (if cljs? 'cljs.spec.alpha/get-spec 'clojure.spec.alpha/get-spec)
+        ;; In CLJ, use detailed format-mock-error; in CLJS, use simple inline message
+        format-error (if cljs?
+                       `(fn [sym# error-type# error-data#]
+                          (str "Mock validation failed for `" sym# "`: " error-type#
+                            (when-let [e# (:original-error error-data#)]
+                              (str "\nError: " e#))))
+                       `fulcro-spec.provided/format-mock-error)]
     (assert-no-duplicate-arglist-symbols! arglist)
-    `(let [stub# (fn [~@arglist] ~result)]
+    `(let [stub# (fn [~@arglist] ~result)
+           format-error# ~format-error]
        (cond
          ;; Check for Malli schema first
          (get (meta (var ~sym)) :malli/schema)
@@ -101,10 +183,9 @@
              (fn [error-type# error-data#]
                (when stub/*validation-problems*
                  (swap! stub/*validation-problems* conj
-                   {:message    (str "Mock validation failed for " ~(str sym)
-                                  ": Malli schema violation")
+                   {:message    (format-error# '~sym error-type# error-data#)
                     :error-type error-type#
-                    :details    (dissoc error-data# :schema :input :output :guard)})))))
+                    :details    error-data#})))))
 
          ;; Check for Spec fspec
          (~spec-get (var ~sym))
@@ -112,12 +193,9 @@
            (fn [error-type# error-data#]
              (when stub/*validation-problems*
                (swap! stub/*validation-problems* conj
-                 {:message    (str "Mock validation failed for " ~(str sym)
-                                ": " (or (:original-error error-data#) (str error-type#)))
+                 {:message    (format-error# '~sym error-type# error-data#)
                   :error-type error-type#
-                  :details    {:problems (:problems error-data#)
-                               :args     (:args error-data#)
-                               :value    (:value error-data#)}}))))
+                  :details    error-data#}))))
 
          ;; No schema/spec - just return the plain stub
          :else stub#))))
