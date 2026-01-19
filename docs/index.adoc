@@ -649,6 +649,32 @@ When functions become stale, use `reseal-advice` to get the new signatures:
 
 Then update your test's `:covers` declaration with the new signature. The signature format (single-field for leaves, two-field for non-leaves) is determined automatically.
 
+==== Automatic Re-sealing with `reseal!`
+
+For a more streamlined workflow, use the `reseal!` function to automatically update signatures in your source files. This function reads the test file, finds the `specification` at the given line, and updates the `:covers` signature in place.
+
+[source]
+----
+(require '[fulcro-spec.signature :as sig])
+
+;; Update the specification at line 42 in the file
+(sig/reseal! "/path/to/my_test.clj" 42)
+
+;; With explicit scope (otherwise reads from .fulcro-spec.edn)
+(sig/reseal! "/path/to/my_test.clj" 42 {:scope-ns-prefixes #{"myapp"}})
+----
+
+The function:
+
+1. Reads the source file
+2. Locates the `specification` form containing the given line
+3. Extracts the function symbol(s) from the `:covers` metadata
+4. Computes the current signature(s) for those functions
+5. Updates the `:covers` map with the new signature(s)
+6. Writes the modified file back to disk
+
+This is particularly useful when integrated with your IDE, allowing you to re-seal a test with a single keystroke. See <<IDE Integration for reseal>> for setup instructions.
+
 === Enforcement with Double-Bang Mocking
 
 The `when-mocking!!` and `provided!!` macros (note double-bang) enforce transitive coverage for mocked functions:
@@ -843,4 +869,119 @@ There are two dynamic vars that can be used to filter/limit stack traces in the 
 `fulcro-spec.reporters.terminal/*stack-frames*`:: How many non-filtered frames to print (default 10)
 
 Use `alter-var-root` to reset the value of these globally.
+
+[appendix]
+== IDE Integration for reseal
+
+The `reseal!` function is most useful when bound to a keyboard shortcut in your IDE. This allows you to update a stale test signature with a single keystroke while your cursor is on the test.
+
+=== Cursive (IntelliJ)
+
+Create a REPL Command to run `reseal!` on the current file and line:
+
+1. Open **Settings** (or **Preferences** on macOS)
+2. Navigate to **Languages & Frameworks > Clojure > REPL Commands**
+3. Click **+** to add a new command
+4. Configure:
+   - **Name:** `Reseal Specification`
+   - **Save all files**
+   - **Execute Command:** (see below)
+   - **Print result to REPL output**
+   - **File Sync**: Reload file from disk
+5. Click **OK** to save
+
+The command should be:
+
+```clojure
+(do
+  (require 'fulcro-spec.signature)
+  (fulcro-spec.signature/reseal! "~file-path" (inc ~line-number)))
+```
+
+Then assign a keyboard shortcut:
+
+1. Navigate to **Keymap** in Settings
+2. Search for your new "Reseal Specification" command
+3. Right-click and choose **Add Keyboard Shortcut**
+4. Assign your preferred key combination
+
+=== CIDER (Emacs)
+
+Untested.
+
+Add this function to your Emacs configuration (e.g., `~/.emacs.d/init.el` or your Clojure-specific config):
+
+[source,elisp]
+----
+(defun cider-reseal-spec ()
+  "Reseal the fulcro-spec specification at the current line."
+  (interactive)
+  (cider-interactive-eval
+   (format "(fulcro-spec.signature/reseal! \"%s\" %d)"
+           (buffer-file-name) (line-number-at-pos))))
+----
+
+Then bind it to a key:
+
+[source,elisp]
+----
+;; Example: bind to C-c C-r in clojure-mode
+(with-eval-after-load 'clojure-mode
+  (define-key clojure-mode-map (kbd "C-c C-r") #'cider-reseal-spec))
+----
+
+Or with `use-package`:
+
+[source,elisp]
+----
+(use-package clojure-mode
+  :bind (:map clojure-mode-map
+         ("C-c C-r" . cider-reseal-spec)))
+----
+
+=== Calva (VS Code)
+
+Untested.
+
+Add a custom REPL command snippet to your VS Code settings:
+
+1. Open **Settings** (`Cmd+,` on macOS, `Ctrl+,` on Windows/Linux)
+2. Search for `calva.customREPLCommandSnippets`
+3. Click **Edit in settings.json**
+4. Add the following to the array:
+
+[source,json]
+----
+{
+  "name": "Reseal Specification",
+  "snippet": "(fulcro-spec.signature/reseal! \"$current-file-path\" $current-line)",
+  "key": "ctrl+shift+r"
+}
+----
+
+The full configuration might look like:
+
+[source,json]
+----
+"calva.customREPLCommandSnippets": [
+  {
+    "name": "Reseal Specification",
+    "snippet": "(fulcro-spec.signature/reseal! \"$current-file-path\" $current-line)",
+    "key": "ctrl+shift+r"
+  }
+]
+----
+
+Alternatively, you can run the command from the Command Palette:
+
+1. Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Windows/Linux)
+2. Type "Calva: Run Custom REPL Command"
+3. Select "Reseal Specification"
+
+=== Usage Tips
+
+- **Position your cursor:** Place your cursor anywhere within the `specification` form before invoking the command
+- **Save first:** Ensure your file is saved before re-sealing, as `reseal!` reads from disk
+- **Check the REPL output:** The function returns the new signature, which can help verify the update
+- **Reload after edit:** After `reseal!` modifies the file, reload it in your editor if it doesn't auto-refresh
 

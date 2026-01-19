@@ -1,5 +1,5 @@
 (ns fulcro-spec.signature
-  "On-demand signature computation for staleness detection.
+  "On-demand signature computation and resealing for staleness detection.
 
    Signatures are short hashes of normalized function source code.
    When a function's implementation changes, its signature changes,
@@ -20,6 +20,15 @@
    The `signature` function automatically detects leaf vs non-leaf and
    returns the appropriate format. Use it for all signature needs.
 
+   Resealing (updating :covers signatures in source files):
+   - `reseal!` updates signatures at a given file/line for IDE integration
+
+   IDE keybinding examples:
+     Cursive: (fulcro-spec.signature/reseal! \"$FilePath$\" $LineNumber$)
+     CIDER:   (cider-interactive-eval
+               (format \"(fulcro-spec.signature/reseal! \\\"%s\\\" %d)\"
+                       (buffer-file-name) (line-number-at-pos)))
+
    Performance options (Java system properties):
    - fulcro-spec.auto-skip: Enable auto-skipping of already-checked tests
    - fulcro-spec.sigcache: Cache signatures for duration of JVM"
@@ -28,7 +37,9 @@
     [clojure.java.io :as io]
     [clojure.repl]
     [clojure.string :as str]
-    [com.fulcrologic.guardrails.impl.externs :as gr.externs])
+    [com.fulcrologic.guardrails.impl.externs :as gr.externs]
+    [rewrite-clj.node :as n]
+    [rewrite-clj.zip :as z])
   (:import
     (java.nio.charset StandardCharsets)
     (java.security MessageDigest)))
@@ -248,11 +259,11 @@
   (try
     (with-open [rdr (java.io.LineNumberReader. (java.io.FileReader. filepath))]
       (dotimes [_ (dec line)] (.readLine rdr))
-      (let [text (StringBuilder.)
-            pbr  (proxy [java.io.PushbackReader] [rdr]
-                   (read [] (let [i (proxy-super read)]
-                              (.append text (char i))
-                              i)))
+      (let [text      (StringBuilder.)
+            pbr       (proxy [java.io.PushbackReader] [rdr]
+                        (read [] (let [i (proxy-super read)]
+                                   (.append text (char i))
+                                   i)))
             read-opts (if (.endsWith filepath "cljc") {:read-cond :allow} {})]
         (read read-opts (java.io.PushbackReader. pbr))
         (str text)))
@@ -467,3 +478,258 @@
     (every? (fn [[fn-sym sealed-sig]]
               (sigs-match? sealed-sig (signature fn-sym scope-ns-prefixes)))
       covers-map)))
+
+;; =============================================================================
+;; Reseal: Automatic Signature Updates in Source Files
+;; =============================================================================
+
+(defn- specification-form?
+  "Returns true if the zipper location is a specification form."
+  [zloc]
+  (when (z/list? zloc)
+    (let [first-child (z/down zloc)]
+      (when first-child
+        (let [sym (z/sexpr first-child)]
+          (and (symbol? sym)
+            (= "specification" (name sym))))))))
+
+(defn- form-contains-line?
+  "Returns true if the form at zloc spans the given line number."
+  [zloc line]
+  (let [pos (meta (z/node zloc))]
+    (when pos
+      (let [start-line (:row pos)
+            end-line   (:end-row pos)]
+        (and start-line end-line
+          (<= start-line line end-line))))))
+
+(defn- find-specification-at-line
+  "Finds the specification form containing the given line.
+   Returns the zipper location or nil if not found."
+  [zloc line]
+  (loop [loc zloc]
+    (when loc
+      (if (and (specification-form? loc)
+            (form-contains-line? loc line))
+        loc
+        (recur (z/next loc))))))
+
+(defn- find-covers-map
+  "Finds the :covers map within a specification form.
+   Returns zloc of the covers map value, or nil if not found.
+
+   Handles: (specification {:covers {...}} \"name\" ...)"
+  [spec-zloc]
+  (let [first-arg (-> spec-zloc z/down z/right)]
+    (when (and first-arg (z/map? first-arg))
+      ;; First arg is a map, look for :covers key
+      (loop [loc (z/down first-arg)]
+        (when loc
+          (if (and (z/sexpr loc) (= :covers (z/sexpr loc)))
+            (z/right loc)                                   ; Return the value (the covers map)
+            (recur (z/right loc))))))))
+
+(defn- unquote-sym
+  "Extracts the symbol from a (quote sym) form or returns the symbol as-is."
+  [x]
+  (cond
+    (symbol? x) x
+    (and (seq? x) (= 'quote (first x))) (second x)
+    :else x))
+
+(defn- extract-sym-from-node
+  "Extracts the qualified symbol from a zipper node.
+   Handles syntax-quote nodes specially by qualifying with the given namespace."
+  [zloc file-ns]
+  (let [node (z/node zloc)
+        tag  (n/tag node)]
+    (if (= :syntax-quote tag)
+      ;; Syntax-quote: extract inner symbol and qualify with namespace
+      (let [inner (z/down zloc)
+            sym   (when inner (z/sexpr inner))]
+        (if (and sym (symbol? sym) (not (namespace sym)))
+          (symbol (str file-ns) (name sym))
+          sym))
+      ;; Regular form - use sexpr and unquote
+      (unquote-sym (z/sexpr zloc)))))
+
+(defn- extract-file-ns
+  "Extracts the namespace name from the file's ns form."
+  [root-zloc]
+  (loop [loc root-zloc]
+    (when loc
+      (if (and (z/list? loc)
+            (let [first-child (z/down loc)]
+              (when first-child
+                (= 'ns (z/sexpr first-child)))))
+        ;; Found ns form - get the namespace name
+        (let [ns-sym (-> loc z/down z/right z/sexpr)]
+          (when (symbol? ns-sym)
+            (str ns-sym)))
+        (recur (z/next loc))))))
+
+(defn- extract-fn-syms-from-covers
+  "Extracts the function symbols from a covers map zipper location.
+   Handles both plain symbols and syntax-quoted symbols like `my-fn.
+   Returns a vector of resolved symbols."
+  [covers-zloc file-ns]
+  (when covers-zloc
+    (let [key-locs (loop [loc  (z/down covers-zloc)
+                          keys []]
+                     (if (nil? loc)
+                       keys
+                       ;; Alternate: key, value, key, value...
+                       (recur (-> loc z/right z/right)
+                         (conj keys loc))))]
+      (mapv #(extract-sym-from-node % file-ns) key-locs))))
+
+(defn- compute-new-signatures
+  "Computes new signatures for the given function symbols.
+   Returns a map of {fn-sym new-signature}."
+  [fn-syms scope-ns-prefixes]
+  (into {}
+    (for [fn-sym fn-syms
+          :let [new-sig (signature fn-sym scope-ns-prefixes)]
+          :when new-sig]
+      [fn-sym new-sig])))
+
+(defn- update-covers-map
+  "Updates the covers map with new signatures IN PLACE.
+   Walks through the map entries and replaces signature values.
+   Preserves all formatting and syntax-quote nodes.
+   Returns the updated zipper location pointing to the covers map."
+  [covers-zloc new-sigs file-ns]
+  (loop [loc (z/down covers-zloc)]
+    (if (nil? loc)
+      ;; Done - navigate back up to the covers map
+      (z/up loc)
+      ;; loc is at a key, next sibling is the value
+      (let [key-sym   (extract-sym-from-node loc file-ns)
+            value-loc (z/right loc)
+            new-sig   (get new-sigs key-sym)]
+        (if (and new-sig value-loc)
+          ;; Update this value and continue
+          (let [updated-value-loc (z/replace value-loc (n/coerce new-sig))
+                ;; Move to next key (skip the updated value)
+                next-key-loc      (z/right updated-value-loc)]
+            (if next-key-loc
+              (recur next-key-loc)
+              ;; No more keys - go back up to the map
+              (z/up updated-value-loc)))
+          ;; No update needed, skip key and value
+          (let [next-loc (-> loc z/right z/right)]
+            (if next-loc
+              (recur next-loc)
+              ;; No more entries - go back up
+              (z/up (z/right loc)))))))))
+
+(defn reseal!
+  "Updates the :covers signatures in the specification at the given file and line.
+
+   Arguments:
+     file-path - Absolute path to the source file
+     line      - Line number within the specification
+
+   Options (optional third argument map):
+     :scope-ns-prefixes - Set of namespace prefixes for transitive analysis
+                          Defaults to value from .fulcro-spec.edn
+
+   Returns a map with:
+     :file      - The file path
+     :spec-name - Name of the specification (if found)
+     :updated   - Map of {fn-sym {:old old-sig :new new-sig}}
+     :unchanged - Set of fn-syms with unchanged signatures
+     :errors    - Any errors encountered
+
+   Example:
+     (reseal! \"/path/to/my_test.clj\" 42)
+     ;; => {:file \"...\", :spec-name \"my test\", :updated {...}, ...}"
+  ([file-path line]
+   (reseal! file-path line {}))
+  ([file-path line {:keys [scope-ns-prefixes]}]
+   (let [scope (or scope-ns-prefixes (load-scope-from-config) #{})]
+     (try
+       (let [root-zloc   (z/of-file file-path {:track-position? true})
+             file-ns     (extract-file-ns root-zloc)
+             spec-zloc   (find-specification-at-line root-zloc line)
+             _           (when-not spec-zloc
+                           (throw (ex-info "No specification found at line"
+                                    {:file file-path :line line})))
+             ;; Extract spec name for reporting
+             spec-name   (let [down (z/down spec-zloc)
+                               arg1 (z/right down)
+                               arg2 (when arg1 (z/right arg1))]
+                           (cond
+                             (and arg1 (string? (z/sexpr arg1))) (z/sexpr arg1)
+                             (and arg2 (string? (z/sexpr arg2))) (z/sexpr arg2)
+                             :else "<unnamed>"))
+             covers-zloc (find-covers-map spec-zloc)
+             _           (when-not covers-zloc
+                           (throw (ex-info "Specification has no :covers map"
+                                    {:file file-path :line line :spec-name spec-name})))
+             fn-syms     (extract-fn-syms-from-covers covers-zloc file-ns)
+             ;; Build old-sigs map with qualified symbols as keys
+             old-sigs    (zipmap fn-syms
+                           (loop [loc  (z/down covers-zloc)
+                                  vals []]
+                             (if (nil? loc)
+                               vals
+                               ;; key is at loc, value is at (z/right loc)
+                               (let [val-loc (z/right loc)
+                                     val     (when val-loc (z/sexpr val-loc))]
+                                 (recur (-> val-loc z/right)
+                                   (conj vals val))))))
+             new-sigs    (compute-new-signatures fn-syms scope)
+             ;; Compute what changed
+             updated     (into {}
+                           (for [[fn-sym new-sig] new-sigs
+                                 :let [old-sig (get old-sigs fn-sym)]
+                                 :when (not= old-sig new-sig)]
+                             [fn-sym {:old old-sig :new new-sig}]))
+             unchanged   (set (for [[fn-sym new-sig] new-sigs
+                                    :when (= (get old-sigs fn-sym) new-sig)]
+                                fn-sym))]
+         (if (seq updated)
+           ;; Write updated file
+           (let [updated-covers (update-covers-map covers-zloc new-sigs file-ns)
+                 updated-root   (z/root updated-covers)
+                 new-content    (z/root-string updated-covers)]
+             (spit file-path new-content)
+             {:file      file-path
+              :spec-name spec-name
+              :updated   updated
+              :unchanged unchanged
+              :errors    nil})
+           ;; Nothing to update
+           {:file      file-path
+            :spec-name spec-name
+            :updated   {}
+            :unchanged unchanged
+            :errors    nil}))
+       (catch Exception e
+         {:file   file-path
+          :errors {:message (ex-message e)
+                   :data    (ex-data e)}})))))
+
+(defn print-reseal-result
+  "Pretty-prints the result of a reseal! call."
+  [{:keys [file spec-name updated unchanged errors]}]
+  (println)
+  (if errors
+    (do
+      (println "ERROR:" (:message errors))
+      (when-let [data (:data errors)]
+        (println "  " (pr-str data))))
+    (do
+      (println "Resealed:" spec-name)
+      (println "File:" file)
+      (if (seq updated)
+        (do
+          (println "\nUpdated signatures:")
+          (doseq [[fn-sym {:keys [old new]}] (sort-by str updated)]
+            (println "  " fn-sym)
+            (println "    old:" old)
+            (println "    new:" new)))
+        (println "\nNo signatures changed."))
+      (when (seq unchanged)
+        (println "\nUnchanged:" (count unchanged) "function(s)")))))

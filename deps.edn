@@ -3,8 +3,9 @@
  :deps    {colorize/colorize                   {:mvn/version "0.1.1" :exclusions [org.clojure/clojure]}
            io.aviso/pretty                     {:mvn/version "1.4.4"}
            com.lucasbradstreet/cljs-uuid-utils {:mvn/version "1.0.2"}
-           com.fulcrologic/guardrails          {:mvn/version "1.2.15"}
+           com.fulcrologic/guardrails          {:mvn/version "1.2.16"}
            metosin/malli                       {:mvn/version "0.19.2"}
+           rewrite-clj/rewrite-clj             {:mvn/version "1.2.51"}
            org.clojure/clojure                 {:mvn/version "1.12.3"}
            org.clojure/clojurescript           {:mvn/version "1.12.42"}}
 
