@@ -1,7 +1,7 @@
 (ns fulcro-spec.provided-spec
   (:require
     [clojure.spec.alpha :as s]
-    [fulcro-spec.core :refer [behavior provided assertions when-mocking provided! when-mocking!]]
+    [fulcro-spec.core :refer [behavior provided assertions when-mocking provided! =>]]
     #?(:clj [fulcro-spec.impl.macros :as im])
     #?(:clj [fulcro-spec.provided :as p])
     [fulcro-spec.stub :as stub]
@@ -300,3 +300,18 @@
     (th/private-fn x) => (inc x)
     (assertions
       (th/public-fn 1) => 2)))
+
+(defn zcpred [x] false)
+(defn zc [x] (when (zcpred x) (f x)))
+
+(deftest can-check-for-uncalled-functions
+  (when-mocking
+    (zcpred v) => false
+
+    (zc 42)
+
+    (assertions
+      "Asking for the return of a function that wasn't called gives :fulcro-spec/not-mocked"
+      (mocking/returns-of `f) => :fulcro-spec/not-mocked
+      "Asking for the calls-of a function that wasn't mocked gives :fulcro-spec/not-mocked"
+      (mocking/calls-of `f) => :fulcro-spec/not-mocked)))

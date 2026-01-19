@@ -130,8 +130,9 @@
 (def ^:dynamic *script-by-fn* {})
 
 (defn returns-of [f]
-  (-> @(get *script-by-fn* f)
-    :returned))
+  (or
+    (some-> *script-by-fn* (get f) (deref) :returned)
+    :fulcro-spec/not-mocked))
 
 (defn return-of [f index]
   (-> (returns-of f)
@@ -158,12 +159,14 @@
             (rest args)))))))
 
 (defn calls-of [f]
-  (let [steps (:steps @(get *script-by-fn* f))]
-    (mapcat
-      (fn [{:keys [history mock-arglist]}]
-        (map #(zip-arglist mock-arglist %)
-          history))
-      steps)))
+  (let [steps (:steps (some-> *script-by-fn* (get f) deref))]
+    (if (nil? steps)
+      :fulcro-spec/not-mocked
+      (mapcat
+       (fn [{:keys [history mock-arglist]}]
+         (map #(zip-arglist mock-arglist %)
+           history))
+       steps))))
 
 (defn call-of [f index]
   (nth (calls-of f) index nil))
