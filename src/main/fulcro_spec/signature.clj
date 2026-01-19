@@ -229,6 +229,48 @@
 ;; Self-Signature (internal helper)
 ;; =============================================================================
 
+(defn- absolute-path?
+  "Returns true if the path string appears to be an absolute filesystem path."
+  [^String path]
+  (and path
+    (or (.startsWith path "/")
+      (and (> (count path) 2)
+        (= \: (get path 1))))))                             ;; Windows: C:\...
+
+(defn- source-from-absolute-path
+  "Reads source from an absolute file path starting at the given line.
+   Returns the source text of the first readable form, or nil on failure.
+
+   This handles the case where files were loaded via `load-file` (common in IDE
+   workflows) which sets :file metadata to an absolute path that
+   clojure.repl/source-fn can't resolve via the classpath."
+  [^String filepath line]
+  (try
+    (with-open [rdr (java.io.LineNumberReader. (java.io.FileReader. filepath))]
+      (dotimes [_ (dec line)] (.readLine rdr))
+      (let [text (StringBuilder.)
+            pbr  (proxy [java.io.PushbackReader] [rdr]
+                   (read [] (let [i (proxy-super read)]
+                              (.append text (char i))
+                              i)))
+            read-opts (if (.endsWith filepath "cljc") {:read-cond :allow} {})]
+        (read read-opts (java.io.PushbackReader. pbr))
+        (str text)))
+    (catch Exception _e
+      nil)))
+
+(defn- get-source
+  "Gets source code for a var, handling both classpath-relative and absolute paths.
+
+   First tries clojure.repl/source-fn (works for classpath-loaded files).
+   Falls back to direct filesystem read for absolute paths (load-file scenario)."
+  [fn-sym]
+  (or (clojure.repl/source-fn fn-sym)
+    (when-let [v (resolve fn-sym)]
+      (let [{:keys [file line]} (meta v)]
+        (when (and (absolute-path? file) line)
+          (source-from-absolute-path file line))))))
+
 (defn self-signature
   "Computes a short signature (first 6 chars of SHA256) for a function's own source.
 
@@ -241,7 +283,7 @@
    Returns:
      6-character signature string, or nil if source not available."
   [fn-sym]
-  (when-let [source (clojure.repl/source-fn fn-sym)]
+  (when-let [source (get-source fn-sym)]
     (when-let [hash (hash-content source)]
       (subs hash 0 (min 6 (count hash))))))
 
