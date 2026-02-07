@@ -5,6 +5,7 @@
     [cljs.test :include-macros true]
     [fulcro-spec.assertions]
     [fulcro-spec.async]
+    [fulcro-spec.coverage]
     [fulcro-spec.hooks :refer [hooks]]
     [fulcro-spec.instrument]
     [fulcro-spec.stub]))
