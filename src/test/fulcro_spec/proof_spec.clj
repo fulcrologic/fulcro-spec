@@ -727,3 +727,140 @@
 ;; of the unified fresh? and stale? functions that work with both leaf and non-leaf
 ;; functions automatically. The tests above for proof/fresh? and proof/stale? cover
 ;; both single-field (leaf) and two-field (non-leaf) signature scenarios.
+
+;; =============================================================================
+;; PART 11: Baseline Export/Import Tests
+;; =============================================================================
+
+(specification "proof/export-baseline"
+  (behavior "returns baseline map with correct structure"
+    (let [baseline (proof/export-baseline test-scope)]
+      (assertions
+        "has :generated-at timestamp"
+        (instance? java.util.Date (:generated-at baseline)) => true
+
+        "has :scope-ns-prefixes"
+        (:scope-ns-prefixes baseline) => test-scope
+
+        "has :signatures map"
+        (map? (:signatures baseline)) => true
+
+        "signatures map contains guardrailed functions from our scope"
+        (contains? (:signatures baseline) `leaf-a) => true
+        (contains? (:signatures baseline) `standalone) => true)))
+
+  (behavior "returns error when scope is empty"
+    (let [baseline (proof/export-baseline #{})]
+      (assertions
+        "has :error key"
+        (:error baseline) => :no-scope-configured
+
+        "has explanatory :note"
+        (string? (:note baseline)) => true
+
+        "does not have :signatures"
+        (contains? baseline :signatures) => false))))
+
+(specification "proof/compare-to-baseline"
+  (behavior "detects unchanged functions on immediate round-trip"
+    (let [baseline   (proof/export-baseline test-scope)
+          comparison (proof/compare-to-baseline baseline)]
+      (assertions
+        "all functions are unchanged"
+        (empty? (:changed comparison)) => true
+
+        "no added functions"
+        (empty? (:added comparison)) => true
+
+        "no removed functions"
+        (empty? (:removed comparison)) => true
+
+        "unchanged set contains our functions"
+        (contains? (:unchanged comparison) `leaf-a) => true
+        (contains? (:unchanged comparison) `standalone) => true)))
+
+  (behavior "detects changed signatures when baseline has wrong signatures"
+    (let [baseline   {:scope-ns-prefixes test-scope
+                      :signatures        {`leaf-a "wrong1" `leaf-b "wrong2"}}
+          comparison (proof/compare-to-baseline baseline)]
+      (assertions
+        "both functions appear as changed"
+        (contains? (:changed comparison) `leaf-a) => true
+        (contains? (:changed comparison) `leaf-b) => true)))
+
+  (behavior "detects removed functions not in current scope"
+    (let [baseline   {:scope-ns-prefixes test-scope
+                      :signatures        {`leaf-a (sig/signature `leaf-a test-scope)
+                                          'fake.ns/gone "abc123"}}
+          comparison (proof/compare-to-baseline baseline)]
+      (assertions
+        "removed set contains the fake function"
+        (contains? (:removed comparison) 'fake.ns/gone) => true)))
+
+  (behavior "detects added functions not in baseline"
+    (let [;; Create baseline with only leaf-a
+          baseline   {:scope-ns-prefixes test-scope
+                      :signatures        {`leaf-a (sig/signature `leaf-a test-scope)}}
+          comparison (proof/compare-to-baseline baseline)]
+      (assertions
+        "added set contains functions not in baseline"
+        ;; leaf-b and others should appear as added since they're in scope but not in baseline
+        (contains? (:added comparison) `leaf-b) => true)))
+
+  (behavior "returns error when no scope configured"
+    (let [baseline   {:signatures {}}
+          comparison (proof/compare-to-baseline baseline)]
+      (assertions
+        "has :error key"
+        (:error comparison) => :no-scope-configured))))
+
+;; =============================================================================
+;; PART 12: Coverage Registry Inverse Query Tests
+;; =============================================================================
+
+(specification "coverage/functions-covered-by"
+  (behavior "returns functions that a specific test covers"
+    (let [test-sym 'fulcro-spec.proof-spec/__leaf-a-coverage__
+          covered  (set (coverage/functions-covered-by test-sym))]
+      (assertions
+        "includes leaf-a (which is covered by that test)"
+        (contains? covered `leaf-a) => true
+
+        "does not include leaf-b (covered by a different test)"
+        (contains? covered `leaf-b) => false)))
+
+  (behavior "returns empty vector for unknown test"
+    (assertions
+      (coverage/functions-covered-by 'nonexistent/test) => [])))
+
+(specification "coverage/all-sealed-functions"
+  (behavior "returns only functions with sealed signatures (not legacy format)"
+    (let [sealed (set (coverage/all-sealed-functions))]
+      (assertions
+        "includes standalone (which has a signature in :covers)"
+        (contains? sealed `standalone) => true
+
+        "includes stale-test-fn (which has a signature in :covers)"
+        (contains? sealed `stale-test-fn) => true
+
+        "excludes leaf-a (legacy :covers format without signature)"
+        (contains? sealed `leaf-a) => false))))
+
+(specification "coverage/coverage-summary"
+  (behavior "returns correct summary structure"
+    (let [summary (coverage/coverage-summary)]
+      (assertions
+        "has :total-functions count"
+        (pos? (:total-functions summary)) => true
+
+        "has :sealed-functions count"
+        (number? (:sealed-functions summary)) => true
+
+        "sealed <= total"
+        (<= (:sealed-functions summary) (:total-functions summary)) => true
+
+        "has :coverage-map (the full registry)"
+        (map? (:coverage-map summary)) => true
+
+        "coverage-map contains known functions"
+        (contains? (:coverage-map summary) `leaf-a) => true))))

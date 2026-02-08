@@ -273,14 +273,19 @@
 (defn- get-source
   "Gets source code for a var, handling both classpath-relative and absolute paths.
 
+   Binds *ns* to the function's defining namespace so that namespace-aliased
+   keywords (::alias/key) in the source are readable by the Clojure reader.
+
    First tries clojure.repl/source-fn (works for classpath-loaded files).
    Falls back to direct filesystem read for absolute paths (load-file scenario)."
   [fn-sym]
-  (or (clojure.repl/source-fn fn-sym)
-    (when-let [v (resolve fn-sym)]
-      (let [{:keys [file line]} (meta v)]
-        (when (and (absolute-path? file) line)
-          (source-from-absolute-path file line))))))
+  (when-let [v (resolve fn-sym)]
+    (let [fn-ns (-> v meta :ns)]
+      (binding [*ns* (or fn-ns *ns*)]
+        (or (clojure.repl/source-fn fn-sym)
+          (let [{:keys [file line]} (meta v)]
+            (when (and (absolute-path? file) line)
+              (source-from-absolute-path file line))))))))
 
 (defn self-signature
   "Computes a short signature (first 6 chars of SHA256) for a function's own source.
@@ -508,7 +513,7 @@
    Returns the zipper location or nil if not found."
   [zloc line]
   (loop [loc zloc]
-    (when loc
+    (when (and loc (not (z/end? loc)))
       (if (and (specification-form? loc)
             (form-contains-line? loc line))
         loc
@@ -601,8 +606,8 @@
   [covers-zloc new-sigs file-ns]
   (loop [loc (z/down covers-zloc)]
     (if (nil? loc)
-      ;; Done - navigate back up to the covers map
-      (z/up loc)
+      ;; Done - return the covers map (z/down returns nil for empty maps)
+      covers-zloc
       ;; loc is at a key, next sibling is the value
       (let [key-sym   (extract-sym-from-node loc file-ns)
             value-loc (z/right loc)
@@ -692,7 +697,6 @@
          (if (seq updated)
            ;; Write updated file
            (let [updated-covers (update-covers-map covers-zloc new-sigs file-ns)
-                 updated-root   (z/root updated-covers)
                  new-content    (z/root-string updated-covers)]
              (spit file-path new-content)
              {:file      file-path

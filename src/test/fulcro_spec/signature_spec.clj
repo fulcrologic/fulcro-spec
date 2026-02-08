@@ -567,3 +567,75 @@
 
       "unsealed function is not stale"
       (proof/stale? `trans-leaf-a) => false)))
+
+;; =============================================================================
+;; sigs-match? Legacy Compatibility Tests
+;; =============================================================================
+
+(def ^:private sigs-match? @#'sig/sigs-match?)
+
+(specification "sigs-match? (legacy compatibility)"
+  (behavior "returns true for exact match"
+    (assertions
+      "identical single-field signatures match"
+      (sigs-match? "abc123" "abc123") => true
+
+      "identical two-field signatures match"
+      (sigs-match? "abc123,def456" "abc123,def456") => true))
+
+  (behavior "returns true for legacy leaf format vs current leaf format"
+    (assertions
+      "legacy 'xxx,000000' matches current 'xxx' (leaf migration)"
+      (sigs-match? "abc123,000000" "abc123") => true))
+
+  (behavior "returns false for different signatures"
+    (assertions
+      "different single-field signatures don't match"
+      (sigs-match? "abc123" "xyz789") => false
+
+      "different two-field signatures don't match"
+      (sigs-match? "abc123,def456" "abc123,zzz999") => false
+
+      "non-legacy comma format does not match single-field"
+      (sigs-match? "abc123,def456" "abc123") => false)))
+
+;; =============================================================================
+;; Namespace-Aliased Keyword Tests (regression for get-source *ns* binding)
+;; =============================================================================
+
+;; These functions use namespace-aliased keywords (::alias/key) in their source.
+;; Before the fix, clojure.repl/source-fn would fail with "Invalid token: ::str/..."
+;; because `read` didn't have the alias context. The fix binds *ns* to the
+;; function's defining namespace before reading, giving the reader access to aliases.
+
+(defn fn-with-aliased-keyword
+  "A function that uses ::alias/keyword syntax in its body."
+  [m]
+  (get m ::str/aliased-key))
+
+(defn fn-with-multiple-aliases
+  "A function that uses multiple namespace-aliased keywords."
+  [m]
+  (assoc m ::str/key-a 1 ::sig/key-b 2))
+
+(specification "get-source handles namespace-aliased keywords"
+  (behavior "computes signature for functions using ::alias/key"
+    (let [s (sig/signature `fn-with-aliased-keyword)]
+      (assertions
+        "returns a valid 6-char hex signature"
+        (string? s) => true
+        (count s) => 6
+        (re-matches #"[0-9a-f]+" s) => s)))
+
+  (behavior "is deterministic for aliased keyword functions"
+    (assertions
+      "same function produces same signature across calls"
+      (sig/signature `fn-with-aliased-keyword) => (sig/signature `fn-with-aliased-keyword)))
+
+  (behavior "handles multiple different namespace aliases in one function"
+    (let [s (sig/signature `fn-with-multiple-aliases)]
+      (assertions
+        "returns a valid 6-char hex signature"
+        (string? s) => true
+        (count s) => 6
+        (re-matches #"[0-9a-f]+" s) => s))))

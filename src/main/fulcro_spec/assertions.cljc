@@ -87,11 +87,57 @@
 
          (throw (ex-info "invalid arrow" {:arrow arrow}))))))
 
-(defn fix-conform [conformed-assertions]
-  ;;see issue: #31
-  (if (vector? (second conformed-assertions))
-    (vec (cons (first conformed-assertions) (second conformed-assertions)))
-    conformed-assertions))
+(defn- arrow-sym?
+  "Returns true if `x` is one of the assertion arrow symbols."
+  [x]
+  (and (symbol? x) (contains? #{"=>" "=fn=>" "=throws=>" "=check=>"} (str x))))
+
+(defn parse-assertions
+  "Parses assertion `forms` in a single linear pass, replacing the spec-based
+   conformance that suffers from backtracking. Returns a vector of blocks, each
+   a map with optional `:behavior` string and `:triples` vector.
+
+   A string is a behavior label when the next form is NOT an arrow (meaning the
+   string cannot be the :actual of a triple). Otherwise the string is the :actual
+   of the next triple."
+  [forms]
+  (let [v   (vec forms)
+        len (count v)]
+    (loop [i       0
+           block   {:triples []}
+           result  []]
+      (if (>= i len)
+        (if (seq (:triples block))
+          (conj result block)
+          result)
+        (let [form (nth v i)]
+          (if (and (string? form)
+                (or (>= (inc i) len)
+                  (not (arrow-sym? (nth v (inc i))))))
+            ;; This string is a behavior label for a new block
+            (let [result (if (seq (:triples block))
+                           (conj result block)
+                           result)]
+              (recur (inc i)
+                {:behavior form :triples []}
+                result))
+            ;; This form is the :actual of a triple
+            (do
+              (when (> (+ i 3) len)
+                (throw (ex-info (str "Incomplete assertion: expected [actual arrow expected] but "
+                                  (- len i) " form(s) remain starting at: " (pr-str form))
+                         {:forms (subvec v i len)})))
+              (let [arrow (nth v (inc i))]
+                (when-not (arrow-sym? arrow)
+                  (throw (ex-info (str "Invalid assertion arrow: " (pr-str arrow)
+                                    ". Expected one of: => =fn=> =throws=> =check=>")
+                           {:arrow arrow :actual form})))
+                (let [triple {:actual   form
+                              :arrow    arrow
+                              :expected (nth v (+ i 2))}]
+                  (recur (+ i 3)
+                    (update block :triples conj triple)
+                    result))))))))))
 
 #?(:clj
    (defn block->asserts [cljs? {:keys [behavior triples]}]

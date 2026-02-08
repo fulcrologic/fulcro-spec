@@ -40,12 +40,11 @@
         (f 6) => 7
         (f 2) => 3))))
 
-(deftest fix-conform-for-issue-31
+(deftest parse-assertions-for-issue-31
   (assertions
     (mapv (juxt :behavior (comp count :triples))
-      (ae/fix-conform
-        (fss/conform! ::ae/assertions
-          '("foo" 1 => 2 "bar" 3 => 4, 5 => 6 "qux" 7 => 8, 9 => 10))))
+      (ae/parse-assertions
+        '("foo" 1 => 2 "bar" 3 => 4, 5 => 6 "qux" 7 => 8, 9 => 10)))
     => '[["foo" 1] ["bar" 2] ["qux" 2]]))
 
 (def reports (atom []))
