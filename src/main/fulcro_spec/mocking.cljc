@@ -11,6 +11,7 @@
 
    (when-mocking
      (f a) =1x=> (real-return)
+
      (assertions
        (f 1) => :real))
    ```"
@@ -26,9 +27,11 @@
 
    (when-mocking
      (f a) => (real-return)
-     (do (f 1)
-       (assertions
-         (returns-of f) => [:real/f])))
+
+     (f 1)
+
+     (assertions
+       (returns-of f) => [:real]))
    ```"
   [f]
   (stub/returns-of f))
@@ -36,15 +39,17 @@
 (defn return-of
   "Returns the return value that the mocked function `f` returned at the (0 based) `index`'ed call.
    Returns nil if the function was not mocked, or the index was out of bounds.
-   Example:
+
    ```
    (defn f [a] :real)
 
    (when-mocking
      (f a) => (real-return)
-     (do (f 1)
-       (assertions
-         (return-of f 0) => :real/f)))
+
+     (f 1)
+
+     (assertions
+       (return-of f 0) => :real))
    ```"
   [f index]
   (stub/return-of f index))
@@ -58,10 +63,11 @@
 
    (when-mocking
      (f a1 b2) => :mocked/f
-     (do (f 1 2)
-       (assertions
-         (calls-of f)
-         => [{'a1 1, 'b2 2}])))
+
+     (f 1 2)
+
+     (assertions
+       (calls-of f) => [{'a1 1, 'b2 2}]))
    ```"
   [f]
   (stub/calls-of f))
@@ -75,10 +81,11 @@
 
    (when-mocking
      (f a1) => (real-return)
-     (do (f 1)
-       (assertions
-         (call-of f 0)
-         => {'a1 1})))
+
+     (f 1)
+
+     (assertions
+       (call-of f 0) => {'a1 1}))
    ```"
   [f index]
   (stub/call-of f index))
@@ -86,16 +93,17 @@
 (defn spied-value
   "Returns the argument `sym` that the mocked function `f` received at the (0 based) `index`'ed call.
    Returns nil if the function was not mocked, the index was out of bounds, or the symbol was not found.
-   Example:
+
    ```
    (defn f [a] :real)
 
    (when-mocking
      (f a1) => (real-return)
-     (do (f 1)
-       (assertions
-         (spied-value f 0 'a1)
-         => 1)))
+
+     (f 1)
+
+     (assertions
+       (spied-value f 0 'a1) => 1))
    ```"
   [f index sym]
   (stub/spied-value f index sym))
