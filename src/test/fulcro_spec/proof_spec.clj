@@ -808,6 +808,7 @@
         (contains? (:added comparison) `leaf-b) => true)))
 
   (behavior "returns error when no scope configured"
+    (proof/configure! {:scope-ns-prefixes #{} :enforce? false})
     (let [baseline   {:signatures {}}
           comparison (proof/compare-to-baseline baseline)]
       (assertions
