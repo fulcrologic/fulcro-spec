@@ -127,14 +127,16 @@
     `(do
        ;; Register coverage at load time
        ~(when (seq covers)
-          (if (map? covers)
-            ;; New format: {fn-sym "signature"}
-            ;; Use covers-map-code to quote keys but allow values to be evaluated
-            `(doseq [[fn-sym# sig#] ~(covers-map-code covers)]
-               (coverage/register-coverage! '~qualified-test-name fn-sym# sig#))
-            ;; Legacy format: [fn-sym ...] (no signatures)
-            `(doseq [fn-sym# ~(vec covers)]
-               (coverage/register-coverage! '~qualified-test-name fn-sym#))))
+          (im/if-cljs &env
+            nil ; Skip coverage registration in CLJS (proof system is CLJ-only)
+            (if (map? covers)
+              ;; New format: {fn-sym "signature"}
+              ;; Use covers-map-code to quote keys but allow values to be evaluated
+              `(doseq [[fn-sym# sig#] ~(covers-map-code covers)]
+                 (coverage/register-coverage! '~qualified-test-name fn-sym# sig#))
+              ;; Legacy format: [fn-sym ...] (no signatures)
+              `(doseq [fn-sym# ~(vec covers)]
+                 (coverage/register-coverage! '~qualified-test-name fn-sym#)))))
        ;; Define the test
        (~(symbol prefix "deftest") ~test-name
          (im/with-reporting {:type      :specification
