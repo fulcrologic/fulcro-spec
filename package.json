@@ -3,20 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
-  "dependencies": {
-    "highlight.js": "^10.1.2",
-    "react-grid-layout": "^1.0.0",
-    "react-icons": "^3.10.0",
-    "reakit": "^1.2.2"
-  },
   "devDependencies": {
-    "karma": "6.4.4",
+    "karma": "6.4.3",
     "karma-chrome-launcher": "3.2.0",
     "karma-cljs-test": "0.1.0",
-    "shadow-cljs": "3.2.1",
-    "showdown": "1.9.1",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1"
+    "shadow-cljs": "3.4.10"
   },
   "author": "",
   "license": "MIT"
