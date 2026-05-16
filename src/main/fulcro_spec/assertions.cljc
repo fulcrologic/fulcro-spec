@@ -3,7 +3,9 @@
      (:require-macros fulcro-spec.assertions))
   (:require
     #?(:clj [clojure.test])
-    cljs.test                                               ;; contains multimethod in clojure file
+    #?@(:bb   []
+        :clj  [cljs.test]                                   ;; contains multimethod in clojure file
+        :cljs [cljs.test])
     [clojure.spec.alpha :as s]
     #?(:clj
        [fulcro-spec.impl.macros :as im])
@@ -145,7 +147,15 @@
        `(im/with-reporting ~{:type :behavior :string (if (empty? behavior) "unmarked" behavior)}
           ~@asserts))))
 
-#?(:clj
+#?(:bb
+   (do
+     (defmethod clojure.test/assert-expr '= [msg form]
+       `(clojure.test/do-report ~(assert-expr msg form)))
+     (defmethod clojure.test/assert-expr 'exec [msg form]
+       `(clojure.test/do-report ~(assert-expr msg form)))
+     (defmethod clojure.test/assert-expr 'check [msg form]
+       (fs.impl.check/check-expr false msg form)))
+   :clj
    (do
      (defmethod cljs.test/assert-expr '= [env msg form]
        `(cljs.test/do-report ~(assert-expr msg form)))
