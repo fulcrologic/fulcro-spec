@@ -73,7 +73,12 @@
             ~msg)
 
          =throws=>
-         (let [cls (if cljs? :default Throwable)]
+         ;; Emit a SYMBOL in the catch position, never a Class object.
+         ;; JVM Clojure's Compiler accepts either, but SCI's `catch`
+         ;; analyzer only takes a symbol — a spliced Class object trips
+         ;; `Unable to resolve classname: class java.lang.Throwable` under
+         ;; babashka. The symbol resolves correctly at runtime on both.
+         (let [cls (if cljs? :default 'java.lang.Throwable)]
            (cond
              (or (symbol? expected) (= :default expected))
              `(~is (~'thrown? ~expected ~actual)
