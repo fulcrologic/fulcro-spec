@@ -92,7 +92,8 @@
 
 (defn spied-value
   "Returns the argument `sym` that the mocked function `f` received at the (0 based) `index`'ed call.
-   Returns nil if the function was not mocked, the index was out of bounds, or the symbol was not found.
+   Returns nil if the index was out of bounds. Throws if that call did not record
+   `sym` (a typo, a literal, or a `_`-prefixed param), so an assertion on it cannot pass vacuously.
 
    ```
    (defn f [a] :real)

@@ -142,7 +142,7 @@
   (loop [ret     {}
          arglist mock-arglist
          args    args]
-    (if (or (empty? arglist) (empty? args))
+    (if (or (empty? arglist) (and (empty? args) (not= ::&_ (first arglist))))
       ret
       (let [arglist-item (first arglist)]
         (case arglist-item
@@ -150,7 +150,7 @@
           (recur ret (rest arglist) (rest args))
           ::&_ (cond-> ret
                  (not (#{::literal ::ignored} (second arglist)))
-                 (assoc (symbol (second arglist)) args))
+                 (assoc (symbol (second arglist)) (when (seq args) args)))
           (recur
             (assoc ret
               (symbol arglist-item)
@@ -172,4 +172,9 @@
   (nth (calls-of f) index nil))
 
 (defn spied-value [f index sym]
-  (get (call-of f index) sym))
+  (let [call (call-of f index)]
+    (if (and (map? call) (not (contains? call sym)))
+      (throw (ex-info (str "`" sym "` is not a recorded parameter of that mock (recorded: " (pr-str (vec (keys call)))
+                        "). Literals and `_`-prefixed parameters are not recorded.")
+               {:sym sym :index index :recorded (vec (keys call))}))
+      (get call sym))))

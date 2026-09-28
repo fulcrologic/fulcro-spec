@@ -191,6 +191,10 @@
     (stub/zip-arglist
       '["a" ::stub/&_ "b"] '[1 2])
     => '{a 1 b [2]}
+    "records an `&` param with no respective args as nil"
+    (stub/zip-arglist
+      '["a" ::stub/&_ "b"] '[1])
+    => '{a 1 b nil}
     (stub/zip-arglist
       '[::stub/&_ ::stub/ignored] '[1 2])
     => '{}

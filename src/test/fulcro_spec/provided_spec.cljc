@@ -293,7 +293,10 @@
         (mocking/calls-of g)
         => [{'a 1}
             {'b 2}
-            {}]))))
+            {}]
+        "and asking `spied-value` for one throws instead of returning nil"
+        (mocking/spied-value g 2 '_a) =throws=> #"`_a` is not a recorded parameter"
+        (mocking/spied-value g 0 'typo) =throws=> #"`typo` is not a recorded parameter"))))
 
 (deftest can-mock-private-functions
   (when-mocking
